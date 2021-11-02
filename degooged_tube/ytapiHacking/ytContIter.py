@@ -29,7 +29,6 @@ class YtContIter:
 
         x,y,z = apiKeyRe.search(r.text), continuationTokenRe.search(r.text), clientVersionRe.search(r.text)
 
-
         if not x:
             cfg.logger.error("Unable to Find INNERTUBE_API_KEY")
             return None
@@ -59,7 +58,6 @@ class YtContIter:
 
 
     def getNext(self) -> Union[dict, None]:
-
         # gets element that was sent on page load
         if self.initalData:
             data = self.initalData
@@ -104,4 +102,5 @@ class YtContIter:
 
 
         data:dict = json.loads(b.text)
+        # print(json.dumps(data, indent=4, sort_keys=True))
         return data

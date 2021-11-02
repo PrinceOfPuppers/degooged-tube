@@ -52,6 +52,7 @@ class ScrapeNode:
     children: list
 
     collapse: bool = False
+    rename: str = ""
 
     def _strIndent(self, numIndent):
         indent = numIndent*'  '
@@ -78,10 +79,12 @@ def _put(src, dest: Union[list, dict], key: Union[str,None] = None):
         dest[key] = src
 
 def scrapeJsonTree(j, base: ScrapeNode, result: Union[dict, list], parentKey: str = None):
-
     # if parent key is provided, put data under parents key
     if parentKey == None:
-        putKey = base.key
+        if base.rename:
+            putKey = base.rename
+        else:
+            putKey = base.key
     else:
         putKey = parentKey
 
@@ -100,6 +103,10 @@ def scrapeJsonTree(j, base: ScrapeNode, result: Union[dict, list], parentKey: st
             for child in base.children:
                 if child.collapse:
                     scrapeJsonTree(datum, child, x, putKey)
+                    if base.key != "continuationItems":
+                        print("all")
+                        print(putKey, child.key)
+                        print(x)
                 else:
                     scrapeJsonTree(datum, child, y)
             x.append(y)
@@ -118,7 +125,9 @@ def scrapeJsonTree(j, base: ScrapeNode, result: Union[dict, list], parentKey: st
 
         for child in base.children:
             if child.collapse:
+                print("first")
                 scrapeJsonTree(data, child, result, putKey)
+                print(putKey, child.key)
             else:
                 x = {}
                 scrapeJsonTree(data, child, x)

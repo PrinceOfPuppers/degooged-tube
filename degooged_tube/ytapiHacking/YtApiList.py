@@ -1,6 +1,7 @@
 from degooged_tube.ytapiHacking.ytContIter import YtContIter
 from degooged_tube.ytapiHacking.jsonScraping import scrapeJsonTree, ScrapeNode, ScrapeNum
 import degooged_tube.config as cfg
+import json as json
 
 class YtApiList:
     _list: list
@@ -16,16 +17,17 @@ class YtApiList:
         self._list = []
         self.url = url
         self.contUrlFragment = contUrlFragment
-        tmp = YtContIter.fromUrl(url, contUrlFragment) 
+
+        tmp = YtContIter.fromUrl(url, contUrlFragment, initalData) 
 
         if tmp == None:
             raise(Exception(f"Error Creating YtList for Url {url}"))
 
         self._iter = tmp
-        self._scrapeFmt = ScrapeNode("continuationItems",ScrapeNum.First,[scrapeFmt])
+        self._scrapeFmt = ScrapeNode("continuationItems",ScrapeNum.All,[scrapeFmt])
 
         if initalData:
-            initScrapeFmt = ScrapeNode("tabs",ScrapeNum.First,[scrapeFmt])
+            initScrapeFmt = ScrapeNode("tabs",ScrapeNum.All,[scrapeFmt])
             self._extend(initScrapeFmt)
 
     def _extend(self,fmt):
@@ -33,16 +35,31 @@ class YtApiList:
 
         if data == None:
             self.atMaxLen = True
-            raise IndexError
+            return
 
         resContainer = []
         scrapeJsonTree(data, fmt, resContainer)
+        resContainer = resContainer[0]
+        #print(json.dumps(resContainer, indent=4, sort_keys=True))
+        #exit()
 
-        if len(resContainer) == 0 or len(resContainer[0]) == 0:
-            cfg.logger.error(f"Scraping Json for {self.url} with Continuation Fragment {self.contUrlFragment} Returned a List of Zero Length\n Scraping Format:\n{str(self._scrapeFmt)}")
-            return None
+        if len(resContainer) == 0:
+            cfg.logger.error(f'Scraping Json for url: "{self.url}" with Continuation Fragment: "{self.contUrlFragment}" Returned a List of Zero Length\n Scraping Format:\n{str(self._scrapeFmt)}')
+            self.atMaxLen = True
+            return
 
         res = resContainer[0]
+
+        for r in resContainer:
+            if len(r) > 0:
+                res = r
+                break
+
+        if len(res) == 0:
+            cfg.logger.error(f'Scraping Json for url: "{self.url}" with Continuation Fragment: "{self.contUrlFragment}" Returned a List of Zero Length\n Scraping Format:\n{str(self._scrapeFmt)}')
+            self.atMaxLen = True
+            return
+
         self._list.extend(res)
 
     def __len__(self):
