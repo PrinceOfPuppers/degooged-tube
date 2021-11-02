@@ -1,4 +1,6 @@
-from degooged_tube.apiHacking import YoutubeApiData, scrapeJsonTree, ScrapeNode, ScrapeNum
+from degooged_tube.ytapiHacking.ytContIter import YtContIter
+from degooged_tube.ytapiHacking.jsonScraping import scrapeJsonTree, ScrapeNode, ScrapeNum
+from degooged_tube.ytapiHacking.YtApiList import YtApiList
 import json
 import logging
 import degooged_tube.config as cfg
@@ -10,46 +12,26 @@ def setupLogger():
     cfg.logger.addHandler(stream)
 
 
+uploadScrapeBody = \
+      ScrapeNode("gridVideoRenderer", ScrapeNum.All,[
+          ScrapeNode("videoId", ScrapeNum.First,[]),
+          ScrapeNode("thumbnails", ScrapeNum.First,[
+              ScrapeNode("url", ScrapeNum.First,[], collapse=True)
+          ]),
+          ScrapeNode("publishedTimeText", ScrapeNum.First,[
+              ScrapeNode("simpleText", ScrapeNum.First,[], collapse=True)
+          ]),
+          ScrapeNode("title", ScrapeNum.First,[
+              ScrapeNode("text", ScrapeNum.First,[], collapse=True)
+          ])
+      ], collapse = True)
+
 def cli():
     setupLogger()
 
     url = "https://www.youtube.com/c/karljobst/videos"
-    ytapi = YoutubeApiData.fromUrl(url,'browse') 
-    cfg.logger.info(ytapi)
+    uploads = YtApiList(url, 'browse', uploadScrapeBody, True)
 
-    if ytapi is None:
-        exit()
-
-    baseKeyText = 'tabs'
-    total = []
-    for i in range(0,30):
-        cfg.logger.info(f"iteration {i}")
-        data = ytapi.getNext()
-        if data == None:
-            break
-
-        res = []
-        
-        scrapeJsonTree(data, 
-            ScrapeNode(baseKeyText,ScrapeNum.First,[
-                    ScrapeNode("gridVideoRenderer", ScrapeNum.All,[
-                        ScrapeNode("videoId", ScrapeNum.First,[]),
-                        ScrapeNode("thumbnails", ScrapeNum.First,[
-                            ScrapeNode("url", ScrapeNum.First,[], collapse=True)
-                        ]),
-                        ScrapeNode("publishedTimeText", ScrapeNum.First,[
-                            ScrapeNode("simpleText", ScrapeNum.First,[], collapse=True)
-                        ]),
-                        ScrapeNode("title", ScrapeNum.First,[
-                            ScrapeNode("text", ScrapeNum.First,[], collapse=True)
-                        ])
-                    ], collapse = True)
-                ])
-            ,res)
-
-        baseKeyText = "continuationItems"
-        cfg.logger.info(json.dumps(res, sort_keys=True, indent=4, separators=(',', ': ')))
-        total.extend(res[0])
-
-    cfg.logger.info("Number of Videos:", len(total))
-
+    for upload in uploads:
+        print(upload)
+        print("\n")
