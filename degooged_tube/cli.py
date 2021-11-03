@@ -28,16 +28,17 @@ uploadScrapeFmt = \
 
 commentScrapeFmt = \
       ScrapeNode("contentText", ScrapeNum.All,[
-          ScrapeNode("runs", ScrapeNum.First,[], collapse = True)
+          ScrapeNode("runs", ScrapeNum.First,[
+              ScrapeNode("text", ScrapeNum.All,[], collapse = True)
+          ], collapse = True)
       ], collapse=True)
 
 def cli():
     setupLogger()
 
-    #uploadUrl = "https://www.youtube.com/c/karljobst/videos"
-    #uploads = YtApiList(uploadUrl, 'browse', uploadScrapeFmt, True)
-    #for upload in uploads:
-    #    print(upload)
+    uploadUrl = "https://www.youtube.com/c/karljobst/videos"
+    uploads = YtApiList(uploadUrl, 'browse', uploadScrapeFmt, True)
+    print(uploads.prettyString())
 
     commentUrl = "https://www.youtube.com/watch?v=wZW2JFO4Jz4"
     comments = YtApiList(commentUrl, 'next', commentScrapeFmt, False)
@@ -49,5 +50,5 @@ def cli():
     print('\n')
     print(comments[4])
     print('\n')
-    print(comments[5])
+    print(comments[40])
 

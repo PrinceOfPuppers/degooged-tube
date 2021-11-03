@@ -20,7 +20,6 @@ def scrapeJson(j, desiredKey: str, results:List):
         return
 
 def scrapeFirstJson(j, desiredKey: str):
-    print(f"in scrape first, j:{j}")
     if isinstance(j,List):
         for value in j:
             if isinstance(value,List) or isinstance(value,dict):
@@ -72,7 +71,6 @@ class ScrapeNode:
 
 def _put(src, dest: Union[list, dict], key: Union[str,None] = None):
     if type(dest) is list:
-        print(f"putting into list, value: {src}")
         dest.append(src)
         return
 
@@ -81,12 +79,10 @@ def _put(src, dest: Union[list, dict], key: Union[str,None] = None):
             cfg.logger.error("Key Required")
             return
 
-        print(f"putting into dict, key: {key}, value: {src}")
         dest[key] = src
 
 
 def _scrapeJsonTree(j, base: ScrapeNode, result: Union[dict, list], parentKey: str = None):
-    print(base)
     # if parent key is provided, put data under parents key
     if parentKey == None:
         if base.rename:
@@ -99,16 +95,13 @@ def _scrapeJsonTree(j, base: ScrapeNode, result: Union[dict, list], parentKey: s
 
 
     if base.scrapeNum == ScrapeNum.First: 
-        print(f"scrape First {base.key}")
         data = scrapeFirstJson(j, base.key)
-        print(f"data: {data}")
 
         if data is None:
             cfg.logger.error(f"Missing Field in JSON: {base.key}")
             return
 
         if len(base.children) == 0:
-            print("No Children")
             _put(data, result, putKey)
             return
 
@@ -121,14 +114,10 @@ def _scrapeJsonTree(j, base: ScrapeNode, result: Union[dict, list], parentKey: s
                 _put(x, result, putKey)
 
     else: # all and longest
-
-        print(f"scrape all {base.key}")
         data = []
         scrapeJson(j, base.key, data)
-        print(f"data: {data}")
 
         if len(base.children) == 0:
-            print("No Children")
             _put(data, result, putKey)
             return
 

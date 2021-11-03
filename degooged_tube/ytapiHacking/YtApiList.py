@@ -1,7 +1,6 @@
 from degooged_tube.ytapiHacking.ytContIter import YtContIter
 from degooged_tube.ytapiHacking.jsonScraping import scrapeJsonTree, ScrapeNode, ScrapeNum
 import degooged_tube.config as cfg
-import json as json
 
 class YtApiList:
     _list: list
@@ -30,7 +29,7 @@ class YtApiList:
             initScrapeFmt = ScrapeNode("tabs",ScrapeNum.Longest,[scrapeFmt], collapse = True)
             self._extend(initScrapeFmt)
 
-    def _extend(self,fmt):
+    def _extend(self, fmt):
         data = self._iter.getNext()
 
         if data == None:
@@ -38,8 +37,6 @@ class YtApiList:
             return
 
         res = scrapeJsonTree(data, fmt)
-        #print(json.dumps(resContainer, indent=4, sort_keys=True))
-        #exit()
 
         if len(res) == 0:
             cfg.logger.error(f'Scraping Json for url: "{self.url}" with Continuation Fragment: "{self.contUrlFragment}" Returned a List of Zero Length\n Scraping Format:\n{str(self._scrapeFmt)}')
@@ -48,8 +45,9 @@ class YtApiList:
 
         self._list.extend(res)
 
-    def __len__(self):
-        return len(self._list)
+    def getAll(self):
+        while not self.atMaxLen:
+            self._extend(self._scrapeFmt)
 
     def __getitem__(self, index):
         while True:
@@ -63,6 +61,37 @@ class YtApiList:
                 raise IndexError
 
             self._extend(self._scrapeFmt)
+
+    def __setitem__(self, index, val):
+        while True:
+            if 0 <= index < len(self._list):
+                self._list[index] = val
+                return
+
+            if 0 > index >= -len(self._list):
+                self._list[index] = val
+                return
+
+            if self.atMaxLen:
+                raise IndexError
+
+            self._extend(self._scrapeFmt)
+
+    def __len__(self):
+        self.getAll()
+        return len(self._list)
+
+    def prettyString(self):
+        self.getAll()
+        return '[\n' + (', \n'.join('  '+ str(a) for a in self._list)) + '\n]'
+
+    def __str__(self):
+        self.getAll()
+        return str(self._list)
+
+    def __repr__(self):
+        self.getAll()
+        return f"{self.__class__.__name__}({str(self._list)})"  
 
     def __next__(self):
         try:
