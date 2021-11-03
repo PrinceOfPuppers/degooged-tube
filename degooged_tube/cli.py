@@ -33,12 +33,18 @@ commentScrapeFmt = \
           ], collapse = True)
       ], collapse=True)
 
+def uploadsCallback(res):
+    for vid in res:
+        print(vid)
+
+    return res
 def cli():
     setupLogger()
 
     uploadUrl = "https://www.youtube.com/c/karljobst/videos"
-    uploads = YtApiList(uploadUrl, 'browse', uploadScrapeFmt, True)
-    print(uploads.prettyString())
+    uploads = YtApiList(uploadUrl, 'browse', uploadScrapeFmt, onExtend=uploadsCallback)
+    print(len(uploads))
+    exit()
 
     commentUrl = "https://www.youtube.com/watch?v=wZW2JFO4Jz4"
     comments = YtApiList(commentUrl, 'next', commentScrapeFmt, False)

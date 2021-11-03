@@ -2,6 +2,8 @@ from degooged_tube.ytapiHacking.ytContIter import YtContIter
 from degooged_tube.ytapiHacking.jsonScraping import scrapeJsonTree, ScrapeNode, ScrapeNum
 import degooged_tube.config as cfg
 
+from typing import Callable
+
 class YtApiList:
     _list: list
     _iter: YtContIter
@@ -11,8 +13,9 @@ class YtApiList:
     url: str
     contUrlFragment: str
     atMaxLen: bool = False
+    onExtend: Callable
 
-    def __init__(self, url, contUrlFragment, scrapeFmt, initalData:bool = False):
+    def __init__(self, url, contUrlFragment, scrapeFmt, initalData:bool = False, onExtend: Callable = lambda res: res):
         self._list = []
         self.url = url
         self.contUrlFragment = contUrlFragment
@@ -24,6 +27,8 @@ class YtApiList:
 
         self._iter = tmp
         self._scrapeFmt = ScrapeNode("continuationItems",ScrapeNum.Longest,[scrapeFmt], collapse = True)
+
+        self.onExtend = onExtend
 
         if initalData:
             initScrapeFmt = ScrapeNode("tabs",ScrapeNum.Longest,[scrapeFmt], collapse = True)
@@ -43,7 +48,7 @@ class YtApiList:
             self.atMaxLen = True
             return
 
-        self._list.extend(res)
+        self._list.extend(self.onExtend(res))
 
     def getAll(self):
         while not self.atMaxLen:
