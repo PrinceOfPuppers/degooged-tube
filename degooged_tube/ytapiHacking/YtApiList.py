@@ -24,10 +24,10 @@ class YtApiList:
             raise(Exception(f"Error Creating YtList for Url {url}"))
 
         self._iter = tmp
-        self._scrapeFmt = ScrapeNode("continuationItems",ScrapeNum.All,[scrapeFmt])
+        self._scrapeFmt = ScrapeNode("continuationItems",ScrapeNum.Longest,[scrapeFmt], collapse = True)
 
         if initalData:
-            initScrapeFmt = ScrapeNode("tabs",ScrapeNum.All,[scrapeFmt])
+            initScrapeFmt = ScrapeNode("tabs",ScrapeNum.Longest,[scrapeFmt], collapse = True)
             self._extend(initScrapeFmt)
 
     def _extend(self,fmt):
@@ -37,23 +37,9 @@ class YtApiList:
             self.atMaxLen = True
             return
 
-        resContainer = []
-        scrapeJsonTree(data, fmt, resContainer)
-        resContainer = resContainer[0]
+        res = scrapeJsonTree(data, fmt)
         #print(json.dumps(resContainer, indent=4, sort_keys=True))
         #exit()
-
-        if len(resContainer) == 0:
-            cfg.logger.error(f'Scraping Json for url: "{self.url}" with Continuation Fragment: "{self.contUrlFragment}" Returned a List of Zero Length\n Scraping Format:\n{str(self._scrapeFmt)}')
-            self.atMaxLen = True
-            return
-
-        res = resContainer[0]
-
-        for r in resContainer:
-            if len(r) > 0:
-                res = r
-                break
 
         if len(res) == 0:
             cfg.logger.error(f'Scraping Json for url: "{self.url}" with Continuation Fragment: "{self.contUrlFragment}" Returned a List of Zero Length\n Scraping Format:\n{str(self._scrapeFmt)}')

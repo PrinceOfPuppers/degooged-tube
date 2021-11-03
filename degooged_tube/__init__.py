@@ -1,4 +1,3 @@
-
 from degooged_tube import config as cfg
 from signal import signal,SIGINT,SIGABRT,SIGTERM,Signals
 import sys

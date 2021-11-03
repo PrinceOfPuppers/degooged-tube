@@ -3,6 +3,7 @@ from enum import Enum
 from dataclasses import dataclass
 import degooged_tube.config as cfg
 
+
 def scrapeJson(j, desiredKey: str, results:List):
     if isinstance(j,List):
         for value in j:
@@ -19,6 +20,7 @@ def scrapeJson(j, desiredKey: str, results:List):
         return
 
 def scrapeFirstJson(j, desiredKey: str):
+    print(f"in scrape first, j:{j}")
     if isinstance(j,List):
         for value in j:
             if isinstance(value,List) or isinstance(value,dict):
@@ -44,6 +46,7 @@ def scrapeFirstJson(j, desiredKey: str):
 class ScrapeNum(Enum):
     First = 1
     All = 2
+    Longest = 3
 
 @dataclass()
 class ScrapeNode:
@@ -69,16 +72,21 @@ class ScrapeNode:
 
 def _put(src, dest: Union[list, dict], key: Union[str,None] = None):
     if type(dest) is list:
+        print(f"putting into list, value: {src}")
         dest.append(src)
         return
+
     elif type(dest) is dict:
         if key == None:
             cfg.logger.error("Key Required")
             return
 
+        print(f"putting into dict, key: {key}, value: {src}")
         dest[key] = src
 
-def scrapeJsonTree(j, base: ScrapeNode, result: Union[dict, list], parentKey: str = None):
+
+def _scrapeJsonTree(j, base: ScrapeNode, result: Union[dict, list], parentKey: str = None):
+    print(base)
     # if parent key is provided, put data under parents key
     if parentKey == None:
         if base.rename:
@@ -89,46 +97,66 @@ def scrapeJsonTree(j, base: ScrapeNode, result: Union[dict, list], parentKey: st
         putKey = parentKey
 
 
-    if base.scrapeNum == ScrapeNum.All:
-        data = []
-        scrapeJson(j, base.key, data)
 
-        if len(base.children) == 0:
-            _put(data, result, putKey)
-            return
-
-        x = []
-        for datum in data:
-            y = {}
-            for child in base.children:
-                if child.collapse:
-                    scrapeJsonTree(datum, child, x, putKey)
-                    if base.key != "continuationItems":
-                        print("all")
-                        print(putKey, child.key)
-                        print(x)
-                else:
-                    scrapeJsonTree(datum, child, y)
-            x.append(y)
-        _put(x, result, putKey)
-
-    else: 
+    if base.scrapeNum == ScrapeNum.First: 
+        print(f"scrape First {base.key}")
         data = scrapeFirstJson(j, base.key)
+        print(f"data: {data}")
 
         if data is None:
             cfg.logger.error(f"Missing Field in JSON: {base.key}")
             return
 
         if len(base.children) == 0:
+            print("No Children")
             _put(data, result, putKey)
             return
 
         for child in base.children:
             if child.collapse:
-                print("first")
-                scrapeJsonTree(data, child, result, putKey)
-                print(putKey, child.key)
+                _scrapeJsonTree(data, child, result, putKey)
             else:
                 x = {}
-                scrapeJsonTree(data, child, x)
+                _scrapeJsonTree(data, child, x)
                 _put(x, result, putKey)
+
+    else: # all and longest
+
+        print(f"scrape all {base.key}")
+        data = []
+        scrapeJson(j, base.key, data)
+        print(f"data: {data}")
+
+        if len(base.children) == 0:
+            print("No Children")
+            _put(data, result, putKey)
+            return
+
+        x = []
+        for datum in data:
+            y = {}
+
+            for child in base.children:
+                if child.collapse:
+                    _scrapeJsonTree(datum, child, x, putKey)
+                else:
+                    _scrapeJsonTree(datum, child, y)
+
+            if len(y) != 0: 
+                x.append(y)
+
+        if base.scrapeNum == ScrapeNum.Longest:
+            _put(max(x, key=len), result, putKey)
+        else:
+            _put(x, result, putKey)
+
+
+def scrapeJsonTree(j, base: ScrapeNode):
+    result = {}
+    _scrapeJsonTree(j, base, result)
+
+    if base.collapse:
+        return result[base.key]
+
+    return result
+

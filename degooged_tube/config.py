@@ -36,6 +36,7 @@ else:
 section = parser['CONFIG']
 
 # global config variables
+testJsonPath = f"{modulePath}/tests/testJson"
 
 # logger
 import logging

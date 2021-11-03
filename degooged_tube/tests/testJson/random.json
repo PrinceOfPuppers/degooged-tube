@@ -1,0 +1,37 @@
+{
+    "nested":{
+        "greetings":{
+            "hello": "there",
+            "howdy": {"name": "partner"},
+            "hi":[
+                { 
+                    "name": "alice",
+                    "favColor": "blue",
+                    "coolness": "megaRad"
+                },
+                { 
+                    "name": "bob", 
+                    "favColor": "green",
+                    "coolness": 11
+                },
+                { 
+                    "name": "carol",
+                    "favColor": "purple",
+                    "coolness": ["super", "duper", "cool"]
+                },
+                { 
+                    "name": "dave",
+                    "favColor": "purple"
+                }
+            ]
+        }
+    },
+
+    "greetings":{
+        "hi":[
+            1,
+            2,
+            3
+        ]
+    }
+}
