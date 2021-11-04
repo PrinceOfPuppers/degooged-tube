@@ -25,8 +25,8 @@ def getCommentList(videoPage):
 
     return YtApiList(videoPage, cp.commentsApiUrl, cp.commentScrapeFmt, onExtend = cp.commentCallback)
 
-def getRecommendedList(videoPage):
-    return YtApiList(videoPage, cp.uploadsApiUrl, cp.uploadScrapeFmt, onExtend = cp.commentCallback)
+def getRelatedVideoList(videoPage):
+    return YtApiList(videoPage, cp.relatedVideosApiUrl, cp.relatedVideosScrapeFmt)
 
 
 def cli():
@@ -42,13 +42,15 @@ def cli():
     videoPage = YtInitalPage.fromUrl(videoUrl)
     if videoPage is None:
         raise Exception("Error Getting Page for video")
-    print(videoPage.continuations)
-    comments = getCommentList(videoPage)
-    print(comments[1])
-    print(comments[2])
-    print(comments[40])
 
-    #recommended = getRecommendedList(videoPage)
+    relatedVideos = getRelatedVideoList(videoPage)
+    print(relatedVideos[10])
+
+    comments = getCommentList(videoPage)
+    #print(comments[1])
+    #print(comments[2])
+    print(comments[10])
+
 
 
 

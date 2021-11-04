@@ -63,13 +63,14 @@ class YtInitalPage:
 
     def getContinuationTokens(self, apiUrl: str):
         try:
-            return self.continuations[apiUrl]
+            return self.continuations[apiUrl].copy()
         except KeyError:
             raise Exception(
                 f"apiUrl: {apiUrl} \n"
                 f"Does Not Match Any apiUrls: {self.continuations.keys()}\n"
                 f"In Inital Page: {self.url}\n"
             )
+
 
 
 @dataclass()
@@ -97,6 +98,7 @@ class YtContIter:
             self.getInitData = True
 
         self.apiUrl = apiUrl.strip('/')
+
 
     def getNext(self, dataFmt: ScrapeNode) -> Union[dict, list, None]:
         # gets element that was sent on page load
@@ -142,7 +144,12 @@ class YtContIter:
                 )
                 return None
             else:
-                cfg.logger.debug(f"Sent Post Request to: {reqUrl} \nclientVersion: {self.initalPage.clientVersion}\ncontinuationToken: {continuationToken}\nStatus {b.status_code} {b.reason}")
+                cfg.logger.debug(
+                    f"Sent Post Request to: {reqUrl} \n"
+                    f"clientVersion: {self.initalPage.clientVersion}\n"
+                    f"continuationToken: {continuationToken}\n"
+                    f"Status {b.status_code} {b.reason}"
+                )
             
             data:dict = json.loads(b.text)
             d = scrapeJsonTree(data, dataFmt)

@@ -109,3 +109,20 @@ def commentCallback(res):
 
     return res
 
+
+# relatedVideos
+relatedVideosApiUrl = '/youtubei/v1/next'
+
+relatedVideosScrapeFmt = \
+      ScrapeNode("compactVideoRenderer", ScrapeNum.All,[
+          ScrapeNode("videoId", ScrapeNum.First,[]),
+          ScrapeNode("thumbnails", ScrapeNum.First,[
+              ScrapeNode("url", ScrapeNum.First,[], collapse=True)
+          ], rename = "thumbnail"),
+          ScrapeNode("publishedTimeText", ScrapeNum.First,[
+              ScrapeNode("simpleText", ScrapeNum.First,[], collapse=True)
+          ], rename = "uploaded on"),
+          ScrapeNode("title", ScrapeNum.First,[
+              ScrapeNode("simpleText", ScrapeNum.First,[], collapse=True)
+          ])
+      ], collapse = True)

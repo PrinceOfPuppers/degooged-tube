@@ -17,7 +17,6 @@ class YtApiList:
     onExtend: Callable
 
     def __init__(self, initalPage: YtInitalPage, apiUrl: str, scrapeFmt: ScrapeNode, getInitalData: bool= False, onExtend: Callable = lambda res: res):
-        print(apiUrl)
         self._list = []
 
         self.apiUrl = apiUrl
