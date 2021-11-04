@@ -46,6 +46,7 @@ class ScrapeNum(Enum):
     First = 1
     All = 2
     Longest = 3
+    Unique = 4
 
 @dataclass()
 class ScrapeNode:
@@ -111,7 +112,7 @@ def _scrapeJsonTree(j, base: ScrapeNode, result: Union[dict, list], parentKey: s
                 _scrapeJsonTree(data, child, x)
                 _put(x, result, putKey)
 
-    else: # all and longest
+    else: # all, unique and longest
         data = []
         scrapeJson(j, base.key, data)
 
@@ -134,6 +135,10 @@ def _scrapeJsonTree(j, base: ScrapeNode, result: Union[dict, list], parentKey: s
 
         if base.scrapeNum == ScrapeNum.Longest and len(x)!=0:
             _put(max(x, key=len), result, putKey)
+
+        elif base.scrapeNum == ScrapeNum.Unique:
+            if result not in x:
+                _put(x, result, putKey)
         else:
             _put(x, result, putKey)
 

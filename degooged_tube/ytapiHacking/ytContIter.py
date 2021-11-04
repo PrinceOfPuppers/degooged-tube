@@ -1,15 +1,11 @@
 import requests
-import re
 import json
 from typing import Union
 from dataclasses import dataclass
 import degooged_tube.config as cfg
 from degooged_tube.ytapiHacking.jsonScraping import scrapeJson
 
-apiKeyRe = re.compile(r'[\'\"]INNERTUBE_API_KEY[\'\"]:[\'\"](.*?)[\'\"]')
-continuationTokenRe = re.compile(r'[\'\"]token[\'\"]\s?:\s?[\'\"](.*?)[\'\"]')
-clientVersionRe = re.compile(r'[\'\"]cver[\'\"]: [\'|\"](.*?)[\'\"]')
-ytInitalDataRe = re.compile(r"ytInitialData = (\{.*?\});</script>")
+import degooged_tube.ytapiHacking.controlPanel as cp
 
 @dataclass
 class YtInitalPage:
@@ -26,7 +22,7 @@ class YtInitalPage:
     def fromUrl(cls, url:str, getDataInScript:bool = False) -> Union['YtInitalPage', None]:
         r=requests.get(url)
 
-        x, y, z = apiKeyRe.search(r.text), continuationTokenRe.search(r.text), clientVersionRe.search(r.text)
+        x, y, z = cp.apiKeyRe.search(r.text), cp.continuationTokenRe.search(r.text), cp.clientVersionRe.search(r.text)
 
         if not x:
             cfg.logger.error("Unable to Find INNERTUBE_API_KEY")
@@ -47,12 +43,13 @@ class YtInitalPage:
         apiUrls = []
 
         if getDataInScript:
-            w = ytInitalDataRe.search(r.text)
+            w = cp.ytInitalDataRe.search(r.text)
             if not w:
                 cfg.logger.error("Unable to Find ScriptData")
                 return None
             initalData = json.loads(w.group(1))
             scrapeJson(initalData, 'apiUrl', apiUrls) 
+            apiUrls = list(set(apiUrls))
 
             return cls(url, apiUrls, key, continuationToken, clientVersion, initalData)
 
@@ -94,25 +91,10 @@ class YtContIter:
         if self.endOfData:
             return None
 
-        requestData = '''{
-            "context": {
-                "adSignalsInfo": {
-                },
-                "clickTracking": {
-                },
-                "client": {
-                    "clientName": "WEB",
-                    "clientVersion": "'''+self.initalPage.clientVersion+'''",
-                },
-                "request": {
-                },
-                "user": {
-                }
-            },
-            "continuation": "'''+self.continuationToken+'''"
-        }'''
-        
-        reqUrl = f'https://www.youtube.com/{self.apiUrl}?key={self.initalPage.key}'
+        requestData = cp.apiContinuationBodyFmt.format(clientVersion = self.initalPage.clientVersion, continuationToken = self.continuationToken)
+
+        reqUrl = cp.apiContinuationUrlFmt.format(apiUrl = self.apiUrl, key = self.initalPage.key)
+
         b = requests.post(reqUrl, data=requestData)
 
         if b.status_code != 200:
@@ -128,7 +110,7 @@ class YtContIter:
         else:
             cfg.logger.debug(f"Sent Post Request to: {reqUrl} \nclientVersion: {self.initalPage.clientVersion}\ncontinuationToken: {self.continuationToken}\nStatus {b.status_code} {b.reason}")
         
-        x = continuationTokenRe.search(b.text)
+        x = cp.continuationTokenRe.search(b.text)
 
         if not x:
             self.endOfData = True
