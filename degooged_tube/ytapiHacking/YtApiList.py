@@ -16,7 +16,7 @@ class YtApiList:
     atMaxLen: bool = False
     onExtend: Callable
 
-    def __init__(self, initalPage: YtInitalPage, apiUrl: str, scrapeFmt, getInitalData: bool= False, onExtend: Callable = lambda res: res):
+    def __init__(self, initalPage: YtInitalPage, apiUrl: str, scrapeFmt: ScrapeNode, getInitalData: bool= False, onExtend: Callable = lambda res: res):
         print(apiUrl)
         self._list = []
 
@@ -34,13 +34,11 @@ class YtApiList:
             self._extend(initScrapeFmt)
 
     def _extend(self, fmt):
-        data = self._iter.getNext()
+        res = self._iter.getNext(fmt)
 
-        if data == None:
+        if res == None:
             self.atMaxLen = True
             return
-
-        res = scrapeJsonTree(data, fmt)
 
         if len(res) == 0:
             cfg.logger.error(f'Scraping Json for Api Url: "{self.apiUrl}" Returned a List of Zero Length\n Scraping Format:\n{str(self._scrapeFmt)}')

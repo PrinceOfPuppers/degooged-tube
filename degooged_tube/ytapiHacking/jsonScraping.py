@@ -143,7 +143,7 @@ def _scrapeJsonTree(j, base: ScrapeNode, result: Union[dict, list], parentKey: s
             _put(x, result, putKey)
 
 
-def scrapeJsonTree(j, base: ScrapeNode):
+def scrapeJsonTree(j, base: ScrapeNode) -> Union[list,dict]:
     result = {}
     _scrapeJsonTree(j, base, result)
 

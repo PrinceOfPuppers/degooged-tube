@@ -13,36 +13,47 @@ def setupLogger():
     cfg.logger.addHandler(stream)
 
 
-def cli():
-    setupLogger()
-
-    uploadUrl = "https://www.youtube.com/c/karljobst/videos"
-    uploadsPage = YtInitalPage.fromUrl(uploadUrl, getDataInScript = True)
-
+def getUploadList(uploadsPage):
     if uploadsPage is None:
-        raise Exception("No Uploads Page")
+        raise Exception(f"Error Getting Uploads Page")
 
-    uploads = YtApiList(uploadsPage, cp.uploadsApiUrl, cp.uploadScrapeFmt, getInitalData=True, onExtend = cp.uploadsCallback)
+    return YtApiList(uploadsPage, cp.uploadsApiUrl, cp.uploadScrapeFmt, getInitalData=True, onExtend = cp.uploadsCallback)
 
-    upload = uploads[20]
-    # print(f"Getting Commments for Upload: {upload['title']}")
-
-    videoUrl = f"https://www.youtube.com/watch?v={upload['videoId']}"
-
-    videoPage = YtInitalPage.fromUrl(videoUrl, getDataInScript = True)
+def getCommentList(videoPage):
     if videoPage is None:
         raise Exception("Error Getting Page for video")
 
-    print(videoPage.apiUrls)
+    return YtApiList(videoPage, cp.commentsApiUrl, cp.commentScrapeFmt, onExtend = cp.commentCallback)
 
-    comments = YtApiList(videoPage, cp.commentsApiUrl, cp.commentScrapeFmt, onExtend = cp.commentCallback)
+def getRecommendedList(videoPage):
+    return YtApiList(videoPage, cp.uploadsApiUrl, cp.uploadScrapeFmt, onExtend = cp.commentCallback)
+
+
+def cli():
+    setupLogger()
+
+    uploadsUrl = "https://www.youtube.com/c/karljobst/videos"
+    uploadsPage = YtInitalPage.fromUrl(uploadsUrl)
+    uploads = getUploadList(uploadsPage)
+
+    upload = uploads[20]
+
+    videoUrl = f"https://www.youtube.com/watch?v={upload['videoId']}"
+    videoPage = YtInitalPage.fromUrl(videoUrl)
+    if videoPage is None:
+        raise Exception("Error Getting Page for video")
+    print(videoPage.continuations)
+    comments = getCommentList(videoPage)
     print(comments[1])
-    print('\n')
     print(comments[2])
-    print('\n')
-    print(comments[3])
-    print('\n')
-    print(comments[4])
-    print('\n')
     print(comments[40])
+
+    #recommended = getRecommendedList(videoPage)
+
+
+
+    #print(recommended[20])
+
+
+
 

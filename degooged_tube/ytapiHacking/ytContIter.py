@@ -3,33 +3,35 @@ import json
 from typing import Union
 from dataclasses import dataclass
 import degooged_tube.config as cfg
-from degooged_tube.ytapiHacking.jsonScraping import scrapeJson
+from degooged_tube.ytapiHacking.jsonScraping import scrapeJsonTree, ScrapeNode
 
 import degooged_tube.ytapiHacking.controlPanel as cp
+
+
 
 @dataclass
 class YtInitalPage:
     url: str
-    apiUrls: list[str] # empty if initalData is None
 
     key: str
-    continuationToken: str
     clientVersion: str
 
-    initalData: Union[dict, None] = None
+    continuations: dict
+
+    initalData: dict
 
     @classmethod
-    def fromUrl(cls, url:str, getDataInScript:bool = False) -> Union['YtInitalPage', None]:
+    def fromUrl(cls, url:str) -> Union['YtInitalPage', None]:
         r=requests.get(url)
 
-        x, y, z = cp.apiKeyRe.search(r.text), cp.continuationTokenRe.search(r.text), cp.clientVersionRe.search(r.text)
+        x, y, z = cp.apiKeyRe.search(r.text), cp.ytInitalDataRe.search(r.text), cp.clientVersionRe.search(r.text)
 
         if not x:
             cfg.logger.error("Unable to Find INNERTUBE_API_KEY")
             return None
 
         if not y:
-            cfg.logger.error("Unable to Find Continuation Token")
+            cfg.logger.error("Unable to Find Inital Data")
             return None
 
         if not z:
@@ -37,23 +39,37 @@ class YtInitalPage:
             return None
 
         key = x.group(1)
-        continuationToken = y.group(1)
+        initalData = json.loads(y.group(1))
         clientVersion = z.group(1)
 
-        apiUrls = []
+        a = scrapeJsonTree(initalData, cp.continuationScrapeFmt)
+        assert type(a) is list
+        continuations = {}
+        for continuation in a:
+            try:
+                token = continuation['token']
+                apiUrl = continuation['apiUrl']
+            except KeyError:
+                continue
 
-        if getDataInScript:
-            w = cp.ytInitalDataRe.search(r.text)
-            if not w:
-                cfg.logger.error("Unable to Find ScriptData")
-                return None
-            initalData = json.loads(w.group(1))
-            scrapeJson(initalData, 'apiUrl', apiUrls) 
-            apiUrls = list(set(apiUrls))
+            if apiUrl in continuations:
+                if token not in continuations[apiUrl]:
+                    continuations[apiUrl].append(token)
+                    cfg.logger.debug(f"Adding Additional Token to {apiUrl} of Page {url}\nNum Tokens Now: {len(continuations[apiUrl])}")
+            else:
+                continuations[apiUrl] = [token]
 
-            return cls(url, apiUrls, key, continuationToken, clientVersion, initalData)
+        return cls(url, key, clientVersion, continuations, initalData )
 
-        return cls(url, apiUrls, key, continuationToken, clientVersion)
+    def getContinuationTokens(self, apiUrl: str):
+        try:
+            return self.continuations[apiUrl]
+        except KeyError:
+            raise Exception(
+                f"apiUrl: {apiUrl} \n"
+                f"Does Not Match Any apiUrls: {self.continuations.keys()}\n"
+                f"In Inital Page: {self.url}\n"
+            )
 
 
 @dataclass()
@@ -62,7 +78,7 @@ class YtContIter:
     endOfData:bool
 
     apiUrl: str
-    continuationToken: str
+    continuationTokens: list[str]
 
     getInitData = False
     initalData: Union[dict, None] = None
@@ -71,6 +87,8 @@ class YtContIter:
         self.endOfData = False
         self.initalPage = initalPage
 
+        self.continuationTokens = initalPage.getContinuationTokens(apiUrl)
+
         if getInitalData:
             if initalPage.initalData is None:
                 raise Exception("No Inital Data To Get")
@@ -78,46 +96,68 @@ class YtContIter:
             self.initalData = initalPage.initalData
             self.getInitData = True
 
-        self.continuationToken = initalPage.continuationToken
-
         self.apiUrl = apiUrl.strip('/')
 
-    def getNext(self) -> Union[dict, None]:
+    def getNext(self, dataFmt: ScrapeNode) -> Union[dict, list, None]:
         # gets element that was sent on page load
         if self.getInitData:
             self.getInitData = False
-            return self.initalPage.initalData
+            cfg.logger.debug(f"Returning InitalData for {self.apiUrl} of {self.initalPage.url}")
+            d = scrapeJsonTree(self.initalPage.initalData, dataFmt)
+            return d
 
         if self.endOfData:
             return None
 
-        requestData = cp.apiContinuationBodyFmt.format(clientVersion = self.initalPage.clientVersion, continuationToken = self.continuationToken)
-
-        reqUrl = cp.apiContinuationUrlFmt.format(apiUrl = self.apiUrl, key = self.initalPage.key)
-
-        b = requests.post(reqUrl, data=requestData)
-
-        if b.status_code != 200:
-            cfg.logger.error(
-                    f"Error Sending Post Request to: {reqUrl}\n"
-                    "clientVersion: {self.initalPage.clientVersion}\n"
-                    "continuationToken: {self.continuationToken}\n"
-                    "Status {b.status_code} {b.reason}\n"
-                    "Request Data:\n"
-                    "{requestData}"
-            )
-            return None
-        else:
-            cfg.logger.debug(f"Sent Post Request to: {reqUrl} \nclientVersion: {self.initalPage.clientVersion}\ncontinuationToken: {self.continuationToken}\nStatus {b.status_code} {b.reason}")
-        
-        x = cp.continuationTokenRe.search(b.text)
-
-        if not x:
-            self.endOfData = True
-            cfg.logger.debug(f"Reached End of Continuation Chain, Yeilding Last Result")
-        else:
-            self.continuationToken = x.group(1)
+        elif len(self.continuationTokens) > 1:
+            cfg.logger.debug(f"YtApiContIter for {self.apiUrl} of {self.initalPage.url} \nHas {len(self.continuationTokens)} Continuation Tokens, Iterating Through Them...")
 
 
-        data:dict = json.loads(b.text)
-        return data
+        while True:
+            if len(self.continuationTokens) == 0:
+                cfg.logger.error(
+                        f"YtApiContIter for {self.apiUrl} of {self.initalPage.url} \n"
+                        f"Has No Continuation Tokens!\n"
+                        f"This Means the Data Scraping Format Does Not Match The Data Found at The Url:\n"
+                        f"{dataFmt}"
+                )
+                return None
+
+            continuationToken = self.continuationTokens[0]
+
+            requestData = cp.apiContinuationBodyFmt.format(clientVersion = self.initalPage.clientVersion, continuationToken = continuationToken)
+
+            reqUrl = cp.apiContinuationUrlFmt.format(apiUrl = self.apiUrl, key = self.initalPage.key)
+
+            b = requests.post(reqUrl, data=requestData)
+
+            if b.status_code != 200:
+                cfg.logger.error(
+                        f"Error Sending Post Request to: {reqUrl}\n"
+                        f"clientVersion: {self.initalPage.clientVersion}\n"
+                        f"continuationToken: {continuationToken}\n"
+                        f"Status {b.status_code} {b.reason}\n"
+                        f"Request Data:\n"
+                        f"{requestData}"
+                )
+                return None
+            else:
+                cfg.logger.debug(f"Sent Post Request to: {reqUrl} \nclientVersion: {self.initalPage.clientVersion}\ncontinuationToken: {continuationToken}\nStatus {b.status_code} {b.reason}")
+            
+            data:dict = json.loads(b.text)
+            d = scrapeJsonTree(data, dataFmt)
+
+            if len(d) == 0:
+                cfg.logger.debug(f"YtApiContIter, Removing Continuation Token for {self.apiUrl} of {self.initalPage.url} \nDoes Not Match Data Json Scraper")
+                self.continuationTokens.pop(0)
+                continue
+
+            x = cp.continuationTokenRe.search(b.text)
+            if not x:
+                self.endOfData = True
+                cfg.logger.debug(f"Reached End of Continuation Chain, Yeilding Last Result")
+
+            else:
+                self.continuationTokens = [x.group(1)]
+
+            return d

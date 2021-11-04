@@ -5,11 +5,20 @@ import re
 #  General Stuff  ##
 ####################
 
-# scraping regexs for inital pages, continuationTokenRe is also used on subsequent api responses
+# scraping regexs for inital pages
 apiKeyRe = re.compile(r'[\'\"]INNERTUBE_API_KEY[\'\"]:[\'\"](.*?)[\'\"]')
-continuationTokenRe = re.compile(r'[\'\"]token[\'\"]\s?:\s?[\'\"](.*?)[\'\"]')
 clientVersionRe = re.compile(r'[\'\"]cver[\'\"]: [\'|\"](.*?)[\'\"]')
 ytInitalDataRe = re.compile(r"ytInitialData = (\{.*?\});</script>")
+
+# inital page continuation token and apiUrl scraping 
+continuationScrapeFmt = \
+    ScrapeNode("continuationItemRenderer", ScrapeNum.All,[
+        ScrapeNode("apiUrl", ScrapeNum.First,[]),
+        ScrapeNode("token", ScrapeNum.First,[])
+    ], collapse = True)
+
+# continuation token scraping regex for continuation json (you could also use continuationScrapeFmt) 
+continuationTokenRe = re.compile(r'[\'\"]token[\'\"]\s?:\s?[\'\"](.*?)[\'\"]')
 
 
 # post request url for continuation chains, key is scraped from inital 
@@ -52,7 +61,7 @@ initalPageDataContainerKey = "tabs"
 ###############################
 
 # Each Route Requires:
-# - a url fragment to be put into apiContinuationUrlFmt 
+# - a url fragment to be put into apiContinuationUrlFmt (you can get a list of them using YtInitalPage.apiUrls if getInitalData = True is passed)
 # - a format to use with scrapeJsonTree
 # - (optional) a callback, called by onExtend in YtApiList whenever new data is requested and appended
 
@@ -99,3 +108,4 @@ def commentCallback(res):
         res[i] = ''.join(comment)
 
     return res
+
