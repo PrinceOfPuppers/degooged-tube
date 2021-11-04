@@ -4,30 +4,29 @@ import json
 from typing import Union
 from dataclasses import dataclass
 import degooged_tube.config as cfg
+from degooged_tube.ytapiHacking.jsonScraping import scrapeJson
 
 apiKeyRe = re.compile(r'[\'\"]INNERTUBE_API_KEY[\'\"]:[\'\"](.*?)[\'\"]')
 continuationTokenRe = re.compile(r'[\'\"]token[\'\"]\s?:\s?[\'\"](.*?)[\'\"]')
 clientVersionRe = re.compile(r'[\'\"]cver[\'\"]: [\'|\"](.*?)[\'\"]')
 ytInitalDataRe = re.compile(r"ytInitialData = (\{.*?\});</script>")
 
-
-@dataclass()
-class YtContIter:
+@dataclass
+class YtInitalPage:
     url: str
-    continuationUrlFragment: str
+    apiUrls: list[str] # empty if initalData is None
+
     key: str
     continuationToken: str
     clientVersion: str
-    endOfData:bool
 
-    initalData: Union[dict, None] = None # used to store elements provided on first page load, set to none after first getNext
-
+    initalData: Union[dict, None] = None
 
     @classmethod
-    def fromUrl(cls, url:str, continuationUrlFragment: str, getDataInScript = True) -> Union['YtContIter', None]:
+    def fromUrl(cls, url:str, getDataInScript:bool = False) -> Union['YtInitalPage', None]:
         r=requests.get(url)
 
-        x,y,z = apiKeyRe.search(r.text), continuationTokenRe.search(r.text), clientVersionRe.search(r.text)
+        x, y, z = apiKeyRe.search(r.text), continuationTokenRe.search(r.text), clientVersionRe.search(r.text)
 
         if not x:
             cfg.logger.error("Unable to Find INNERTUBE_API_KEY")
@@ -45,27 +44,56 @@ class YtContIter:
         continuationToken = y.group(1)
         clientVersion = z.group(1)
 
+        apiUrls = []
+
         if getDataInScript:
-            a = ytInitalDataRe.search(r.text)
-            if not a:
+            w = ytInitalDataRe.search(r.text)
+            if not w:
                 cfg.logger.error("Unable to Find ScriptData")
                 return None
-            b = a.group(1)
-            initalData = json.loads(b)
-            return cls(url, continuationUrlFragment, key, continuationToken, clientVersion,False, initalData)
+            initalData = json.loads(w.group(1))
+            scrapeJson(initalData, 'apiUrl', apiUrls) 
 
-        return cls(url, continuationUrlFragment, key, continuationToken, clientVersion,False)
+            return cls(url, apiUrls, key, continuationToken, clientVersion, initalData)
 
+        return cls(url, apiUrls, key, continuationToken, clientVersion)
+
+
+@dataclass()
+class YtContIter:
+    initalPage: YtInitalPage
+    endOfData:bool
+
+    apiUrl: str
+    continuationToken: str
+
+    getInitData = False
+    initalData: Union[dict, None] = None
+
+    def __init__(self, initalPage: YtInitalPage, apiUrl: str, getInitalData:bool = False):
+        self.endOfData = False
+        self.initalPage = initalPage
+
+        if getInitalData:
+            if initalPage.initalData is None:
+                raise Exception("No Inital Data To Get")
+
+            self.initalData = initalPage.initalData
+            self.getInitData = True
+
+        self.continuationToken = initalPage.continuationToken
+
+        self.apiUrl = apiUrl.strip('/')
 
     def getNext(self) -> Union[dict, None]:
         # gets element that was sent on page load
-        if self.initalData:
-            data = self.initalData
-            self.initalData = None
-            return data
+        if self.getInitData:
+            self.getInitData = False
+            return self.initalPage.initalData
 
         if self.endOfData:
             return None
+
         requestData = '''{
             "context": {
                 "adSignalsInfo": {
@@ -74,7 +102,7 @@ class YtContIter:
                 },
                 "client": {
                     "clientName": "WEB",
-                    "clientVersion": "'''+self.clientVersion+'''",
+                    "clientVersion": "'''+self.initalPage.clientVersion+'''",
                 },
                 "request": {
                 },
@@ -84,13 +112,21 @@ class YtContIter:
             "continuation": "'''+self.continuationToken+'''"
         }'''
         
-        reqUrl = f'https://www.youtube.com/youtubei/v1/{self.continuationUrlFragment}?key={self.key}'
+        reqUrl = f'https://www.youtube.com/{self.apiUrl}?key={self.initalPage.key}'
         b = requests.post(reqUrl, data=requestData)
-        cfg.logger.debug(f"Sent Post Request to: {reqUrl} \nStatus {b.status_code} {b.reason}")
 
         if b.status_code != 200:
-            cfg.logger.error(f"Error Sending Post Request to: {reqUrl} \nStatus {b.status_code} {b.reason}")
+            cfg.logger.error(
+                    f"Error Sending Post Request to: {reqUrl}\n"
+                    "clientVersion: {self.initalPage.clientVersion}\n"
+                    "continuationToken: {self.continuationToken}\n"
+                    "Status {b.status_code} {b.reason}\n"
+                    "Request Data:\n"
+                    "{requestData}"
+            )
             return None
+        else:
+            cfg.logger.debug(f"Sent Post Request to: {reqUrl} \nclientVersion: {self.initalPage.clientVersion}\ncontinuationToken: {self.continuationToken}\nStatus {b.status_code} {b.reason}")
         
         x = continuationTokenRe.search(b.text)
 

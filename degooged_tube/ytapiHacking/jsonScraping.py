@@ -92,8 +92,6 @@ def _scrapeJsonTree(j, base: ScrapeNode, result: Union[dict, list], parentKey: s
     else:
         putKey = parentKey
 
-
-
     if base.scrapeNum == ScrapeNum.First: 
         data = scrapeFirstJson(j, base.key)
 
@@ -134,7 +132,7 @@ def _scrapeJsonTree(j, base: ScrapeNode, result: Union[dict, list], parentKey: s
             if len(y) != 0: 
                 x.append(y)
 
-        if base.scrapeNum == ScrapeNum.Longest:
+        if base.scrapeNum == ScrapeNum.Longest and len(x)!=0:
             _put(max(x, key=len), result, putKey)
         else:
             _put(x, result, putKey)

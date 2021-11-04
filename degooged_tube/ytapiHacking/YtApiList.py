@@ -1,4 +1,4 @@
-from degooged_tube.ytapiHacking.ytContIter import YtContIter
+from degooged_tube.ytapiHacking.ytContIter import YtContIter, YtInitalPage
 from degooged_tube.ytapiHacking.jsonScraping import scrapeJsonTree, ScrapeNode, ScrapeNum
 import degooged_tube.config as cfg
 
@@ -10,27 +10,24 @@ class YtApiList:
     _scrapeFmt: ScrapeNode
     _index: int = 0
 
-    url: str
-    contUrlFragment: str
+    apiUrl: str
     atMaxLen: bool = False
     onExtend: Callable
 
-    def __init__(self, url, contUrlFragment, scrapeFmt, initalData:bool = False, onExtend: Callable = lambda res: res):
+    def __init__(self, initalPage: YtInitalPage, apiUrl: str, scrapeFmt, getInitalData: bool= False, onExtend: Callable = lambda res: res):
+        print(apiUrl)
         self._list = []
-        self.url = url
-        self.contUrlFragment = contUrlFragment
 
-        tmp = YtContIter.fromUrl(url, contUrlFragment, initalData) 
+        self.apiUrl = apiUrl
 
-        if tmp == None:
-            raise(Exception(f"Error Creating YtList for Url {url}"))
-
-        self._iter = tmp
+        self._iter = YtContIter(initalPage, apiUrl, getInitalData)
         self._scrapeFmt = ScrapeNode("continuationItems",ScrapeNum.Longest,[scrapeFmt], collapse = True)
 
         self.onExtend = onExtend
 
-        if initalData:
+        if getInitalData:
+            if initalPage.initalData is None:
+                raise Exception("No Inital Data To Get")
             initScrapeFmt = ScrapeNode("tabs",ScrapeNum.Longest,[scrapeFmt], collapse = True)
             self._extend(initScrapeFmt)
 
@@ -44,7 +41,7 @@ class YtApiList:
         res = scrapeJsonTree(data, fmt)
 
         if len(res) == 0:
-            cfg.logger.error(f'Scraping Json for url: "{self.url}" with Continuation Fragment: "{self.contUrlFragment}" Returned a List of Zero Length\n Scraping Format:\n{str(self._scrapeFmt)}')
+            cfg.logger.error(f'Scraping Json for Api Url: "{self.apiUrl}" Returned a List of Zero Length\n Scraping Format:\n{str(self._scrapeFmt)}')
             self.atMaxLen = True
             return
 

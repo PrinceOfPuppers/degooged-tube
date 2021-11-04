@@ -1,5 +1,5 @@
-from degooged_tube.ytapiHacking.ytContIter import YtContIter
-from degooged_tube.ytapiHacking.jsonScraping import scrapeJsonTree, ScrapeNode, ScrapeNum
+from degooged_tube.ytapiHacking.ytContIter import YtInitalPage
+from degooged_tube.ytapiHacking.jsonScraping import ScrapeNode, ScrapeNum
 from degooged_tube.ytapiHacking.YtApiList import YtApiList
 import json
 import logging
@@ -42,12 +42,23 @@ def cli():
     setupLogger()
 
     uploadUrl = "https://www.youtube.com/c/karljobst/videos"
-    uploads = YtApiList(uploadUrl, 'browse', uploadScrapeFmt, onExtend=uploadsCallback)
-    print(len(uploads))
-    exit()
+    uploadsPage = YtInitalPage.fromUrl(uploadUrl, getDataInScript = True)
 
-    commentUrl = "https://www.youtube.com/watch?v=wZW2JFO4Jz4"
-    comments = YtApiList(commentUrl, 'next', commentScrapeFmt, False)
+    if uploadsPage is None:
+        raise Exception("No Uploads Page")
+
+    uploads = YtApiList(uploadsPage, "/youtubei/v1/browse", uploadScrapeFmt, getInitalData=True)
+
+    upload = uploads[20]
+    # print(f"Getting Commments for Upload: {upload['title']}")
+
+    videoUrl = f"https://www.youtube.com/watch?v={upload['videoId']}"
+
+    videoPage = YtInitalPage.fromUrl(videoUrl)
+    if videoPage is None:
+        raise Exception("Error Getting Page for video")
+
+    comments = YtApiList(videoPage, '/youtubei/v1/next', commentScrapeFmt)
     print(comments[1])
     print('\n')
     print(comments[2])
