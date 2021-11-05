@@ -1,10 +1,11 @@
-from degooged_tube.ytapiHacking.ytContIter import YtContIter, YtInitalPage
-from degooged_tube.ytapiHacking.jsonScraping import scrapeJsonTree, ScrapeNode, ScrapeNum
+from typing import Callable
+
+from .ytContIter import YtContIter, YtInitalPage
+from .jsonScraping import ScrapeNode, ScrapeNum
+from . import controlPanel as ctrlp 
+
 import degooged_tube.config as cfg
 
-import degooged_tube.ytapiHacking.controlPanel as cp
-
-from typing import Callable
 
 class YtApiList:
     _list: list
@@ -22,14 +23,14 @@ class YtApiList:
         self.apiUrl = apiUrl
 
         self._iter = YtContIter(initalPage, apiUrl, getInitalData)
-        self._scrapeFmt = ScrapeNode(cp.continuationPageDataContainerKey,ScrapeNum.Longest,[scrapeFmt], collapse = True)
+        self._scrapeFmt = ScrapeNode(ctrlp.continuationPageDataContainerKey,ScrapeNum.Longest,[scrapeFmt], collapse = True)
 
         self.onExtend = onExtend
 
         if getInitalData:
             if initalPage.initalData is None:
                 raise Exception("No Inital Data To Get")
-            initScrapeFmt = ScrapeNode(cp.initalPageDataContainerKey,ScrapeNum.Longest,[scrapeFmt], collapse = True)
+            initScrapeFmt = ScrapeNode(ctrlp.initalPageDataContainerKey,ScrapeNum.Longest,[scrapeFmt], collapse = True)
             self._extend(initScrapeFmt)
 
     def _extend(self, fmt):

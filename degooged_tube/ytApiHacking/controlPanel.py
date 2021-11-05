@@ -1,4 +1,4 @@
-from degooged_tube.ytapiHacking.jsonScraping import ScrapeNode, ScrapeNum
+from .jsonScraping import ScrapeNode, ScrapeNum
 import re
 
 ####################
@@ -52,13 +52,62 @@ initalPageDataContainerKey = "tabs"
 
 
 
+# some stuff shares scraper formats, such as uploads and recommended videos, so we create wrappers for them
+def videoDataFmt(titleTextKey: str, durationTextContainerKey: str):
+    return [
+        ScrapeNode("videoId", ScrapeNum.First,[]),
+
+         ScrapeNode("thumbnails", ScrapeNum.All,[]),
+
+         ScrapeNode("publishedTimeText", ScrapeNum.First,[
+             ScrapeNode("simpleText", ScrapeNum.First,[], collapse=True)
+         ], rename = "uploaded on"),
+
+         ScrapeNode("viewCountText", ScrapeNum.First,[
+             ScrapeNode("simpleText", ScrapeNum.First,[], collapse=True)
+         ], rename = "views"),
+
+         ScrapeNode(durationTextContainerKey, ScrapeNum.First,[
+             ScrapeNode("simpleText", ScrapeNum.First,[], collapse=True)
+         ], rename = "duration"),
+
+         ScrapeNode("title", ScrapeNum.First,[
+             ScrapeNode(titleTextKey, ScrapeNum.First,[], collapse=True)
+         ])
+    ]
 
 
 
 
 ###############################
-##  Api Route Specific Stuff  #
+#  Inital Page Scraping Stuff #
 ###############################
+
+channelInfoScrapeFmt = \
+    ScrapeNode("header", ScrapeNum.First,[
+        ScrapeNode("title", ScrapeNum.First,[], rename='name'),
+        ScrapeNode("canonicalBaseUrl", ScrapeNum.First,[], rename='baseUrl'),
+        ScrapeNode("avatar", ScrapeNum.First,[
+            ScrapeNode("thumbnails", ScrapeNum.All,[], collapse=True),
+        ]),
+        ScrapeNode("banner", ScrapeNum.First,[
+            ScrapeNode("thumbnails", ScrapeNum.All,[], collapse=True),
+        ], rename='banners'),
+        ScrapeNode("mobileBanner", ScrapeNum.First,[
+            ScrapeNode("thumbnails", ScrapeNum.All,[], collapse=True),
+        ], rename='mobileBanners'),
+        ScrapeNode("subscriberCountText", ScrapeNum.First,[
+            ScrapeNode("simpleText", ScrapeNum.All,[], collapse=True),
+        ], rename='subscribers'),
+    ],collapse=True)
+
+
+channelUrlSanitizationSplits = ['?', '&', '/channels', '/channels', '/about', '/featured', '/videos']
+
+
+############################################
+##  Continuation Api Route Specific Stuff  #
+############################################
 
 # Each Route Requires:
 # - a url fragment to be put into apiContinuationUrlFmt (you can get a list of them using YtInitalPage.apiUrls if getInitalData = True is passed)
@@ -68,32 +117,20 @@ initalPageDataContainerKey = "tabs"
 # res in callbacks will be an array of what is dictated by the format
 
 
-# uploads
+
+# >Uploads< #
 uploadsApiUrl = '/youtubei/v1/browse'
 
 uploadScrapeFmt = \
-      ScrapeNode("gridVideoRenderer", ScrapeNum.All,[
-          ScrapeNode("videoId", ScrapeNum.First,[]),
-          ScrapeNode("thumbnails", ScrapeNum.First,[
-              ScrapeNode("url", ScrapeNum.First,[], collapse=True)
-          ], rename = "thumbnail"),
-          ScrapeNode("publishedTimeText", ScrapeNum.First,[
-              ScrapeNode("simpleText", ScrapeNum.First,[], collapse=True)
-          ], rename = "uploaded on"),
-          ScrapeNode("title", ScrapeNum.First,[
-              ScrapeNode("text", ScrapeNum.First,[], collapse=True)
-          ])
-      ], collapse = True)
+      ScrapeNode("gridVideoRenderer", ScrapeNum.All,videoDataFmt("text", "thumbnailOverlayTimeStatusRenderer"), collapse = True)
 
 def uploadsCallback(res):
     #for vid in res:
     #    print(vid)
-
     return res
 
 
-
-# comments
+# >Comments< #
 commentsApiUrl = '/youtubei/v1/next'
 
 commentScrapeFmt = \
@@ -110,19 +147,10 @@ def commentCallback(res):
     return res
 
 
-# relatedVideos
+
+# >RelatedVideos< #
 relatedVideosApiUrl = '/youtubei/v1/next'
 
 relatedVideosScrapeFmt = \
-      ScrapeNode("compactVideoRenderer", ScrapeNum.All,[
-          ScrapeNode("videoId", ScrapeNum.First,[]),
-          ScrapeNode("thumbnails", ScrapeNum.First,[
-              ScrapeNode("url", ScrapeNum.First,[], collapse=True)
-          ], rename = "thumbnail"),
-          ScrapeNode("publishedTimeText", ScrapeNum.First,[
-              ScrapeNode("simpleText", ScrapeNum.First,[], collapse=True)
-          ], rename = "uploaded on"),
-          ScrapeNode("title", ScrapeNum.First,[
-              ScrapeNode("simpleText", ScrapeNum.First,[], collapse=True)
-          ])
-      ], collapse = True)
+      ScrapeNode("compactVideoRenderer", ScrapeNum.All, videoDataFmt("simpleText", "lengthText"), collapse = True)
+

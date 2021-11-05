@@ -2,11 +2,12 @@ import requests
 import json
 from typing import Union
 from dataclasses import dataclass
+
+from .jsonScraping import scrapeJsonTree, ScrapeNode
+from . import controlPanel as ctrlp 
+from . import customExceptions as ce 
+
 import degooged_tube.config as cfg
-from degooged_tube.ytapiHacking.jsonScraping import scrapeJsonTree, ScrapeNode
-
-import degooged_tube.ytapiHacking.controlPanel as cp
-
 
 
 @dataclass
@@ -21,28 +22,31 @@ class YtInitalPage:
     initalData: dict
 
     @classmethod
-    def fromUrl(cls, url:str) -> Union['YtInitalPage', None]:
+    def fromUrl(cls, url:str) -> 'YtInitalPage':
         r=requests.get(url)
 
-        x, y, z = cp.apiKeyRe.search(r.text), cp.ytInitalDataRe.search(r.text), cp.clientVersionRe.search(r.text)
+        if r.status_code != 200:
+            raise requests.HTTPError(
+                f"Error Sending GET Request to: {url}\n"
+                f"Status: {r.status_code} {r.reason}"
+            )
+
+        x, y, z = ctrlp.apiKeyRe.search(r.text), ctrlp.ytInitalDataRe.search(r.text), ctrlp.clientVersionRe.search(r.text)
 
         if not x:
-            cfg.logger.error("Unable to Find INNERTUBE_API_KEY")
-            return None
+            raise ce.UnableToGetPage("Unable to Find INNERTUBE_API_KEY")
 
         if not y:
-            cfg.logger.error("Unable to Find Inital Data")
-            return None
+            raise ce.UnableToGetPage("Unable to Find Inital Data")
 
         if not z:
-            cfg.logger.error("Unable to Find Youtube Client Version")
-            return None
+            raise ce.UnableToGetPage("Unable to Find Youtube Client Version")
 
         key = x.group(1)
         initalData = json.loads(y.group(1))
         clientVersion = z.group(1)
 
-        a = scrapeJsonTree(initalData, cp.continuationScrapeFmt)
+        a = scrapeJsonTree(initalData, ctrlp.continuationScrapeFmt)
         assert type(a) is list
         continuations = {}
         for continuation in a:
@@ -65,11 +69,14 @@ class YtInitalPage:
         try:
             return self.continuations[apiUrl].copy()
         except KeyError:
-            raise Exception(
+            raise KeyError(
                 f"apiUrl: {apiUrl} \n"
                 f"Does Not Match Any apiUrls: {self.continuations.keys()}\n"
                 f"In Inital Page: {self.url}\n"
             )
+
+    def scrapeInitalData(self, dataFmt: ScrapeNode):
+        return scrapeJsonTree(self.initalData, dataFmt)
 
 
 
@@ -118,29 +125,29 @@ class YtContIter:
         while True:
             if len(self.continuationTokens) == 0:
                 cfg.logger.error(
-                        f"YtApiContIter for {self.apiUrl} of {self.initalPage.url} \n"
-                        f"Has No Continuation Tokens!\n"
-                        f"This Means the Data Scraping Format Does Not Match The Data Found at The Url:\n"
-                        f"{dataFmt}"
+                    f"YtApiContIter for {self.apiUrl} of {self.initalPage.url} \n"
+                    f"Has No Continuation Tokens!\n"
+                    f"This Means the Data Scraping Format Does Not Match The Data Found at The Url:\n"
+                    f"{dataFmt}"
                 )
                 return None
 
             continuationToken = self.continuationTokens[0]
 
-            requestData = cp.apiContinuationBodyFmt.format(clientVersion = self.initalPage.clientVersion, continuationToken = continuationToken)
+            requestData = ctrlp.apiContinuationBodyFmt.format(clientVersion = self.initalPage.clientVersion, continuationToken = continuationToken)
 
-            reqUrl = cp.apiContinuationUrlFmt.format(apiUrl = self.apiUrl, key = self.initalPage.key)
+            reqUrl = ctrlp.apiContinuationUrlFmt.format(apiUrl = self.apiUrl, key = self.initalPage.key)
 
             b = requests.post(reqUrl, data=requestData)
 
             if b.status_code != 200:
                 cfg.logger.error(
-                        f"Error Sending Post Request to: {reqUrl}\n"
-                        f"clientVersion: {self.initalPage.clientVersion}\n"
-                        f"continuationToken: {continuationToken}\n"
-                        f"Status {b.status_code} {b.reason}\n"
-                        f"Request Data:\n"
-                        f"{requestData}"
+                    f"Error Sending Post Request to: {reqUrl}\n"
+                    f"clientVersion: {self.initalPage.clientVersion}\n"
+                    f"continuationToken: {continuationToken}\n"
+                    f"Status {b.status_code} {b.reason}\n"
+                    f"Request Data:\n"
+                    f"{requestData}"
                 )
                 return None
             else:
@@ -159,7 +166,7 @@ class YtContIter:
                 self.continuationTokens.pop(0)
                 continue
 
-            x = cp.continuationTokenRe.search(b.text)
+            x = ctrlp.continuationTokenRe.search(b.text)
             if not x:
                 self.endOfData = True
                 cfg.logger.debug(f"Reached End of Continuation Chain, Yeilding Last Result")

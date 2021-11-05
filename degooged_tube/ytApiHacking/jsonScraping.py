@@ -80,6 +80,11 @@ def _put(src, dest: Union[list, dict], key: Union[str,None] = None):
             cfg.logger.error("Key Required")
             return
 
+        if key in dest and type(src) is dict:
+            for srcKey in src.keys():
+                dest[key][srcKey] = src[srcKey]
+            return
+
         dest[key] = src
 
 
