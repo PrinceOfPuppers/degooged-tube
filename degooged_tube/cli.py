@@ -46,8 +46,8 @@ class SubBox:
 
     @classmethod
     def fromUrls(cls, urls, prevOrdering:list = list()) -> 'SubBox':
-        uploadLists = [ytapih.getUploadList( ytapih.YtInitalPage.fromUrl(url) ) for url in urls]
-        return cls(uploadLists,prevOrdering)
+        uploadLists = [ ytapih.getUploadList( ytapih.YtInitalPage.fromUrl(url) ) for url in urls ]
+        return cls(uploadLists, prevOrdering)
 
 
     def _getNextChannelWithMoreUploads(self, startIndex: int):
@@ -75,14 +75,16 @@ class SubBox:
             cfg.logger.debug("End of SubBox Reached!")
             raise EndOfSubBox
 
-        for contenderIndex in range(1, len(self.uploadLists)):
+        contenderIndex = mostRecentIndex 
+        while True:
             try:
-                contenderIndex, _, contenderVideo = self._getNextChannelWithMoreUploads(0)
+                contenderIndex, _, contenderVideo = self._getNextChannelWithMoreUploads(contenderIndex+1)
             except NoVideo:
                 break
 
             if contenderVideo['unixTime'] < mostRecentVideo['unixTime']:
                 mostRecentIndex = contenderIndex
+                mostRecentVideo = contenderVideo
 
         self.orderedUploads.append(mostRecentVideo)
         self.extensionIndices[mostRecentIndex] += 1
@@ -90,9 +92,17 @@ class SubBox:
             
 
     def _extendOrderedUploads(self, desiredLen: int):
-        numExtend = desiredLen - len(self.uploadLists) 
+        initalLength = len(self.orderedUploads) 
+        numExtend = desiredLen - initalLength
         for _ in range(numExtend):
             self._appendNextUpload()
+
+        cfg.logger.debug(
+            f"SubBox Extenion Requested:\n"
+            f"Length Before Extension: {initalLength}\n"
+            f"Desired Length: {desiredLen}\n"
+            f"Length After Extenion: {len(self.orderedUploads)}"
+        )
 
 
     def getUploads(self, limit: int, offset: int):
@@ -104,6 +114,7 @@ class SubBox:
         start = min(offset, len(self.orderedUploads))
         end = min(offset+limit, len(self.orderedUploads))
         if start >= end:
+            cfg.logger.debug(f"SubBox.getUploads(limit= {limit}, offset= {offset}), Returning Empty List")
             return []
 
         return self.orderedUploads[offset: offset+limit]
@@ -137,15 +148,26 @@ def exampleCode1():
 
 def cli():
     setupLogger()
-
     subscribed = ['https://www.youtube.com/c/MattMcMuscles', 'https://www.youtube.com/channel/UC3ltptWa0xfrDweghW94Acg']
     channelUrlGenerator = ( ytapih.sanitizeChannelUrl(url) + '/videos' for url in subscribed )
     subBox = SubBox.fromUrls(channelUrlGenerator)
 
-    uploads = subBox.getPaginatedUploads(1, 10)
-    import json
-    print(len(uploads))
-    print(json.dumps(uploads, indent = 2))
+    uploads1 = subBox.getPaginatedUploads(1, 10)
+
+    videoIds1 = [upload['videoId'] for upload in uploads1]
+
+    uploads2 = subBox.getPaginatedUploads(2, 10)
+    videoIds2 = [upload['videoId'] for upload in uploads2]
+
+    intersection = list( set(videoIds1)&set(videoIds2) )
+    if len(intersection) != 0:
+        print(videoIds1)
+        print(videoIds2)
+        print(intersection)
+        raise Exception()
+
+
+    #print(json.dumps(uploads, indent = 2))
 
     
 
