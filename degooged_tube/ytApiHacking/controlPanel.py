@@ -5,6 +5,32 @@ import re
 #  General Stuff  ##
 ####################
 
+ytTimeConversion = {
+    "second":  1,
+    "seconds":  1,
+
+    "minute":  60,
+    "minutes":  60,
+
+    "hour":    3600,
+    "hours":    3600,
+
+    "day":     86400,
+    "days":     86400,
+
+    "week":    604800,
+    "weeks":    604800,
+
+    "month":   2419200,
+    "months":   2419200,
+
+    "year":    29030400,
+    "years":    29030400,
+}
+timeDelineations = "|".join(ytTimeConversion.keys())
+approxTimeRe = re.compile(r"(\d+)\s+("+timeDelineations +r")\s+ago", re.I)
+
+
 # scraping regexs for inital pages
 apiKeyRe = re.compile(r'[\'\"]INNERTUBE_API_KEY[\'\"]:[\'\"](.*?)[\'\"]')
 clientVersionRe = re.compile(r'[\'\"]cver[\'\"]: [\'|\"](.*?)[\'\"]')
@@ -112,7 +138,7 @@ channelUrlSanitizationSplits = ['?', '&', '/channels', '/channels', '/about', '/
 # Each Route Requires:
 # - a url fragment to be put into apiContinuationUrlFmt (you can get a list of them using YtInitalPage.apiUrls if getInitalData = True is passed)
 # - a format to use with scrapeJsonTree
-# - (optional) a callback, called by onExtend in YtApiList whenever new data is requested and appended
+# - (optional) a callback, called by onExtend in YtApiList whenever new data is requested and appended (defined in .__init__.py)
 
 # res in callbacks will be an array of what is dictated by the format
 
@@ -124,10 +150,6 @@ uploadsApiUrl = '/youtubei/v1/browse'
 uploadScrapeFmt = \
       ScrapeNode("gridVideoRenderer", ScrapeNum.All,videoDataFmt("text", "thumbnailOverlayTimeStatusRenderer"), collapse = True)
 
-def uploadsCallback(res):
-    #for vid in res:
-    #    print(vid)
-    return res
 
 
 # >Comments< #
@@ -140,11 +162,6 @@ commentScrapeFmt = \
           ], collapse = True)
       ], collapse=True)
 
-def commentCallback(res):
-    for i,comment in enumerate(res):
-        res[i] = ''.join(comment)
-
-    return res
 
 
 

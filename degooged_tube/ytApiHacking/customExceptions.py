@@ -3,3 +3,6 @@ class InvalidUrl(Exception):
 
 class UnableToGetPage(Exception):
     pass
+
+class UnableToGetUploadTime(Exception):
+    pass
