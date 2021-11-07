@@ -9,8 +9,8 @@ from .unitTests import logName
 
 class test_SubBox(unittest.TestCase):
     subscribed = ['https://www.youtube.com/c/MattMcMuscles', 'https://www.youtube.com/channel/UC3ltptWa0xfrDweghW94Acg']
-    channelUrlGenerator = ( ytapih.sanitizeChannelUrl(url) + '/videos' for url in subscribed )
-    subBox = SubBox.fromUrls(channelUrlGenerator)
+    channelUrls = [ ytapih.sanitizeChannelUrl(url) + '/videos' for url in subscribed ]
+    subBox = SubBox.fromUrls(channelUrls)
 
     def test_noOverlap(self):
         logName(self, inspect.currentframe())
@@ -45,8 +45,8 @@ class test_SubBox(unittest.TestCase):
         self.assertEqual(pageSize, len(videoIds))
         
         count = 0
-        for channel in self.subBox.uploadLists:
-            for upload in channel:
+        for channel in self.subBox.channels:
+            for upload in channel.uploadList:
                 if upload['videoId'] in videoIds:
                     count+=1
                 else:
@@ -66,5 +66,3 @@ class test_SubBox(unittest.TestCase):
             self.assertNotEqual(upload1['videoId'],upload2['videoId'])
 
             self.assertGreaterEqual(upload1['unixTime'], upload2['unixTime'])
-            
-

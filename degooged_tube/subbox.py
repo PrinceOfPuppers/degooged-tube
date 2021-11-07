@@ -8,20 +8,35 @@ class EndOfSubBox(Exception):
 class NoVideo(Exception):
     pass
 
-
 @dataclass
+class SubBoxChannel:
+    uploadList: ytapih.YtApiList
+    channelUrl:  str
+    extensionIndex: int
+
+
 class SubBox:
-    uploadLists: list[ytapih.YtApiList]
-    extensionIndices: list[int]
+    channels: list[SubBoxChannel]
+
     atMaxLen: bool
 
     orderedUploads: list
     prevOrdering: list[str]
     
 
-    def __init__(self, uploadLists: list[ytapih.YtApiList], prevOrdering: list):
-        self.extensionIndices = [0]*len(uploadLists)
-        self.uploadLists = uploadLists
+    def __init__(self, uploadLists: list[ytapih.YtApiList], channelUrls: list[str], prevOrdering: list):
+
+        if len(uploadLists) != len(channelUrls):
+            raise Exception("Upload Lists and Channel Urls must be Same Length")
+
+        self.channels = []
+        for i in range(len(uploadLists)):
+            self.channels.append(
+                SubBoxChannel(
+                    uploadLists[i], channelUrls[i], 0
+                )
+            )
+
         self.orderedUploads = []
 
         self.atMaxLen = False
@@ -34,23 +49,23 @@ class SubBox:
     @classmethod
     def fromInitalPages(cls, initalPages: list[ytapih.YtInitalPage], prevOrdering:list = list()) -> 'SubBox':
         uploadLists = [ytapih.getUploadList(initalPage) for initalPage in initalPages]
-        return cls(uploadLists,prevOrdering)
+        channelUrls = [initalPage.url for initalPage in initalPages]
+        return cls(uploadLists, channelUrls, prevOrdering)
 
 
     @classmethod
-    def fromUrls(cls, urls, prevOrdering:list = list()) -> 'SubBox':
+    def fromUrls(cls, urls: list[str], prevOrdering:list = list()) -> 'SubBox':
         uploadLists = [ ytapih.getUploadList( ytapih.YtInitalPage.fromUrl(url) ) for url in urls ]
-        return cls(uploadLists, prevOrdering)
+        return cls(uploadLists, urls, prevOrdering)
 
 
     def _getNextChannelWithMoreUploads(self, startIndex: int):
         channelIndex = startIndex
 
-        while channelIndex < len(self.uploadLists):
-            channel = self.uploadLists[channelIndex]
-            nextUploadIndex = self.extensionIndices[channelIndex]
+        while channelIndex < len(self.channels):
+            channel = self.channels[channelIndex]
             try:
-                return channelIndex, channel, channel[nextUploadIndex] 
+                return channelIndex, channel, channel.uploadList[channel.extensionIndex] 
             except IndexError:
                 channelIndex+=1
 
@@ -61,8 +76,9 @@ class SubBox:
             cfg.logger.debug("End of SubBox Reached!")
             raise EndOfSubBox
 
+        # mostRecentIndex / contenderIndex are indices of channels, we are checking for the channel who uploaded most recently
         try:
-            mostRecentIndex, _, mostRecentVideo = self._getNextChannelWithMoreUploads(0)
+            mostRecentIndex, mostRecentChannel, mostRecentVideo = self._getNextChannelWithMoreUploads(0)
         except NoVideo: 
             self.atMaxLen = True
             cfg.logger.debug("End of SubBox Reached!")
@@ -71,16 +87,19 @@ class SubBox:
         contenderIndex = mostRecentIndex 
         while True:
             try:
-                contenderIndex, _, contenderVideo = self._getNextChannelWithMoreUploads(contenderIndex+1)
+                contenderIndex, contenderChannel, contenderVideo = self._getNextChannelWithMoreUploads(contenderIndex+1)
             except NoVideo:
                 break
 
             if contenderVideo['unixTime'] < mostRecentVideo['unixTime']:
                 mostRecentIndex = contenderIndex
+                mostRecentChannel = contenderChannel
                 mostRecentVideo = contenderVideo
 
+        # All uploads must be labeled with channel url in case channel needs to be removed from subbox
+        mostRecentVideo['channelUrl'] = mostRecentChannel.channelUrl
         self.orderedUploads.append(mostRecentVideo)
-        self.extensionIndices[mostRecentIndex] += 1
+        mostRecentChannel.extensionIndex += 1
             
 
     def _extendOrderedUploads(self, desiredLen: int):
@@ -117,20 +136,38 @@ class SubBox:
         return self.getUploads(limit, offset)
 
     def addChannelFromInitalPage(self, initalPage: ytapih.YtInitalPage):
-        channel1 = ytapih.getUploadList(initalPage)
-        c1UploadIndex = 0
+        channelUploadList = ytapih.getUploadList(initalPage)
+        channelUploadIndex = 0
 
         orderedUploadIndex = 0
         while orderedUploadIndex < len(self.orderedUploads):
-            c1Upload = channel1[c1UploadIndex]
+            c1Upload = channelUploadList[channelUploadIndex]
             orderedUpload = self.orderedUploads[orderedUploadIndex]
 
             if c1Upload['unixTime'] < orderedUpload['unixTime']:
                 self.orderedUploads.insert(orderedUploadIndex, c1Upload)
-                c1UploadIndex+=1
+                channelUploadIndex+=1
                 orderedUploadIndex+=1
 
             orderedUploadIndex+=1
 
-        self.uploadLists.append(channel1)
-        self.extensionIndices.append(c1UploadIndex)
+        self.channels.append(
+            SubBoxChannel(channelUploadList, initalPage.url, channelUploadIndex)
+        )
+
+    def addChannelFromUrl(self, url: str):
+        self.addChannelFromInitalPage(ytapih.YtInitalPage.fromUrl(url))
+
+    def removeChannel(self, channelIndex: int):
+        channelUrl = self.channels[channelIndex].channelUrl
+
+        i = 0
+        while i < len(self.orderedUploads):
+            upload = self.orderedUploads[i]
+            if upload['channelUrl'] != channelUrl:
+                i+=1
+                continue
+
+            self.orderedUploads.pop(i)
+
+        self.channels.pop(channelIndex)
