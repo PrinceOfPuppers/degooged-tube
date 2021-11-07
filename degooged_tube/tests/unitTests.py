@@ -3,7 +3,7 @@ import inspect
 import json
 
 import degooged_tube.config as cfg
-from degooged_tube.ytapiHacking.jsonScraping import scrapeJsonTree, ScrapeNode, ScrapeNum
+from degooged_tube.ytApiHacking.jsonScraping import scrapeJsonTree, ScrapeNode, ScrapeNum
 
 def logName(testInstance, frame):
     assert frame is not None

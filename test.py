@@ -1,9 +1,11 @@
 import unittest
+import sys
 import logging
 
 import argparse
 
 import degooged_tube.tests.unitTests as unitTests
+import degooged_tube.tests.integrationTests as integrationTests
 
 import degooged_tube.config as cfg
 
@@ -13,13 +15,13 @@ def parseArgs():
     parser = argparse.ArgumentParser(description=description)
 
     parser.add_argument('-u','--unit', action='store_true', help='runs all unit tests')
+    parser.add_argument('-i','--integration',action='store_true',  help='tests integration using playlist at URL')
 
     parser.add_argument('-p','--print',action='store_true', help='prints to terminal in addition to tests/testing.log' )
 
-    args,other = parser.parse_known_args()
+    args,_ = parser.parse_known_args()
 
     return args
-
 
 def setLogging(args):
     formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
@@ -35,14 +37,23 @@ def setLogging(args):
 
     cfg.logger.setLevel(level=logging.DEBUG)
 
-
-
 if __name__ == "__main__":
     args = parseArgs()
 
     setLogging(args)
 
-    runall = not args.unit
+    runall = not (args.unit or args.integration)
 
-    if args.unit or runall:
+
+    if runall:
+        success = unittest.main(unitTests,exit=False).result.wasSuccessful()
+        if not success:
+            sys.exit(1)
+        unittest.main(integrationTests,failfast=True)
+
+    elif args.unit:
         unittest.main(unitTests)
+        
+    elif args.integration:
+        unittest.main(integrationTests,failfast=True)
+
