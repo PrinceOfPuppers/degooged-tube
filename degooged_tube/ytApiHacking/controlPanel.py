@@ -30,6 +30,7 @@ ytTimeConversion = {
 timeDelineations = "|".join(ytTimeConversion.keys())
 approxTimeRe = re.compile(r"(\d+)\s+("+timeDelineations +r")\s+ago", re.I)
 
+channelVideoPath = '/videos'
 
 # scraping regexs for inital pages
 apiKeyRe = re.compile(r'[\'\"]INNERTUBE_API_KEY[\'\"]:[\'\"](.*?)[\'\"]')

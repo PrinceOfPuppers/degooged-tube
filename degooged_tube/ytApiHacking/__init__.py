@@ -4,9 +4,11 @@ from .ytApiList import YtApiList
 from .customExceptions import UnableToGetUploadTime
 import time
 
+currentTime = int(time.time())
+
 def uploadsCallback(res):
     for r in res:
-        r['unixTime'] = approxTimeToUnix(int(time.time()), r['uploaded on'])
+        r['unixTime'] = approxTimeToUnix(currentTime, r['uploaded on'])
     return res
 
 def getUploadList(uploadsPage):
@@ -35,13 +37,13 @@ def getChannelInfo(channelUrl: str):
     assert type(data) is dict
     return data
 
-def sanitizeChannelUrl(channelUrl: str):
+def sanitizeChannelUrl(channelUrl: str, path:str = ''):
     channelUrl = channelUrl.strip(' ')
 
     for splitStr in ctrlp.channelUrlSanitizationSplits:
         channelUrl = channelUrl.split(splitStr,1)[0]
 
-    return channelUrl
+    return channelUrl + path
 
 def approxTimeToUnix(currentTime:int, approxTime: str)->int:
     matches = ctrlp.approxTimeRe.search(approxTime)

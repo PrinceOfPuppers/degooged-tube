@@ -8,6 +8,9 @@ class EndOfSubBox(Exception):
 class NoVideo(Exception):
     pass
 
+class AlreadySubscribed(Exception):
+    pass
+
 @dataclass
 class SubBoxChannel:
     uploadList: ytapih.YtApiList
@@ -48,14 +51,17 @@ class SubBox:
 
     @classmethod
     def fromInitalPages(cls, initalPages: list[ytapih.YtInitalPage], prevOrdering:list = list()) -> 'SubBox':
+
         uploadLists = [ytapih.getUploadList(initalPage) for initalPage in initalPages]
         channelUrls = [initalPage.url for initalPage in initalPages]
+        cfg.logger.debug(f"Creating SubBox With the following Channels:\n{channelUrls}")
+
         return cls(uploadLists, channelUrls, prevOrdering)
 
 
     @classmethod
     def fromUrls(cls, urls: list[str], prevOrdering:list = list()) -> 'SubBox':
-        uploadLists = [ ytapih.getUploadList( ytapih.YtInitalPage.fromUrl(url) ) for url in urls ]
+        uploadLists = [ ytapih.getUploadList( ytapih.YtInitalPage.fromUrl( ytapih.sanitizeChannelUrl(url, ytapih.ctrlp.channelVideoPath) ) ) for url in urls ]
         return cls(uploadLists, urls, prevOrdering)
 
 
@@ -70,6 +76,14 @@ class SubBox:
                 channelIndex+=1
 
         raise NoVideo
+
+    def _insertUpload(self, index, upload, channelUrl):
+        upload['channelUrl'] = channelUrl
+        self.orderedUploads.insert(index,upload)
+
+    def _appendUpload(self, upload, channelUrl):
+        upload['channelUrl'] = channelUrl
+        self.orderedUploads.append(upload)
 
     def _appendNextUpload(self):
         if self.atMaxLen:
@@ -96,9 +110,7 @@ class SubBox:
                 mostRecentChannel = contenderChannel
                 mostRecentVideo = contenderVideo
 
-        # All uploads must be labeled with channel url in case channel needs to be removed from subbox
-        mostRecentVideo['channelUrl'] = mostRecentChannel.channelUrl
-        self.orderedUploads.append(mostRecentVideo)
+        self._appendUpload(mostRecentVideo, mostRecentChannel.channelUrl)
         mostRecentChannel.extensionIndex += 1
             
 
@@ -136,7 +148,26 @@ class SubBox:
         return self.getUploads(limit, offset)
 
     def addChannelFromInitalPage(self, initalPage: ytapih.YtInitalPage):
+        cfg.logger.debug(f"Adding new Channel to SubBox {initalPage.url}")
         channelUploadList = ytapih.getUploadList(initalPage)
+
+        # heuristic to see if already subscribed (we dont have a channel id)
+        # note we check multiple recent videos because channel may have uploaded new videos since last refresh
+        for i in range(0,2):
+            try:
+                newChannelVideo = channelUploadList[i]
+            except IndexError:
+                pass
+            else:
+                for channel in self.channels:
+                    try:
+                        oldChannelVideo = channel.uploadList[0]
+                    except IndexError:
+                        continue
+                    else:
+                        if newChannelVideo == oldChannelVideo:
+                            raise AlreadySubscribed()
+
         channelUploadIndex = 0
 
         orderedUploadIndex = 0
@@ -144,10 +175,14 @@ class SubBox:
             c1Upload = channelUploadList[channelUploadIndex]
             orderedUpload = self.orderedUploads[orderedUploadIndex]
 
-            if c1Upload['unixTime'] < orderedUpload['unixTime']:
-                self.orderedUploads.insert(orderedUploadIndex, c1Upload)
+            if c1Upload['unixTime'] >= orderedUpload['unixTime']:
+                cfg.logger.debug(
+                    f"Inserting New Channel Video Into SubBox\n"
+                    f"New Insert Id : {c1Upload['videoId']} Unix Time: {c1Upload['unixTime']} Title: {c1Upload['title']}\n"
+                    f"Pushed Back Id: {orderedUpload['videoId']} Unix Time: {orderedUpload['unixTime']} Title: {orderedUpload['title']}"
+                )
+                self._insertUpload(orderedUploadIndex, c1Upload,initalPage.url)
                 channelUploadIndex+=1
-                orderedUploadIndex+=1
 
             orderedUploadIndex+=1
 
@@ -156,10 +191,16 @@ class SubBox:
         )
 
     def addChannelFromUrl(self, url: str):
+        url = ytapih.sanitizeChannelUrl(url, ytapih.ctrlp.channelVideoPath)
+        for channel in self.channels:
+            if url == channel.channelUrl:
+                cfg.logger.error(f"url: {url} Already exists in SubBox Urls:\n{[channel.channelUrl for channel in self.channels]}")
+                raise AlreadySubscribed()
         self.addChannelFromInitalPage(ytapih.YtInitalPage.fromUrl(url))
 
     def removeChannel(self, channelIndex: int):
         channelUrl = self.channels[channelIndex].channelUrl
+        cfg.logger.debug(f"Remvoing Channel from SubBox, URL: {channelUrl}")
 
         i = 0
         while i < len(self.orderedUploads):
@@ -171,3 +212,13 @@ class SubBox:
             self.orderedUploads.pop(i)
 
         self.channels.pop(channelIndex)
+
+    def getChannelIndex(self, channelUrl: str):
+        channelUrl = ytapih.sanitizeChannelUrl(channelUrl, ytapih.ctrlp.channelVideoPath)
+        for channelIndex in range(len(self.channels)):
+            channel = self.channels[channelIndex]
+            if channel.channelUrl == channelUrl:
+                return channelIndex
+        raise KeyError(f"No Channel with Channel URL: {channelUrl}")
+
+
