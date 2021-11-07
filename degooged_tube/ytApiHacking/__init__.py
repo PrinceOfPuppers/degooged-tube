@@ -22,8 +22,18 @@ def commentCallback(res):
 
     return res
 
-def getCommentList(videoPage):
+def getCommentList(videoPage: YtInitalPage):
     return YtApiList(videoPage, ctrlp.commentsApiUrl, ctrlp.commentScrapeFmt, onExtend = commentCallback)
+
+
+
+def processVideoInfo(info):
+    return info
+
+def getVideoInfo(videoPage: YtInitalPage):
+    info = videoPage.scrapeInitalData(ctrlp.videoInfoScrapeFmt)
+    return processVideoInfo(info)
+
 
 
 
@@ -56,3 +66,4 @@ def approxTimeToUnix(currentTime:int, approxTime: str)->int:
         raise UnableToGetUploadTime(f"Error When Processing Time String: {approxTime}")
 
     return currentTime - number*ctrlp.ytTimeConversion[delineation]
+

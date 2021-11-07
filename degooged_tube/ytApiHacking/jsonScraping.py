@@ -102,7 +102,7 @@ def _scrapeJsonTree(j, base: ScrapeNode, result: Union[dict, list], parentKey: s
         data = scrapeFirstJson(j, base.key)
 
         if data is None:
-            cfg.logger.error(f"Missing Field in JSON: {base.key}")
+            cfg.logger.debug(f"Missing Field in JSON: {base.key}")
             return
 
         if len(base.children) == 0:
@@ -156,4 +156,3 @@ def scrapeJsonTree(j, base: ScrapeNode) -> Union[list,dict]:
         return result[base.key]
 
     return result
-

@@ -80,7 +80,7 @@ initalPageDataContainerKey = "tabs"
 
 
 # some stuff shares scraper formats, such as uploads and recommended videos, so we create wrappers for them
-def videoDataFmt(titleTextKey: str, durationTextContainerKey: str):
+def _videoDataFmt(titleTextKey: str, durationTextContainerKey: str):
     return [
         ScrapeNode("videoId", ScrapeNum.First,[]),
 
@@ -132,6 +132,48 @@ channelInfoScrapeFmt = \
 channelUrlSanitizationSplits = ['?', '&', '/channels', '/channels', '/about', '/featured', '/videos']
 
 
+videoInfoScrapeFmt = \
+    ScrapeNode("twoColumnWatchNextResults", ScrapeNum.First,[
+        ScrapeNode("description", ScrapeNum.First,[
+            ScrapeNode("text", ScrapeNum.All,[], collapse=True),
+        ]),
+
+        ScrapeNode("videoPrimaryInfoRenderer", ScrapeNum.First,[
+                ScrapeNode("title", ScrapeNum.First,[]),
+                ScrapeNode("videoViewCountRenderer", ScrapeNum.First,[
+                    ScrapeNode("viewCount", ScrapeNum.First,[
+                        ScrapeNode("simpleText", ScrapeNum.First,[],collapse=True)
+                    ],),
+            ], collapse = True),
+            ScrapeNode("sentimentBar", ScrapeNum.First,[
+                ScrapeNode("tooltip", ScrapeNum.First,[], collapse=True)
+            ],rename="likeDislike"),
+        ]),
+
+        ScrapeNode("videoSecondaryInfoRenderer", ScrapeNum.First,[
+            ScrapeNode("owner", ScrapeNum.First,[
+                ScrapeNode("title", ScrapeNum.First,[
+                    ScrapeNode("text", ScrapeNum.First,[],collapse=True)
+                    ], rename = "channelName"),
+                ScrapeNode("url", ScrapeNum.First,[],rename = 'channelUrlFragment'),
+                ScrapeNode("thumbnails", ScrapeNum.First,[]),
+            ],collapse=True),
+
+            ScrapeNode("subscriberCountText", ScrapeNum.First,[
+                ScrapeNode("simpleText", ScrapeNum.First,[], collapse=True)
+            ],rename="subscriberCount"),
+        ]),
+
+        ScrapeNode("dateText", ScrapeNum.First,[
+            ScrapeNode("simpleText", ScrapeNum.First,[], collapse=True),
+        ], rename='date'),
+
+        ScrapeNode("subscriberCountText", ScrapeNum.First,[
+            ScrapeNode("simpleText", ScrapeNum.All,[], collapse=True),
+        ], rename='subscribers'),
+    ],collapse=True)
+
+
 ############################################
 ##  Continuation Api Route Specific Stuff  #
 ############################################
@@ -148,8 +190,7 @@ channelUrlSanitizationSplits = ['?', '&', '/channels', '/channels', '/about', '/
 # >Uploads< #
 uploadsApiUrl = '/youtubei/v1/browse'
 
-uploadScrapeFmt = \
-      ScrapeNode("gridVideoRenderer", ScrapeNum.All,videoDataFmt("text", "thumbnailOverlayTimeStatusRenderer"), collapse = True)
+uploadScrapeFmt = ScrapeNode("gridVideoRenderer", ScrapeNum.All, _videoDataFmt("text", "thumbnailOverlayTimeStatusRenderer"), collapse = True)
 
 
 
@@ -169,6 +210,6 @@ commentScrapeFmt = \
 # >RelatedVideos< #
 relatedVideosApiUrl = '/youtubei/v1/next'
 
-relatedVideosScrapeFmt = \
-      ScrapeNode("compactVideoRenderer", ScrapeNum.All, videoDataFmt("simpleText", "lengthText"), collapse = True)
+relatedVideosScrapeFmt = ScrapeNode("compactVideoRenderer", ScrapeNum.All, _videoDataFmt("simpleText", "lengthText"), collapse = True)
+
 

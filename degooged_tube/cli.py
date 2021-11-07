@@ -1,8 +1,7 @@
 import degooged_tube.ytApiHacking as ytapih
 import logging
 import degooged_tube.config as cfg
-from dataclasses import dataclass
-from degooged_tube.subbox import SubBox
+import json
 
 def setupLogger():
     stream = logging.StreamHandler()
@@ -34,27 +33,8 @@ def exampleCode1():
 
 def cli():
     setupLogger()
-    subscribed = ['https://www.youtube.com/c/MattMcMuscles', 'https://www.youtube.com/channel/UC3ltptWa0xfrDweghW94Acg']
-    channelUrlGenerator = ( ytapih.sanitizeChannelUrl(url) + '/videos' for url in subscribed )
-    subBox = SubBox.fromUrls(channelUrlGenerator)
-
-    uploads1 = subBox.getPaginatedUploads(1, 10)
-
-    videoIds1 = [upload['videoId'] for upload in uploads1]
-
-    uploads2 = subBox.getPaginatedUploads(2, 10)
-    videoIds2 = [upload['videoId'] for upload in uploads2]
-
-    intersection = list( set(videoIds1)&set(videoIds2) )
-    if len(intersection) != 0:
-        print(videoIds1)
-        print(videoIds2)
-        print(intersection)
-        raise Exception()
-
-
-    #print(json.dumps(uploads, indent = 2))
-
-    
-
-
+    videoPage = ytapih.YtInitalPage.fromUrl("https://www.youtube.com/watch?v=AFrQ1_2bbsI")
+    print(ytapih.getVideoInfo(videoPage))
+    #related = ytapih.getRelatedVideoList(vid)
+    #print(related[0])
+    print(json.dumps(videoPage.initalData, indent=2))

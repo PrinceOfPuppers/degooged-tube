@@ -4,7 +4,7 @@ import inspect
 import degooged_tube.config as cfg
 from degooged_tube.subbox import SubBox
 from degooged_tube.ytApiHacking import sanitizeChannelUrl
-from degooged_tube.ytApiHacking.controlPanel import channelVideoPath
+import degooged_tube.ytApiHacking.controlPanel as ctrlp
 from .unitTests import logName
 
 
@@ -102,7 +102,7 @@ class test_SubBox(unittest.TestCase):
         numExtensionBeforeFail = 3
 
         newChannelUrl = 'https://www.youtube.com/c/GamersNexus'
-        sanitizedChannelUrl = sanitizeChannelUrl(newChannelUrl, channelVideoPath)
+        sanitizedChannelUrl = sanitizeChannelUrl(newChannelUrl, ctrlp.channelVideoPath)
 
         for _ in range(numExtensionBeforeFail):
             initalUploads = getUploads(pageSize, numPages, self.subBox)
@@ -137,12 +137,3 @@ class test_SubBox(unittest.TestCase):
 
         self.fail()
             
-
-
-
-
-
-
-
-
-
