@@ -2,16 +2,16 @@ import unittest
 import inspect
 
 import degooged_tube.config as cfg
-from degooged_tube.subbox import SubBox
+from degooged_tube.subbox import SubBox, listsOverlap
 from degooged_tube.ytApiHacking import sanitizeChannelUrl
 import degooged_tube.ytApiHacking.controlPanel as ctrlp
 from .unitTests import logName
 
 
-def getUploads(pageSize: int, numPages: int, subBox: SubBox):
+def getUploads(pageSize: int, numPages: int, subBox: SubBox, tags = None):
     uploads = []
     for pageNum in range(numPages):
-        page = subBox.getPaginatedUploads(pageNum, pageSize)
+        page = subBox.getPaginatedUploads(pageNum, pageSize, tags)
         uploads.extend(page)
 
     return uploads
@@ -28,15 +28,25 @@ def checkNoOverlap(videoIds1, videoIds2):
         return False
     return True
 
-def checkNoMisses(uploads, subBox: SubBox):
+def checkNoMisses(uploads, subBox: SubBox, tags = list()):
 
     videoIds = [upload['videoId'] for upload in uploads]
 
-    
     count = 0
     for channel in subBox.channels:
         for upload in channel.uploadList:
             if upload['videoId'] in videoIds:
+
+                # ensure channnel has correct tags
+                if len(tags) != 0 and not listsOverlap(channel.tags, tags):
+                    cfg.logger.error(
+                        f"Video Found in SubBox From Channel That Should Have Been Filtered\n"
+                        f"VideoId Tags: {upload['videoId']}\n"
+                        f"Channel Tags: {channel.tags}\n"
+                        f"SubBox Tags: {tags}\n"
+                    )
+                    return False
+
                 count+=1
             else:
                 break
@@ -60,7 +70,7 @@ def checkOrdering(uploads):
 
 class test_SubBox(unittest.TestCase):
     subscribed = ['https://www.youtube.com/c/MattMcMuscles', 'https://www.youtube.com/channel/UC3ltptWa0xfrDweghW94Acg']
-    subBox = SubBox.fromUrls(subscribed)
+    subBox = SubBox.fromUrls(subscribed, [['gaming'], ['speedrunning']])
 
     def test_noOverlap(self):
         logName(self, inspect.currentframe())
@@ -136,4 +146,35 @@ class test_SubBox(unittest.TestCase):
             return
 
         self.fail()
-            
+
+    def test_noOverlap_tags(self):
+        logName(self, inspect.currentframe())
+        pageSize = 10
+
+        uploads1 = self.subBox.getPaginatedUploads(1, pageSize, ['gaming'])
+
+        videoIds1 = [upload['videoId'] for upload in uploads1]
+
+        uploads2 = self.subBox.getPaginatedUploads(2, pageSize, ['gaming'])
+        videoIds2 = [upload['videoId'] for upload in uploads2]
+
+        self.assertTrue(checkNoOverlap(videoIds1, videoIds2))
+
+    def test_noMisses_tags(self):
+        logName(self, inspect.currentframe())
+        pageSize = 10
+        numPages = 2
+        uploads = getUploads(pageSize, numPages, self.subBox, ['speedrunning'])
+        self.assertTrue(checkNoMisses(uploads, self.subBox, ['speedrunning']))
+
+
+    def test_ordering_tags(self):
+        logName(self, inspect.currentframe())
+        pageSize = 10
+        numPages = 2
+
+        uploads = getUploads(pageSize, numPages, self.subBox, ['gaming'])
+
+        self.assertTrue(checkOrdering(uploads))
+
+

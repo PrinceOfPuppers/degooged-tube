@@ -1,10 +1,11 @@
+import sys
 import degooged_tube.ytApiHacking as ytapih
 import logging
 import degooged_tube.config as cfg
 import json
 
 def setupLogger():
-    stream = logging.StreamHandler()
+    stream = logging.StreamHandler(sys.stdout)
     cfg.logger.setLevel(logging.DEBUG)
     stream.setFormatter(logging.Formatter("[%(levelname)s] %(message)s"))
     cfg.logger.addHandler(stream)

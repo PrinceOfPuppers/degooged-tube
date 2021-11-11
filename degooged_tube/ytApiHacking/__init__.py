@@ -28,6 +28,7 @@ def getCommentList(videoPage: YtInitalPage):
 
 
 def processVideoInfo(info):
+    # Todo join description
     return info
 
 def getVideoInfo(videoPage: YtInitalPage):
