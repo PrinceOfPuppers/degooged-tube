@@ -38,8 +38,11 @@ section = parser['CONFIG']
 # global config variables
 testJsonPath     = f"{modulePath}/tests/testJson"
 testDataDumpPath = f"{modulePath}/tests/dataDump.log"
+testLogPath = f"{modulePath}/tests/testing.log"
 testing = False
 
+integrationTestPath = f"{modulePath}/tests/integrationTests.py"
+unitTestPath = f"{modulePath}/tests/unitTest.py"
 # logger
 import logging
 logger = logging.getLogger('degooged_tube')

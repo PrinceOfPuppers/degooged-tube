@@ -1,4 +1,4 @@
-import unittest
+from unittest import TestCase
 import inspect
 
 import degooged_tube.config as cfg
@@ -68,7 +68,7 @@ def checkOrdering(uploads):
 
     return True
 
-class test_SubBox(unittest.TestCase):
+class test_SubBox(TestCase):
     subscribed = ['https://www.youtube.com/c/MattMcMuscles', 'https://www.youtube.com/channel/UC3ltptWa0xfrDweghW94Acg']
     subBox = SubBox.fromUrls(subscribed, [['gaming'], ['speedrunning']])
 
@@ -184,7 +184,7 @@ class test_SubBox(unittest.TestCase):
 def nothingCallback(res):
     return res
 
-class test_getFunctionsAndFmts(unittest.TestCase):
+class test_getFunctionsAndFmts(TestCase):
     channelUrl = sanitizeChannelUrl('https://www.youtube.com/c/GamersNexus')
     channelVideosUrl = sanitizeChannelUrl('https://www.youtube.com/c/GamersNexus', '/videos')
     videoUrl = 'https://www.youtube.com/watch?v=B14h25fKMpY'

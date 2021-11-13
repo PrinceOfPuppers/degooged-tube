@@ -76,10 +76,34 @@ class ScrapeNode:
     def __str__(self):
         return self.__repr__()
 
+    def getKeys(self, result:set[str]):
+        for child in self.children:
+            child.getKeys(result)
+
+        if self.collapse:
+            return
+
+        if self.rename:
+            result.add(self.rename)
+            return
+
+        result.add(self.key)
+
+    def getOldKeyToNewKeyMap(self, result:dict):
+        for child in self.children:
+            child.getOldKeyToNewKeyMap(result)
+
+        if self.collapse:
+            return
+
+        if self.rename:
+            result[self.rename] = self.key
+            return
+
+        result[self.key] = self.key
 
 
-
-def _put(src, dest: Union[list, dict], key: Union[str,None] = None):
+def _put(src, dest: Union[list, dict], keys: set[str], key: Union[str,None] = None):
     if type(dest) is list:
         dest.append(src)
         return
@@ -94,9 +118,10 @@ def _put(src, dest: Union[list, dict], key: Union[str,None] = None):
             return
 
         dest[key] = src
+        keys.add(key)
 
 
-def _scrapeJsonTree(j, base: ScrapeNode, result: Union[dict, list], allowMissingKey: bool, parentKey: str = None):
+def _scrapeJsonTree(j, base: ScrapeNode, result: Union[dict, list], keys: set[str], parentKey: str = None):
     # if parent key is provided, put data under parents key
     if parentKey == None:
         if base.rename:
@@ -112,28 +137,26 @@ def _scrapeJsonTree(j, base: ScrapeNode, result: Union[dict, list], allowMissing
         if data is None:
             logMsg = f"Missing Field in JSON: {base.key}"
             cfg.logger.debug(logMsg)
-            if not allowMissingKey:
-                raise KeyError(logMsg)
             return
 
         if len(base.children) == 0:
-            _put(data, result, putKey)
+            _put(data, result, keys, putKey)
             return
 
         for child in base.children:
             if child.collapse:
-                _scrapeJsonTree(data, child, result, allowMissingKey, putKey)
+                _scrapeJsonTree(data, child, result, keys, putKey)
             else:
                 x = {}
-                _scrapeJsonTree(data, child, x, allowMissingKey)
-                _put(x, result, putKey)
+                _scrapeJsonTree(data, child, x, keys)
+                _put(x, result, keys, putKey)
 
     else: # all, unique and longest
         data = []
         scrapeJson(j, base.key, data)
 
         if len(base.children) == 0:
-            _put(data, result, putKey)
+            _put(data, result, keys, putKey)
             return
 
         x = []
@@ -143,35 +166,61 @@ def _scrapeJsonTree(j, base: ScrapeNode, result: Union[dict, list], allowMissing
 
             for child in base.children:
                 if child.collapse:
-                    _scrapeJsonTree(datum, child, x, allowMissingKey, putKey)
+                    _scrapeJsonTree(datum, child, x, keys, putKey)
                 else:
-                    _scrapeJsonTree(datum, child, y, allowMissingKey)
+                    _scrapeJsonTree(datum, child, y, keys)
 
             if len(y) != 0: 
                 x.append(y)
 
         if base.scrapeNum == ScrapeNum.Longest and len(x)!=0:
-            _put(max(x, key=len), result, putKey)
+            _put(max(x, key=len), result, keys, putKey)
 
         elif base.scrapeNum == ScrapeNum.Unique:
             if result not in x:
-                _put(x, result, putKey)
+                _put(x, result, keys, putKey)
         else:
-            _put(x, result, putKey)
+            _put(x, result, keys, putKey)
 
 
 def scrapeJsonTree(j, base: ScrapeNode, allowMissingKey:bool = False) -> Union[list,dict]:
     result = {}
-    try:
-        _scrapeJsonTree(j, base, result, allowMissingKey)
-    except KeyError as e:
-        if cfg.testing:
-            with open(cfg.testDataDumpPath, 'w') as f:
-                json.dump(j, f, indent=2)
-                f.write('\n'+str(e))
+    keys = set()
+    _scrapeJsonTree(j, base, result, keys)
+
+    if base.collapse:
+        try:
+            keys.remove(base.key)
+        except:
+            pass
+
+    if not allowMissingKey:
+        requiredKeys = set()
+        base.getKeys(requiredKeys)
+
+        if keys != requiredKeys:
+            cfg.logger.debug(f"Scraped Keys Not Equal To Required Keys \nScrapedKeys: {keys} \nRequired Keys: {requiredKeys}")
+            if cfg.testing:
+                with open(cfg.testDataDumpPath, 'w') as f:
+                    json.dump(j, f, indent=2)
+                    map = {}
+                    base.getOldKeyToNewKeyMap(map)
+                    missingKeys = [(f"{map[k]} " + (f"(renamed: {k})" if map[k] != k else "")) for k in requiredKeys if k not in keys]
+                    surplusKeys = [(f"{map[k]} " + (f"(renamed: {k})" if map[k] != k else "")) for k in keys if k not in requiredKeys]
+
+                    if len(missingKeys) > 0:
+                        f.write('\n'+ f'Missing Keys: {missingKeys}')
+
+                    if len(surplusKeys) > 0:
+                        f.write('\n'+ f'Surplus Keys: {surplusKeys}')
+
+            raise KeyError
 
 
     if len(result) == 0:
+        requiredKeys = set()
+        base.getKeys(requiredKeys)
+        print(keys, requiredKeys)
         raise KeyError("Empty Result")
 
     if base.collapse:

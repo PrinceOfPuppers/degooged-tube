@@ -1,7 +1,6 @@
-import unittest
+from unittest import TestCase
 import inspect
 import json
-
 import degooged_tube.config as cfg
 from degooged_tube.ytApiHacking.jsonScraping import scrapeJsonTree, ScrapeNode, ScrapeNum
 
@@ -15,7 +14,7 @@ def test_scrapeJsonTreeHelper(jsonName, fmt):
         j = json.load(f)
         return scrapeJsonTree(j, fmt)
 
-class test_scrapeJsonTree(unittest.TestCase):
+class test_scrapeJsonTree(TestCase):
     def test_handmade_1(self):
         logName(self, inspect.currentframe())
 
@@ -268,6 +267,7 @@ class test_scrapeJsonTree(unittest.TestCase):
 
 
     def test_example_1(self):
+        logName(self, inspect.currentframe())
         channelInfoScrapeFmt = \
             ScrapeNode("header", ScrapeNum.First,[
                 ScrapeNode("title", ScrapeNum.First,[], rename='name'),
@@ -316,5 +316,24 @@ class test_scrapeJsonTree(unittest.TestCase):
         except KeyError:
             self.fail("Scrape Json Tree Missed Key")
 
+
+        self.assertEqual(answer, solution)
+
+    def test_handmade_badFmt_1(self):
+        logName(self, inspect.currentframe())
+
+        uploadScrapeFmt = \
+              ScrapeNode("greetings", ScrapeNum.Longest,[
+                  ScrapeNode("hi", ScrapeNum.Longest,[
+                      ScrapeNode("name", ScrapeNum.All,[], collapse = True)
+                  ]),
+              ], collapse = True)
+
+        solution = { "hi" : ['alice', 'bob', 'carol', 'dave'] }
+
+        try:
+            answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt)
+        except KeyError:
+            self.fail("Scrape Json Tree Missed Key")
 
         self.assertEqual(answer, solution)

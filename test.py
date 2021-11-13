@@ -1,13 +1,8 @@
-import unittest
 import sys
 import logging
-
 import argparse
-
-import degooged_tube.tests.unitTests as unitTests
-import degooged_tube.tests.integrationTests as integrationTests
-
 import degooged_tube.config as cfg
+
 
 def parseArgs():
     description = ("unit and integration testing for degooged-tube")
@@ -25,7 +20,7 @@ def parseArgs():
 
 def setLogging(args):
     formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
-    fh = logging.FileHandler(f"{cfg.modulePath}/tests/testing.log")
+    fh = logging.FileHandler(cfg.testLogPath)
     fh.setFormatter(formatter)
 
     cfg.logger.addHandler(fh)
@@ -38,23 +33,32 @@ def setLogging(args):
     cfg.logger.setLevel(level=logging.DEBUG)
 
 if __name__ == "__main__":
-    cfg.testing = True
     args = parseArgs()
-
     setLogging(args)
+    cfg.testing = True
 
     runall = not (args.unit or args.integration)
-
+    import unittest
+    loader = unittest.TestLoader()
+    runner = unittest.TextTestRunner(failfast= True)
 
     if runall:
-        success = unittest.main(unitTests,exit=False, argv=[sys.argv[0]]).result.wasSuccessful()
-        if not success:
-            sys.exit(1)
-        unittest.main(integrationTests,failfast=True, argv=[sys.argv[0]])
+        import degooged_tube.tests.unitTests as unitTests
+        suite = loader.loadTestsFromModule(unitTests)
+        result = runner.run(suite)
+
+        if result.wasSuccessful():
+            import degooged_tube.tests.integrationTests as integrationTests
+            suite = loader.loadTestsFromModule(integrationTests)
+            runner.run(suite)
 
     elif args.unit:
-        unittest.main(unitTests, failfast=True, argv=[sys.argv[0]])
+        import degooged_tube.tests.unitTests as unitTests
+        suite = loader.loadTestsFromModule(unitTests)
+        result = runner.run(suite)
         
     elif args.integration:
-        unittest.main(integrationTests,failfast=True, argv=[sys.argv[0]])
+        import degooged_tube.tests.integrationTests as integrationTests
+        suite = loader.loadTestsFromModule(integrationTests)
+        runner.run(suite)
 
