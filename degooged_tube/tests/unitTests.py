@@ -26,11 +26,18 @@ class test_scrapeJsonTree(unittest.TestCase):
                   ]),
               ])
 
+        try:
+            answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt)
+        except KeyError:
+            self.fail("Scrape Json Tree Missed Key")
+
+        solution = {'greetings': [{'hi': {'name': ['alice', 'bob', 'carol', 'dave']}}, {'hi': {'name': []}}]}
+
 
         self.assertEqual ( 
-                test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt), 
-                {'greetings': [{'hi': {'name': ['alice', 'bob', 'carol', 'dave']}}, {'hi': {'name': []}}]}
+            answer, solution
         )
+
 
     def test_handmade_2(self):
         logName(self, inspect.currentframe())
@@ -41,11 +48,14 @@ class test_scrapeJsonTree(unittest.TestCase):
                       ScrapeNode("name", ScrapeNum.All,[])
                   ]),
               ], collapse = True)
+        try:
+            answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt)
+        except KeyError:
+            self.fail("Scrape Json Tree Missed Key")
 
-        self.assertEqual ( 
-                test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt),
-                [{'hi': {'name': ['alice', 'bob', 'carol', 'dave']}}, {'hi': {'name': []}}]
-        )
+        solution = [{'hi': {'name': ['alice', 'bob', 'carol', 'dave']}}, {'hi': {'name': []}}]
+
+        self.assertEqual ( answer, solution )
 
 
     def test_handmade_3(self):
@@ -58,10 +68,13 @@ class test_scrapeJsonTree(unittest.TestCase):
                   ]),
               ], collapse = True)
 
-        self.assertEqual ( 
-                test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt),
-                [{'hi': ['alice', 'bob', 'carol', 'dave']}, {'hi': []}]
-        )
+        try:
+            answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt)
+        except KeyError:
+            self.fail("Scrape Json Tree Missed Key")
+
+        solution = [{'hi': ['alice', 'bob', 'carol', 'dave']}, {'hi': []}]
+        self.assertEqual ( answer, solution )
 
     def test_handmade_4(self):
         logName(self, inspect.currentframe())
@@ -73,10 +86,14 @@ class test_scrapeJsonTree(unittest.TestCase):
                   ], collapse = True),
               ])
 
-        self.assertEqual ( 
-                test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt),
-                {'greetings': [['alice', 'bob', 'carol', 'dave'],[]]}
-        )
+        try:
+            answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt)
+        except KeyError:
+            self.fail("Scrape Json Tree Missed Key")
+
+        solution = {'greetings': [['alice', 'bob', 'carol', 'dave'],[]]}
+        self.assertEqual ( answer, solution )
+
 
     def test_handmade_5(self):
         logName(self, inspect.currentframe())
@@ -88,10 +105,14 @@ class test_scrapeJsonTree(unittest.TestCase):
                   ], collapse = True),
               ], collapse = True)
 
-        self.assertEqual ( 
-                test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt),
-                [['alice', 'bob', 'carol', 'dave'],[]]
-        )
+        try:
+            answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt)
+        except KeyError:
+            self.fail("Scrape Json Tree Missed Key")
+
+        solution = [['alice', 'bob', 'carol', 'dave'],[]]
+        self.assertEqual ( answer, solution )
+
 
     def test_handmade_6(self):
         logName(self, inspect.currentframe())
@@ -103,10 +124,14 @@ class test_scrapeJsonTree(unittest.TestCase):
                   ], collapse = True),
               ], collapse = True)
 
-        self.assertEqual ( 
-                test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt),
-                [['alice', 'bob', 'carol', 'dave'],[]]
-        )
+        try:
+            answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt)
+        except KeyError:
+            self.fail("Scrape Json Tree Missed Key")
+
+        solution = [['alice', 'bob', 'carol', 'dave'],[]]
+        self.assertEqual ( answer, solution )
+
 
     def test_handmade_7(self):
         logName(self, inspect.currentframe())
@@ -118,10 +143,14 @@ class test_scrapeJsonTree(unittest.TestCase):
                   ], collapse = True),
               ], collapse = True)
 
-        self.assertEqual ( 
-                test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt),
-                [['megaRad', 11, ['super', 'duper', 'cool']],[]]
-        )
+        try:
+            answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt)
+        except KeyError:
+            self.fail("Scrape Json Tree Missed Key")
+
+        solution = [['megaRad', 11, ['super', 'duper', 'cool']],[]]
+        self.assertEqual ( answer, solution )
+
 
     def test_handmade_8(self):
         logName(self, inspect.currentframe())
@@ -141,8 +170,13 @@ class test_scrapeJsonTree(unittest.TestCase):
                 [1, 2, 3]
         ]
 
-        answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt)
-        self.assertEqual(answer, solution)
+        try:
+            answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt)
+        except KeyError:
+            self.fail("Scrape Json Tree Missed Key")
+
+        self.assertEqual( answer, solution )
+
 
     def test_handmade_9(self):
         logName(self, inspect.currentframe())
@@ -159,8 +193,13 @@ class test_scrapeJsonTree(unittest.TestCase):
                 { "name": "dave", "favColor": "purple" }
         ]
 
-        answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt)
+        try:
+            answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt)
+        except KeyError:
+            self.fail("Scrape Json Tree Missed Key")
+
         self.assertEqual(answer, solution)
+
 
     def test_handmade_10(self):
         logName(self, inspect.currentframe())
@@ -180,8 +219,13 @@ class test_scrapeJsonTree(unittest.TestCase):
                 ]
             }
 
-        answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt)
+        try:
+            answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt)
+        except KeyError:
+            self.fail("Scrape Json Tree Missed Key")
+
         self.assertEqual(answer, solution)
+
 
     def test_handmade_11(self):
         logName(self, inspect.currentframe())
@@ -195,8 +239,13 @@ class test_scrapeJsonTree(unittest.TestCase):
 
         solution = { "hi" : ['alice', 'bob', 'carol', 'dave'] }
 
-        answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt)
+        try:
+            answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt)
+        except KeyError:
+            self.fail("Scrape Json Tree Missed Key")
+
         self.assertEqual(answer, solution)
+
 
     def test_handmade_12(self):
         logName(self, inspect.currentframe())
@@ -210,8 +259,13 @@ class test_scrapeJsonTree(unittest.TestCase):
 
         solution = { "hi" : ['alice', 'bob', 'carol', 'dave'] }
 
-        answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt)
+        try:
+            answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt)
+        except KeyError:
+            self.fail("Scrape Json Tree Missed Key")
+
         self.assertEqual(answer, solution)
+
 
     def test_example_1(self):
         channelInfoScrapeFmt = \
@@ -256,7 +310,11 @@ class test_scrapeJsonTree(unittest.TestCase):
                     'hFkvlVu7zCunBpXKyc8CwjuEVjjkx2wswBLyHtgaphowjz3tPt=w1440-fcrop64=1,32b75a57cd48a5a8-k-c0xffffffff-no-nd-rj", "width": 1440, "heigh'
                     't": 395}]], "subscribers": ["425K subscribers"]}'
             )
-        answer = test_scrapeJsonTreeHelper("example.json", channelInfoScrapeFmt)
+
+        try:
+            answer = test_scrapeJsonTreeHelper("example.json", channelInfoScrapeFmt)
+        except KeyError:
+            self.fail("Scrape Json Tree Missed Key")
+
 
         self.assertEqual(answer, solution)
-

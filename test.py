@@ -38,6 +38,7 @@ def setLogging(args):
     cfg.logger.setLevel(level=logging.DEBUG)
 
 if __name__ == "__main__":
+    cfg.testing = True
     args = parseArgs()
 
     setLogging(args)
@@ -46,14 +47,14 @@ if __name__ == "__main__":
 
 
     if runall:
-        success = unittest.main(unitTests,exit=False).result.wasSuccessful()
+        success = unittest.main(unitTests,exit=False, argv=[sys.argv[0]]).result.wasSuccessful()
         if not success:
             sys.exit(1)
-        unittest.main(integrationTests,failfast=True)
+        unittest.main(integrationTests,failfast=True, argv=[sys.argv[0]])
 
     elif args.unit:
-        unittest.main(unitTests)
+        unittest.main(unitTests, failfast=True, argv=[sys.argv[0]])
         
     elif args.integration:
-        unittest.main(integrationTests,failfast=True)
+        unittest.main(integrationTests,failfast=True, argv=[sys.argv[0]])
 

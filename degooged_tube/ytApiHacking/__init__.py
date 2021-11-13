@@ -11,8 +11,8 @@ def uploadsCallback(res):
         r['unixTime'] = approxTimeToUnix(currentTime, r['uploaded on'])
     return res
 
-def getUploadList(uploadsPage):
-    return YtApiList(uploadsPage, ctrlp.uploadsApiUrl, ctrlp.uploadScrapeFmt, getInitalData=True, onExtend = uploadsCallback)
+def getUploadList(uploadsPage, onExtend = uploadsCallback):
+    return YtApiList(uploadsPage, ctrlp.uploadsApiUrl, ctrlp.uploadScrapeFmt, getInitalData=True, onExtend = onExtend)
 
 
 
@@ -22,8 +22,8 @@ def commentCallback(res):
 
     return res
 
-def getCommentList(videoPage: YtInitalPage):
-    return YtApiList(videoPage, ctrlp.commentsApiUrl, ctrlp.commentScrapeFmt, onExtend = commentCallback)
+def getCommentList(videoPage: YtInitalPage, onExtend = commentCallback):
+    return YtApiList(videoPage, ctrlp.commentsApiUrl, ctrlp.commentScrapeFmt, onExtend = onExtend)
 
 
 

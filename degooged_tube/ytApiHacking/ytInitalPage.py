@@ -44,7 +44,8 @@ class YtInitalPage:
         initalData = json.loads(y.group(1))
         clientVersion = z.group(1)
 
-        a = scrapeJsonTree(initalData, ctrlp.continuationScrapeFmt)
+        a = scrapeJsonTree(initalData, ctrlp.continuationScrapeFmt, True)
+
         assert type(a) is list
         continuations = {}
         for continuation in a:

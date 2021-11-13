@@ -10,11 +10,11 @@ import degooged_tube.config as cfg
 class YtApiList:
     _list: list
     _iter: YtContIter
-    _scrapeFmt: ScrapeNode
     _index: int = 0
 
     apiUrl: str
     atMaxLen: bool = False
+    scrapeFmt: ScrapeNode
     onExtend: Callable
 
     def __init__(self, initalPage: YtInitalPage, apiUrl: str, scrapeFmt: ScrapeNode, getInitalData: bool= False, onExtend: Callable = lambda res: res):
@@ -41,7 +41,7 @@ class YtApiList:
             return
 
         if len(res) == 0:
-            cfg.logger.error(f'Scraping Json for Api Url: "{self.apiUrl}" Returned a List of Zero Length\n Scraping Format:\n{str(self._scrapeFmt)}')
+            cfg.logger.error(f'Scraping Json for Api Url: "{self.apiUrl}" Returned a List of Zero Length\nScraping Format:\n{str(self._scrapeFmt)}')
             self.atMaxLen = True
             return
 
@@ -103,7 +103,3 @@ class YtApiList:
         except IndexError:
             self.index = 0
             raise StopIteration
-
-
-        
-

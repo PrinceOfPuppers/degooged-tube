@@ -7,25 +7,25 @@ import re
 
 ytTimeConversion = {
     "second":  1,
-    "seconds":  1,
+    "seconds": 1,
 
     "minute":  60,
-    "minutes":  60,
+    "minutes": 60,
 
     "hour":    3600,
-    "hours":    3600,
+    "hours":   3600,
 
     "day":     86400,
-    "days":     86400,
+    "days":    86400,
 
     "week":    604800,
-    "weeks":    604800,
+    "weeks":   604800,
 
     "month":   2419200,
-    "months":   2419200,
+    "months":  2419200,
 
     "year":    29030400,
-    "years":    29030400,
+    "years":   29030400,
 }
 timeDelineations = "|".join(ytTimeConversion.keys())
 approxTimeRe = re.compile(r"(\d+)\s+("+timeDelineations +r")\s+ago", re.I)
@@ -84,7 +84,7 @@ def _videoDataFmt(titleTextKey: str, durationTextContainerKey: str):
     return [
         ScrapeNode("videoId", ScrapeNum.First,[]),
 
-         ScrapeNode("thumbnails", ScrapeNum.All,[]),
+         #ScrapeNode("thumbnails", ScrapeNum.All,[]),
 
          ScrapeNode("publishedTimeText", ScrapeNum.First,[
              ScrapeNode("simpleText", ScrapeNum.First,[], collapse=True)
@@ -100,7 +100,10 @@ def _videoDataFmt(titleTextKey: str, durationTextContainerKey: str):
 
          ScrapeNode("title", ScrapeNum.First,[
              ScrapeNode(titleTextKey, ScrapeNum.First,[], collapse=True)
-         ])
+         ]),
+         #ScrapeNode("longBylineText", ScrapeNum.First,[
+         #    ScrapeNode("canonicalBaseUrl", ScrapeNum.First,[], collapse=True)
+         #], rename = "channelUrlFragment")
     ]
 
 
@@ -168,9 +171,9 @@ videoInfoScrapeFmt = \
             ScrapeNode("simpleText", ScrapeNum.First,[], collapse=True),
         ], rename='date'),
 
-        ScrapeNode("subscriberCountText", ScrapeNum.First,[
-            ScrapeNode("simpleText", ScrapeNum.All,[], collapse=True),
-        ], rename='subscribers'),
+        #ScrapeNode("subscriberCountText", ScrapeNum.First,[
+        #    ScrapeNode("simpleText", ScrapeNum.All,[], collapse=True),
+        #], rename='subscribers'),
     ],collapse=True)
 
 
@@ -211,5 +214,4 @@ commentScrapeFmt = \
 relatedVideosApiUrl = '/youtubei/v1/next'
 
 relatedVideosScrapeFmt = ScrapeNode("compactVideoRenderer", ScrapeNum.All, _videoDataFmt("simpleText", "lengthText"), collapse = True)
-
 

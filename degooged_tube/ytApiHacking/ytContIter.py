@@ -91,9 +91,14 @@ class YtContIter:
                 )
             
             data:dict = json.loads(b.text)
-            d = scrapeJsonTree(data, dataFmt)
 
-            if len(d) == 0:
+            try:
+                d = scrapeJsonTree(data, dataFmt)
+
+                if len(d) == 0:
+                    raise KeyError
+
+            except KeyError:
                 cfg.logger.debug(f"YtApiContIter, Removing Continuation Token for {self.apiUrl} of {self.initalPage.url} \nDoes Not Match Data Json Scraper")
                 self.continuationTokens.pop(0)
                 continue

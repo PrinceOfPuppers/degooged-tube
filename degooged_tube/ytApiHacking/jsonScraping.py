@@ -1,6 +1,7 @@
 from typing import List, Union
 from enum import Enum
 from dataclasses import dataclass
+import json
 import degooged_tube.config as cfg
 
 
@@ -52,7 +53,7 @@ class ScrapeNum(Enum):
 class ScrapeNode:
     key: str
     scrapeNum: ScrapeNum
-    children: list
+    children: list['ScrapeNode']
 
     collapse: bool = False
     rename: str = ""
@@ -60,15 +61,23 @@ class ScrapeNode:
     def _strIndent(self, numIndent):
         indent = numIndent*'  '
         indentp1 = indent + '  '
-        return f"{indent}ScrapeNode(\n{indentp1}key: {self.key}\n{indentp1}ScrapeNum: {self.scrapeNum}\n{indentp1}children:\n" + \
-                "\n".join([child._strIndent(numIndent+2) for child in self.children]) + \
-                f"\n{indent})"
+        return f"{indent}ScrapeNode(\n"\
+               f"{indentp1}key: {self.key}\n" \
+               f"{indentp1}ScrapeNum: {self.scrapeNum}\n" \
+               f"{indentp1}rename: {self.rename}\n" \
+               f"{indentp1}collapse: {self.collapse}\n" \
+               f"{indentp1}children:\n" + \
+                    "\n".join([child._strIndent(numIndent+2) for child in self.children]) + \
+               f"\n{indent})"
 
     def __repr__(self):
         return self._strIndent(0)
 
     def __str__(self):
         return self.__repr__()
+
+
+
 
 def _put(src, dest: Union[list, dict], key: Union[str,None] = None):
     if type(dest) is list:
@@ -77,8 +86,7 @@ def _put(src, dest: Union[list, dict], key: Union[str,None] = None):
 
     elif type(dest) is dict:
         if key == None:
-            cfg.logger.error("Key Required")
-            return
+            raise KeyError("Key Required")
 
         if key in dest and type(src) is dict:
             for srcKey in src.keys():
@@ -88,7 +96,7 @@ def _put(src, dest: Union[list, dict], key: Union[str,None] = None):
         dest[key] = src
 
 
-def _scrapeJsonTree(j, base: ScrapeNode, result: Union[dict, list], parentKey: str = None):
+def _scrapeJsonTree(j, base: ScrapeNode, result: Union[dict, list], allowMissingKey: bool, parentKey: str = None):
     # if parent key is provided, put data under parents key
     if parentKey == None:
         if base.rename:
@@ -102,7 +110,10 @@ def _scrapeJsonTree(j, base: ScrapeNode, result: Union[dict, list], parentKey: s
         data = scrapeFirstJson(j, base.key)
 
         if data is None:
-            cfg.logger.debug(f"Missing Field in JSON: {base.key}")
+            logMsg = f"Missing Field in JSON: {base.key}"
+            cfg.logger.debug(logMsg)
+            if not allowMissingKey:
+                raise KeyError(logMsg)
             return
 
         if len(base.children) == 0:
@@ -111,10 +122,10 @@ def _scrapeJsonTree(j, base: ScrapeNode, result: Union[dict, list], parentKey: s
 
         for child in base.children:
             if child.collapse:
-                _scrapeJsonTree(data, child, result, putKey)
+                _scrapeJsonTree(data, child, result, allowMissingKey, putKey)
             else:
                 x = {}
-                _scrapeJsonTree(data, child, x)
+                _scrapeJsonTree(data, child, x, allowMissingKey)
                 _put(x, result, putKey)
 
     else: # all, unique and longest
@@ -126,14 +137,15 @@ def _scrapeJsonTree(j, base: ScrapeNode, result: Union[dict, list], parentKey: s
             return
 
         x = []
+
         for datum in data:
             y = {}
 
             for child in base.children:
                 if child.collapse:
-                    _scrapeJsonTree(datum, child, x, putKey)
+                    _scrapeJsonTree(datum, child, x, allowMissingKey, putKey)
                 else:
-                    _scrapeJsonTree(datum, child, y)
+                    _scrapeJsonTree(datum, child, y, allowMissingKey)
 
             if len(y) != 0: 
                 x.append(y)
@@ -148,9 +160,19 @@ def _scrapeJsonTree(j, base: ScrapeNode, result: Union[dict, list], parentKey: s
             _put(x, result, putKey)
 
 
-def scrapeJsonTree(j, base: ScrapeNode) -> Union[list,dict]:
+def scrapeJsonTree(j, base: ScrapeNode, allowMissingKey:bool = False) -> Union[list,dict]:
     result = {}
-    _scrapeJsonTree(j, base, result)
+    try:
+        _scrapeJsonTree(j, base, result, allowMissingKey)
+    except KeyError as e:
+        if cfg.testing:
+            with open(cfg.testDataDumpPath, 'w') as f:
+                json.dump(j, f, indent=2)
+                f.write('\n'+str(e))
+
+
+    if len(result) == 0:
+        raise KeyError("Empty Result")
 
     if base.collapse:
         return result[base.key]

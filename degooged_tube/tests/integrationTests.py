@@ -3,7 +3,7 @@ import inspect
 
 import degooged_tube.config as cfg
 from degooged_tube.subbox import SubBox, listsOverlap
-from degooged_tube.ytApiHacking import sanitizeChannelUrl
+from degooged_tube.ytApiHacking import sanitizeChannelUrl, getChannelInfo, getCommentList, getRelatedVideoList, getUploadList, getVideoInfo, YtInitalPage
 import degooged_tube.ytApiHacking.controlPanel as ctrlp
 from .unitTests import logName
 
@@ -177,4 +177,58 @@ class test_SubBox(unittest.TestCase):
 
         self.assertTrue(checkOrdering(uploads))
 
+
+
+# we are checking the formats for the next section of tests, hence we dont want the onExtend callbacks to interfere
+# we define this callback to override them
+def nothingCallback(res):
+    return res
+
+class test_getFunctionsAndFmts(unittest.TestCase):
+    channelUrl = sanitizeChannelUrl('https://www.youtube.com/c/GamersNexus')
+    channelVideosUrl = sanitizeChannelUrl('https://www.youtube.com/c/GamersNexus', '/videos')
+    videoUrl = 'https://www.youtube.com/watch?v=B14h25fKMpY'
+
+    def test_getChannelInfo(self):
+        logName(self, inspect.currentframe())
+        try:
+            getChannelInfo(self.channelUrl)
+        except KeyError:
+            self.fail("Scrape Json Tree Missed Key")
+
+    def test_getCommentList(self):
+        logName(self, inspect.currentframe())
+        page = YtInitalPage.fromUrl(self.videoUrl)
+        try:
+            commentList = getCommentList(page, onExtend = nothingCallback)
+            _ = commentList[0]
+        except KeyError:
+            self.fail("Scrape Json Tree Missed Key")
+
+    def test_getRelatedVideoList(self):
+        logName(self, inspect.currentframe())
+        page = YtInitalPage.fromUrl(self.videoUrl)
+        try:
+            videoList = getRelatedVideoList(page)
+            _ = videoList[0]
+        except KeyError:
+            self.fail("Scrape Json Tree Missed Key")
+
+
+    def test_getUploadList(self):
+        logName(self, inspect.currentframe())
+        page = YtInitalPage.fromUrl(self.channelVideosUrl)
+        try:
+            uploadList = getUploadList(page, onExtend = nothingCallback)
+            _ = uploadList[0]
+        except KeyError:
+            self.fail("Scrape Json Tree Missed Key")
+
+    def test_getVideoInfo(self):
+        logName(self, inspect.currentframe())
+        page = YtInitalPage.fromUrl(self.videoUrl)
+        try:
+            _ = getVideoInfo(page)
+        except KeyError:
+            self.fail("Scrape Json Tree Missed Key")
 
