@@ -217,12 +217,6 @@ def scrapeJsonTree(j, base: ScrapeNode, allowMissingKey:bool = False) -> Union[l
             raise KeyError
 
 
-    if len(result) == 0:
-        requiredKeys = set()
-        base.getKeys(requiredKeys)
-        print(keys, requiredKeys)
-        raise KeyError("Empty Result")
-
     if base.collapse:
         return result[base.key]
 
