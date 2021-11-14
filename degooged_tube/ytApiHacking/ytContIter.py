@@ -3,13 +3,11 @@ import json
 from typing import Union
 from dataclasses import dataclass
 
-from .jsonScraping import scrapeJsonTree, ScrapeNode
+from .jsonScraping import scrapeJsonTree, ScrapeNode, dumpDebugData, ScrapeError
 from .ytInitalPage import YtInitalPage
 from . import controlPanel as ctrlp 
 
 import degooged_tube.config as cfg
-
-
 
 
 @dataclass()
@@ -44,15 +42,22 @@ class YtContIter:
         if self.getInitData:
             self.getInitData = False
             cfg.logger.debug(f"Returning InitalData for {self.apiUrl} of {self.initalPage.url}")
-            d = scrapeJsonTree(self.initalPage.initalData, dataFmt)
-            return d
+            return self.initalPage.scrapeInitalData(dataFmt)
+
 
         if self.endOfData:
             return None
 
+
         elif len(self.continuationTokens) > 1:
             cfg.logger.debug(f"YtApiContIter for {self.apiUrl} of {self.initalPage.url} \nHas {len(self.continuationTokens)} Continuation Tokens, Iterating Through Them...")
 
+
+        # Sets up test only debug data to catch errors with scraping
+        if cfg.testing:
+            debugData = []
+        else:
+            debugData = None
 
         while True:
             if len(self.continuationTokens) == 0:
@@ -62,7 +67,9 @@ class YtContIter:
                     f"This Means the Data Scraping Format Does Not Match The Data Found at The Url:\n"
                     f"{dataFmt}"
                 )
-                return None
+
+                dumpDebugData(debugData)
+                raise ScrapeError
 
             continuationToken = self.continuationTokens[0]
 
@@ -93,12 +100,8 @@ class YtContIter:
             data:dict = json.loads(b.text)
 
             try:
-                d = scrapeJsonTree(data, dataFmt)
-
-                if len(d) == 0:
-                    raise KeyError
-
-            except KeyError:
+                d = scrapeJsonTree(data, dataFmt, debugDataList=debugData)
+            except ScrapeError:
                 cfg.logger.debug(f"YtApiContIter, Removing Continuation Token for {self.apiUrl} of {self.initalPage.url} \nDoes Not Match Data Json Scraper")
                 self.continuationTokens.pop(0)
                 continue

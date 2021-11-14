@@ -101,9 +101,9 @@ def _videoDataFmt(titleTextKey: str, durationTextContainerKey: str):
          ScrapeNode("title", ScrapeNum.First,[
              ScrapeNode(titleTextKey, ScrapeNum.First,[], collapse=True)
          ]),
-         #ScrapeNode("longBylineText", ScrapeNum.First,[
-         #    ScrapeNode("canonicalBaseUrl", ScrapeNum.First,[], collapse=True)
-         #], rename = "channelUrlFragment")
+         ScrapeNode("longBylineText", ScrapeNum.First,[
+             ScrapeNode("canonicalBaseUrl", ScrapeNum.First,[], collapse=True)
+         ], rename = "channelUrlFragment")
     ]
 
 
@@ -171,9 +171,9 @@ videoInfoScrapeFmt = \
             ScrapeNode("simpleText", ScrapeNum.First,[], collapse=True),
         ], rename='date'),
 
-        #ScrapeNode("subscriberCountText", ScrapeNum.First,[
-        #    ScrapeNode("simpleText", ScrapeNum.All,[], collapse=True),
-        #], rename='subscribers'),
+        ScrapeNode("subscriberCountText", ScrapeNum.First,[
+            ScrapeNode("simpleText", ScrapeNum.All,[], collapse=True),
+        ], rename='subscribers'),
     ],collapse=True)
 
 

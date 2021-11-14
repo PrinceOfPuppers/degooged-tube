@@ -70,6 +70,9 @@ def checkOrdering(uploads):
 
 class test_SubBox(TestCase):
     subscribed = ['https://www.youtube.com/c/MattMcMuscles', 'https://www.youtube.com/channel/UC3ltptWa0xfrDweghW94Acg']
+
+    exception = None
+    # Cleans up exception Message
     subBox = SubBox.fromUrls(subscribed, [['gaming'], ['speedrunning']])
 
     def test_noOverlap(self):
@@ -194,6 +197,7 @@ class test_getFunctionsAndFmts(TestCase):
         try:
             getChannelInfo(self.channelUrl)
         except KeyError:
+            print("hello")
             self.fail("Scrape Json Tree Missed Key")
 
     def test_getCommentList(self):

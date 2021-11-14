@@ -4,6 +4,42 @@ from dataclasses import dataclass
 import json
 import degooged_tube.config as cfg
 
+class ScrapeError(Exception):
+    pass
+
+@dataclass
+class ScrapeJsonTreeDebugData:
+    requiredKeys: set
+    foundKeys: set
+    data: dict
+    oldKeyToNewKeyMap: dict
+
+def dumpDebugData(debugDataList: Union[list[ScrapeJsonTreeDebugData], None]):
+    if debugDataList is None:
+        if cfg.testing:
+            raise Exception("ScrapeJsonTreeDebugData is None While Testing")
+        return
+
+    for i,debugData in enumerate(debugDataList):
+        requiredKeys = debugData.requiredKeys
+        foundKeys = debugData.foundKeys
+        data = debugData.data
+        map = debugData.oldKeyToNewKeyMap
+        
+        with open(cfg.testDataDumpPath, 'w') as f:
+            f.write(f"\nData Number {i}:\n==================================================\n")
+            json.dump(data, f, indent=2)
+            missingKeys = [(f"{map[k]} " + (f"(renamed: {k})" if map[k] != k else "")) for k in requiredKeys if k not in foundKeys]
+            surplusKeys = [(f"{map[k]} " + (f"(renamed: {k})" if map[k] != k else "")) for k in foundKeys if k not in requiredKeys]
+
+            if len(missingKeys) > 0:
+                f.write('\n'+ f'Missing Keys: {missingKeys}')
+
+            if len(surplusKeys) > 0:
+                f.write('\n'+ f'Surplus Keys: {surplusKeys}')
+
+
+
 
 def scrapeJson(j, desiredKey: str, results:List):
     if isinstance(j,List):
@@ -183,7 +219,7 @@ def _scrapeJsonTree(j, base: ScrapeNode, result: Union[dict, list], keys: set[st
             _put(x, result, keys, putKey)
 
 
-def scrapeJsonTree(j, base: ScrapeNode, allowMissingKey:bool = False) -> Union[list,dict]:
+def scrapeJsonTree(j, base: ScrapeNode, allowMissingKey:bool = False, debugDataList:list[ScrapeJsonTreeDebugData] = None) -> Union[list,dict]:
     result = {}
     keys = set()
     _scrapeJsonTree(j, base, result, keys)
@@ -200,24 +236,18 @@ def scrapeJsonTree(j, base: ScrapeNode, allowMissingKey:bool = False) -> Union[l
 
         if keys != requiredKeys:
             cfg.logger.debug(f"Scraped Keys Not Equal To Required Keys \nScrapedKeys: {keys} \nRequired Keys: {requiredKeys}")
-            if cfg.testing:
-                with open(cfg.testDataDumpPath, 'w') as f:
-                    json.dump(j, f, indent=2)
-                    map = {}
-                    base.getOldKeyToNewKeyMap(map)
-                    missingKeys = [(f"{map[k]} " + (f"(renamed: {k})" if map[k] != k else "")) for k in requiredKeys if k not in keys]
-                    surplusKeys = [(f"{map[k]} " + (f"(renamed: {k})" if map[k] != k else "")) for k in keys if k not in requiredKeys]
+            
+            if debugDataList is not None:
+                map = {}
+                base.getOldKeyToNewKeyMap(map)
+                cfg.logger.debug(f"Adding ScrapeJsonTreeDebugData to debugDataList")
+                debugDataList.append(ScrapeJsonTreeDebugData(requiredKeys, keys, j, map))
 
-                    if len(missingKeys) > 0:
-                        f.write('\n'+ f'Missing Keys: {missingKeys}')
-
-                    if len(surplusKeys) > 0:
-                        f.write('\n'+ f'Surplus Keys: {surplusKeys}')
-
-            raise KeyError
+            raise ScrapeError(f"Scraped Keys Not Equal To Required Keys \nScrapedKeys: {keys} \nRequired Keys: {requiredKeys}")
 
 
     if base.collapse:
         return result[base.key]
 
     return result
+
