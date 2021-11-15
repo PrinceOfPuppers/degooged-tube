@@ -9,7 +9,6 @@ from . import controlPanel as ctrlp
 
 import degooged_tube.config as cfg
 
-
 @dataclass()
 class YtContIter:
     initalPage: YtInitalPage
@@ -115,3 +114,54 @@ class YtContIter:
                 self.continuationTokens = [x.group(1)]
 
             return d
+
+
+    def getNextRaw(self):
+        '''Follows all continuation paths and returns their raw data, used to develop scraper formats'''
+
+        # gets element that was sent on page load
+        if self.getInitData:
+            self.getInitData = False
+            cfg.logger.debug(f"Returning InitalData for {self.apiUrl} of {self.initalPage.url}")
+            return [self.initalPage.initalData]
+
+        if self.endOfData:
+            return None
+
+        returnData = []
+        newContinuationTokens = []
+        for continuationToken in self.continuationTokens:
+            requestData = ctrlp.apiContinuationBodyFmt.format(clientVersion = self.initalPage.clientVersion, continuationToken = continuationToken)
+            reqUrl = ctrlp.apiContinuationUrlFmt.format(apiUrl = self.apiUrl, key = self.initalPage.key)
+            b = requests.post(reqUrl, data=requestData)
+
+            if b.status_code != 200:
+                raise Exception(
+                    f"Error Sending Post Request to: {reqUrl}\n"
+                    f"clientVersion: {self.initalPage.clientVersion}\n"
+                    f"continuationToken: {continuationToken}\n"
+                    f"Status {b.status_code} {b.reason}\n"
+                    f"Request Data:\n"
+                    f"{requestData}"
+                )
+            else:
+                cfg.logger.debug(
+                    f"Sent Post Request to: {reqUrl} \n"
+                    f"clientVersion: {self.initalPage.clientVersion}\n"
+                    f"continuationToken: {continuationToken}\n"
+                    f"Status {b.status_code} {b.reason}"
+                )
+            
+            returnData.append(json.loads(b.text))
+
+            x = ctrlp.continuationTokenRe.search(b.text)
+            if x:
+                newContinuationTokens.append(x)
+
+
+        if len(newContinuationTokens) == 0:
+            cfg.logger.debug(f"Reached End of Continuation Chain, Yeilding Last Result")
+            self.endOfData = True
+
+        self.continuationTokens = newContinuationTokens
+        return returnData
