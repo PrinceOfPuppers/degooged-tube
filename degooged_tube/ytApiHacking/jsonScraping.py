@@ -219,41 +219,52 @@ def _scrapeJsonTree(j, base: ScrapeNode, result: Union[dict, list], keys: set[st
             _put(x, result, keys, putKey)
 
 
-def scrapeJsonTree(j, base: ScrapeNode, debugDataList:list[ScrapeJsonTreeDebugData] = None, percentRequiredKeys:float = None) -> Union[list,dict]:
-
+def scrapeJsonTree(j, fmt: Union[ScrapeNode, list[ScrapeNode]], debugDataList:list[ScrapeJsonTreeDebugData] = None, percentRequiredKeys:float = None) -> Union[list,dict]:
     # default value of percentRequiredKeys depends on if we are in debug mode, if so then we dont allow any missing keys so we can check the formatting
     if percentRequiredKeys is None:
         percentRequiredKeys = 0.5 if debugDataList is None else 1.0
 
-    result = {}
-    keys = set()
-    _scrapeJsonTree(j, base, result, keys)
+    if isinstance(fmt,list):
+        baseNodes = fmt
+    else:
+        baseNodes = [fmt]
 
-    if base.collapse:
-        try:
-            keys.remove(base.key)
-        except:
-            pass
+    result = []
+    keys = set()
+    requiredKeys = set()
+    map = {}
+    for base in baseNodes:
+        r = {}
+        _scrapeJsonTree(j, base, r, keys)
+        base.getKeys(requiredKeys)
+        base.getOldKeyToNewKeyMap(map)
+
+        if base.collapse:
+            result.append(r[base.key])
+            try:
+                keys.remove(base.key)
+            except:
+                pass
+        else:
+            result.append(r)
+
 
     if percentRequiredKeys != 0.0:
-        requiredKeys = set()
-        base.getKeys(requiredKeys)
         ratio = 1.0 if len(requiredKeys) == 0 else len(keys)/len(requiredKeys)
 
         if ratio < percentRequiredKeys:
             cfg.logger.debug(f"Too Many Required Keys Missing \nScrapedKeys: {keys} \nRequired Keys: {requiredKeys}")
             
             if debugDataList is not None:
-                map = {}
-                base.getOldKeyToNewKeyMap(map)
                 cfg.logger.debug(f"Adding ScrapeJsonTreeDebugData to debugDataList")
                 debugDataList.append(ScrapeJsonTreeDebugData(requiredKeys, keys, j, map))
 
             raise ScrapeError(f"Too Many Required Keys Missing \nScrapedKeys: {keys} \nRequired Keys: {requiredKeys}")
 
 
-    if base.collapse:
-        return result[base.key]
+    
+    if not isinstance(fmt, list):
+        return result[0]
 
     return result
 

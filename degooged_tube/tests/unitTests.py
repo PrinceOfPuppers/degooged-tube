@@ -265,6 +265,62 @@ class test_scrapeJsonTree(TestCase):
 
         self.assertEqual(answer, solution)
 
+    def test_handmade_13(self):
+        logName(self, inspect.currentframe())
+
+        uploadScrapeFmt = \
+                  ScrapeNode("colors", ScrapeNum.First,[])
+
+        solution = {"colors": ["purple", "green" ,"red" ]}
+
+        try:
+            answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt)
+        except KeyError:
+            self.fail("Scrape Json Tree Missed Key")
+
+        self.assertEqual(answer, solution)
+
+    def test_handmade_14(self):
+        logName(self, inspect.currentframe())
+
+        uploadScrapeFmt = \
+              [
+                  ScrapeNode("nested", ScrapeNum.First,[
+                          ScrapeNode("name", ScrapeNum.All,[], rename="names")
+                  ], collapse = True ),
+
+                  #ScrapeNode("colors", ScrapeNum.First,[]),
+              ]
+
+        solution = [ {"names" : ['partner', 'alice', 'bob', 'carol', 'dave']},  ]#{"colors": ["purple", "green" ,"red" ]} ]
+
+        try:
+            answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt)
+        except KeyError:
+            self.fail("Scrape Json Tree Missed Key")
+
+        self.assertEqual(answer, solution)
+
+    def test_handmade_15(self):
+        logName(self, inspect.currentframe())
+
+        uploadScrapeFmt = \
+              [
+                  ScrapeNode("nested", ScrapeNum.First,[
+                          ScrapeNode("name", ScrapeNum.All,[], rename="names")
+                  ], collapse = True ),
+
+                  ScrapeNode("colors", ScrapeNum.First,[]),
+              ]
+
+        solution = [ {"names" : ['partner', 'alice', 'bob', 'carol', 'dave']},  {"colors": ["purple", "green" ,"red" ]} ]
+
+        try:
+            answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt)
+        except KeyError:
+            self.fail("Scrape Json Tree Missed Key")
+
+        self.assertEqual(answer, solution)
 
     def test_example_1(self):
         logName(self, inspect.currentframe())

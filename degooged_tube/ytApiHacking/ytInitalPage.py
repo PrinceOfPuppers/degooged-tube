@@ -1,10 +1,12 @@
 import requests
 import json
 from dataclasses import dataclass
+from typing import Union
 
 from .jsonScraping import scrapeJsonTree, ScrapeNode, ScrapeError, dumpDebugData
 from . import controlPanel as ctrlp 
 from . import customExceptions as ce 
+
 
 import degooged_tube.config as cfg
 
@@ -74,7 +76,7 @@ class YtInitalPage:
                 f"In Inital Page: {self.url}\n"
             )
 
-    def scrapeInitalData(self, dataFmt: ScrapeNode):
+    def scrapeInitalData(self, dataFmt: Union[ScrapeNode, list[ScrapeNode]]):
         if cfg.testing:
             debugData = []
         else:

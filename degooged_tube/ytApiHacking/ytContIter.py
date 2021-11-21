@@ -36,7 +36,7 @@ class YtContIter:
         self.apiUrl = apiUrl.strip('/')
 
 
-    def getNext(self, dataFmt: ScrapeNode) -> Union[dict, list, None]:
+    def getNext(self, dataFmt: Union[ScrapeNode, list[ScrapeNode]]) -> Union[dict, list, None]:
         # gets element that was sent on page load
         if self.getInitData:
             self.getInitData = False

@@ -6,6 +6,7 @@ from . import controlPanel as ctrlp
 
 import degooged_tube.config as cfg
 
+from typing import Union
 
 class YtApiList:
     _list: list
@@ -17,20 +18,23 @@ class YtApiList:
     scrapeFmt: ScrapeNode
     onExtend: Callable
 
-    def __init__(self, initalPage: YtInitalPage, apiUrl: str, scrapeFmt: ScrapeNode, getInitalData: bool= False, onExtend: Callable = lambda res: res):
+    def __init__(self, initalPage: YtInitalPage, apiUrl: str, scrapeFmt: Union[ScrapeNode, list[ScrapeNode]], getInitalData: bool= False, onExtend: Callable = lambda res: res):
         self._list = []
 
         self.apiUrl = apiUrl
 
         self._iter = YtContIter(initalPage, apiUrl, getInitalData)
-        self._scrapeFmt = ScrapeNode(ctrlp.continuationPageDataContainerKey,ScrapeNum.Longest,[scrapeFmt], collapse = True)
+
+        scrapeList = scrapeFmt if isinstance(scrapeFmt, list) else [scrapeFmt]
+
+        self._scrapeFmt = ScrapeNode(ctrlp.continuationPageDataContainerKey,ScrapeNum.Longest, scrapeList , collapse = True)
 
         self.onExtend = onExtend
 
         if getInitalData:
             if initalPage.initalData is None:
                 raise Exception("No Inital Data To Get")
-            initScrapeFmt = ScrapeNode(ctrlp.initalPageDataContainerKey,ScrapeNum.Longest,[scrapeFmt], collapse = True)
+            initScrapeFmt = ScrapeNode(ctrlp.initalPageDataContainerKey, ScrapeNum.Longest, scrapeList, collapse = True)
             self._extend(initScrapeFmt)
 
     def _extend(self, fmt):

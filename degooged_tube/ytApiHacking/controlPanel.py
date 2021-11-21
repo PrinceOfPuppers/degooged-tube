@@ -112,22 +112,27 @@ def _uploadAndRelatedFmt(titleTextKey: str, durationTextContainerKey: str):
 ###############################
 
 channelInfoScrapeFmt = \
-    ScrapeNode("header", ScrapeNum.First,[
-        ScrapeNode("title", ScrapeNum.First,[], rename='name'),
-        ScrapeNode("canonicalBaseUrl", ScrapeNum.First,[], rename='baseUrl'),
-        ScrapeNode("avatar", ScrapeNum.First,[
-            ScrapeNode("thumbnails", ScrapeNum.All,[], collapse=True),
-        ]),
-        ScrapeNode("banner", ScrapeNum.First,[
-            ScrapeNode("thumbnails", ScrapeNum.All,[], collapse=True),
-        ], rename='banners'),
-        ScrapeNode("mobileBanner", ScrapeNum.First,[
-            ScrapeNode("thumbnails", ScrapeNum.All,[], collapse=True),
-        ], rename='mobileBanners'),
-        ScrapeNode("subscriberCountText", ScrapeNum.First,[
-            ScrapeNode("simpleText", ScrapeNum.All,[], collapse=True),
-        ], rename='subscribers'),
-    ],collapse=True)
+    [
+        ScrapeNode("header", ScrapeNum.First,[
+            ScrapeNode("title", ScrapeNum.First,[], rename='name'),
+            ScrapeNode("avatar", ScrapeNum.First,[
+                ScrapeNode("thumbnails", ScrapeNum.All,[], collapse=True),
+            ]),
+            ScrapeNode("banner", ScrapeNum.First,[
+                ScrapeNode("thumbnails", ScrapeNum.All,[], collapse=True),
+            ], rename='banners'),
+            ScrapeNode("mobileBanner", ScrapeNum.First,[
+                ScrapeNode("thumbnails", ScrapeNum.All,[], collapse=True),
+            ], rename='mobileBanners'),
+            ScrapeNode("subscriberCountText", ScrapeNum.First,[
+                ScrapeNode("simpleText", ScrapeNum.All,[], collapse=True),
+            ], rename='subscribers'),
+        ],collapse=True),
+
+        ScrapeNode("metadata", ScrapeNum.First, [
+            ScrapeNode("vanityChannelUrl", ScrapeNum.First,[], rename='channelUrl')
+        ], collapse = True),
+    ]
 
 
 channelUrlSanitizationSplits = ['?', '&', '/channels', '/channels', '/about', '/featured', '/videos']

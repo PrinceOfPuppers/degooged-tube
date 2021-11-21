@@ -15,7 +15,6 @@ def getUploadList(uploadsPage, onExtend = uploadsCallback):
     return YtApiList(uploadsPage, ctrlp.uploadsApiUrl, ctrlp.uploadScrapeFmt, getInitalData=True, onExtend = onExtend)
 
 
-
 def commentCallback(res):
     for i,comment in enumerate(res):
         res[i] = ''.join(comment)
@@ -45,7 +44,6 @@ def getChannelInfo(channelUrl: str):
     channelUrl = sanitizeChannelUrl(channelUrl)
     channelPage = YtInitalPage.fromUrl(channelUrl)
     data = channelPage.scrapeInitalData(ctrlp.channelInfoScrapeFmt)
-    assert type(data) is dict
     return data
 
 def sanitizeChannelUrl(channelUrl: str, path:str = ''):
