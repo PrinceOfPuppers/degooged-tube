@@ -219,7 +219,12 @@ def _scrapeJsonTree(j, base: ScrapeNode, result: Union[dict, list], keys: set[st
             _put(x, result, keys, putKey)
 
 
-def scrapeJsonTree(j, base: ScrapeNode, allowMissingKey:bool = False, debugDataList:list[ScrapeJsonTreeDebugData] = None) -> Union[list,dict]:
+def scrapeJsonTree(j, base: ScrapeNode, debugDataList:list[ScrapeJsonTreeDebugData] = None, percentRequiredKeys:float = None) -> Union[list,dict]:
+
+    # default value of percentRequiredKeys depends on if we are in debug mode, if so then we dont allow any missing keys so we can check the formatting
+    if percentRequiredKeys is None:
+        percentRequiredKeys = 0.5 if debugDataList is None else 1.0
+
     result = {}
     keys = set()
     _scrapeJsonTree(j, base, result, keys)
@@ -230,12 +235,13 @@ def scrapeJsonTree(j, base: ScrapeNode, allowMissingKey:bool = False, debugDataL
         except:
             pass
 
-    if not allowMissingKey:
+    if percentRequiredKeys != 0.0:
         requiredKeys = set()
         base.getKeys(requiredKeys)
+        ratio = 1.0 if len(requiredKeys) == 0 else len(keys)/len(requiredKeys)
 
-        if keys != requiredKeys:
-            cfg.logger.debug(f"Scraped Keys Not Equal To Required Keys \nScrapedKeys: {keys} \nRequired Keys: {requiredKeys}")
+        if ratio < percentRequiredKeys:
+            cfg.logger.debug(f"Too Many Required Keys Missing \nScrapedKeys: {keys} \nRequired Keys: {requiredKeys}")
             
             if debugDataList is not None:
                 map = {}
@@ -243,7 +249,7 @@ def scrapeJsonTree(j, base: ScrapeNode, allowMissingKey:bool = False, debugDataL
                 cfg.logger.debug(f"Adding ScrapeJsonTreeDebugData to debugDataList")
                 debugDataList.append(ScrapeJsonTreeDebugData(requiredKeys, keys, j, map))
 
-            raise ScrapeError(f"Scraped Keys Not Equal To Required Keys \nScrapedKeys: {keys} \nRequired Keys: {requiredKeys}")
+            raise ScrapeError(f"Too Many Required Keys Missing \nScrapedKeys: {keys} \nRequired Keys: {requiredKeys}")
 
 
     if base.collapse:

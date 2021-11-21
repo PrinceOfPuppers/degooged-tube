@@ -80,11 +80,11 @@ initalPageDataContainerKey = "tabs"
 
 
 # some stuff shares scraper formats, such as uploads and recommended videos, so we create wrappers for them
-def _videoDataFmt(titleTextKey: str, durationTextContainerKey: str):
+def _uploadAndRelatedFmt(titleTextKey: str, durationTextContainerKey: str):
     return [
         ScrapeNode("videoId", ScrapeNum.First,[]),
 
-         #ScrapeNode("thumbnails", ScrapeNum.All,[]),
+         ScrapeNode("thumbnails", ScrapeNum.All,[]),
 
          ScrapeNode("publishedTimeText", ScrapeNum.First,[
              ScrapeNode("simpleText", ScrapeNum.First,[], collapse=True)
@@ -101,9 +101,7 @@ def _videoDataFmt(titleTextKey: str, durationTextContainerKey: str):
          ScrapeNode("title", ScrapeNum.First,[
              ScrapeNode(titleTextKey, ScrapeNum.First,[], collapse=True)
          ]),
-         ScrapeNode("longBylineText", ScrapeNum.First,[
-             ScrapeNode("canonicalBaseUrl", ScrapeNum.First,[], collapse=True)
-         ], rename = "channelUrlFragment")
+         ScrapeNode("canonicalBaseUrl", ScrapeNum.First,[], collapse=True, rename="channelUrlFragment")
     ]
 
 
@@ -148,9 +146,9 @@ videoInfoScrapeFmt = \
                         ScrapeNode("simpleText", ScrapeNum.First,[],collapse=True)
                     ],),
             ], collapse = True),
-            ScrapeNode("sentimentBar", ScrapeNum.First,[
-                ScrapeNode("tooltip", ScrapeNum.First,[], collapse=True)
-            ],rename="likeDislike"),
+            #ScrapeNode("sentimentBar", ScrapeNum.First,[
+            #    ScrapeNode("tooltip", ScrapeNum.First,[], collapse=True)
+            #],rename="likeDislike"),
         ]),
 
         ScrapeNode("videoSecondaryInfoRenderer", ScrapeNum.First,[
@@ -193,9 +191,7 @@ videoInfoScrapeFmt = \
 # >Uploads< #
 uploadsApiUrl = '/youtubei/v1/browse'
 
-uploadScrapeFmt = ScrapeNode("gridVideoRenderer", ScrapeNum.All, _videoDataFmt("text", "thumbnailOverlayTimeStatusRenderer"), collapse = True)
-
-
+uploadScrapeFmt = ScrapeNode("gridVideoRenderer", ScrapeNum.All, _uploadAndRelatedFmt("text", "thumbnailOverlayTimeStatusRenderer"), collapse = True)
 
 # >Comments< #
 commentsApiUrl = '/youtubei/v1/next'
@@ -212,5 +208,5 @@ commentScrapeFmt = \
 # >RelatedVideos< #
 relatedVideosApiUrl = '/youtubei/v1/next'
 
-relatedVideosScrapeFmt = ScrapeNode("compactVideoRenderer", ScrapeNum.All, _videoDataFmt("simpleText", "lengthText"), collapse = True)
+relatedVideosScrapeFmt = ScrapeNode("compactVideoRenderer", ScrapeNum.All, _uploadAndRelatedFmt("simpleText", "lengthText"), collapse = True)
 

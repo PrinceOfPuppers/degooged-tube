@@ -44,7 +44,7 @@ class YtInitalPage:
         initalData = json.loads(y.group(1))
         clientVersion = z.group(1)
 
-        a = scrapeJsonTree(initalData, ctrlp.continuationScrapeFmt, True)
+        a = scrapeJsonTree(initalData, ctrlp.continuationScrapeFmt, percentRequiredKeys = 0.0)
 
         assert type(a) is list
         continuations = {}
@@ -74,14 +74,14 @@ class YtInitalPage:
                 f"In Inital Page: {self.url}\n"
             )
 
-    def scrapeInitalData(self, dataFmt: ScrapeNode, allowMissingKeys:bool = False):
+    def scrapeInitalData(self, dataFmt: ScrapeNode):
         if cfg.testing:
             debugData = []
         else:
             debugData = None
 
         try:
-            return scrapeJsonTree(self.initalData, dataFmt, allowMissingKey = allowMissingKeys, debugDataList= debugData)
+            return scrapeJsonTree(self.initalData, dataFmt, debugDataList= debugData)
         except ScrapeError:
             dumpDebugData(debugData)
             raise
