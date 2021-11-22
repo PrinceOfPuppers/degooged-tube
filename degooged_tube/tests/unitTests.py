@@ -284,15 +284,19 @@ class test_scrapeJsonTree(TestCase):
         logName(self, inspect.currentframe())
 
         uploadScrapeFmt = \
-              [
-                  ScrapeNode("nested", ScrapeNum.First,[
-                          ScrapeNode("name", ScrapeNum.All,[], rename="names")
-                  ], collapse = True ),
+              ScrapeNode("greetings", ScrapeNum.Longest,[
+                  ScrapeNode("hi", ScrapeNum.First,[]),
+              ], collapse = True)
 
-                  #ScrapeNode("colors", ScrapeNum.First,[]),
-              ]
-
-        solution = [ {"names" : ['partner', 'alice', 'bob', 'carol', 'dave']},  ]#{"colors": ["purple", "green" ,"red" ]} ]
+        solution = \
+            {
+                "hi" : [
+                    { "name": "alice", "favColor": "blue", "coolness": "megaRad"},
+                    { "name": "bob", "favColor": "green", "coolness": 11 },
+                    { "name": "carol", "favColor": "purple", "coolness": ["super", "duper", "cool"] },
+                    { "name": "dave", "favColor": "purple" }
+                ]
+            }
 
         try:
             answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt)
@@ -319,6 +323,21 @@ class test_scrapeJsonTree(TestCase):
             answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt)
         except KeyError:
             self.fail("Scrape Json Tree Missed Key")
+
+        self.assertEqual(answer, solution)
+
+    def test_handmade_16(self):
+        logName(self, inspect.currentframe())
+
+        uploadScrapeFmt = \
+                  ScrapeNode("beverages", ScrapeNum.Longest,[
+                          ScrapeNode("coffee", ScrapeNum.First,[], rename = "Bean Juice"),
+                          ScrapeNode("kvass", ScrapeNum.First,[], rename ="Bread Blessing")
+                  ], collapse = True )
+
+        solution = {"Bean Juice": "omegaGood", "Bread Blessing": "megaGood"}
+
+        answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt)
 
         self.assertEqual(answer, solution)
 

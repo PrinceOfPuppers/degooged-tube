@@ -3,7 +3,7 @@ import inspect
 
 import degooged_tube.config as cfg
 from degooged_tube.subbox import SubBox, listsOverlap
-from degooged_tube.ytApiHacking import sanitizeChannelUrl, getChannelInfo, getCommentList, getRelatedVideoList, getUploadList, getVideoInfo, YtInitalPage
+from degooged_tube.ytApiHacking import sanitizeChannelUrl, getChannelInfo, getCommentList, getRelatedVideoList, getUploadList, getVideoInfo, YtInitalPage, getSearchList
 import degooged_tube.ytApiHacking.controlPanel as ctrlp
 from .unitTests import logName
 
@@ -194,45 +194,40 @@ class test_getFunctionsAndFmts(TestCase):
 
     def test_getChannelInfo(self):
         logName(self, inspect.currentframe())
-        try:
-            getChannelInfo(self.channelUrl)
-        except KeyError:
-            print("hello")
-            self.fail("Scrape Json Tree Missed Key")
+
+        _ = getChannelInfo(self.channelUrl)
 
     def test_getCommentList(self):
         logName(self, inspect.currentframe())
         page = YtInitalPage.fromUrl(self.videoUrl)
-        try:
-            commentList = getCommentList(page, onExtend = nothingCallback)
-            _ = commentList[0]
-        except KeyError:
-            self.fail("Scrape Json Tree Missed Key")
+
+        commentList = getCommentList(page, onExtend = nothingCallback)
+        _ = commentList[0]
 
     def test_getRelatedVideoList(self):
         logName(self, inspect.currentframe())
         page = YtInitalPage.fromUrl(self.videoUrl)
-        try:
-            videoList = getRelatedVideoList(page)
-            _ = videoList[0]
-        except KeyError:
-            self.fail("Scrape Json Tree Missed Key")
+
+        videoList = getRelatedVideoList(page)
+        _ = videoList[0]
 
 
     def test_getUploadList(self):
         logName(self, inspect.currentframe())
         page = YtInitalPage.fromUrl(self.channelVideosUrl)
-        try:
-            uploadList = getUploadList(page, onExtend = nothingCallback)
-            _ = uploadList[0]
-        except KeyError:
-            self.fail("Scrape Json Tree Missed Key")
+
+        uploadList = getUploadList(page, onExtend = nothingCallback)
+        _ = uploadList[0]
 
     def test_getVideoInfo(self):
         logName(self, inspect.currentframe())
         page = YtInitalPage.fromUrl(self.videoUrl)
-        try:
-            _ = getVideoInfo(page)
-        except KeyError:
-            self.fail("Scrape Json Tree Missed Key")
+
+        _ = getVideoInfo(page)
+
+    def test_search(self):
+        logName(self, inspect.currentframe())
+
+        searchList = getSearchList("test")
+        searchList[0]
 

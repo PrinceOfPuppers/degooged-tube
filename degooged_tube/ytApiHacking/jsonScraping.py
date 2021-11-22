@@ -263,7 +263,6 @@ def scrapeJsonTree(j, fmt: Union[ScrapeNode, list[ScrapeNode]], debugDataList:li
             raise ScrapeError(f"Too Many Required Keys Missing \nScrapedKeys: {keys} \nRequired Keys: {requiredKeys}")
 
 
-    
     if not isinstance(fmt, list):
         return result[0]
 

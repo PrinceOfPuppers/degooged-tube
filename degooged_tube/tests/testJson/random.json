@@ -39,5 +39,20 @@
         "purple",
         "green",
         "red"
-    ]
+    ],
+
+    "small":{
+        "beverages":{
+            "hello": "boio"
+        }
+    },
+
+    "container": {
+        "beverages": {
+            "genmaicha": "good",
+            "kvass":     "megaGood",
+            "coffee":    "omegaGood"
+        }
+    }
+
 }

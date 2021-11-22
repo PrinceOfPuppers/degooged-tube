@@ -2,19 +2,26 @@ from .ytContIter import YtInitalPage
 from . import controlPanel as ctrlp 
 from .ytApiList import YtApiList
 from .customExceptions import UnableToGetUploadTime
+from urllib.parse import quote_plus
 import time
 
 currentTime = int(time.time())
 
+
+
+# uploads
 def uploadsCallback(res):
     for r in res:
-        r['unixTime'] = approxTimeToUnix(currentTime, r['uploaded on'])
+        r['unixTime'] = approxTimeToUnix(currentTime, r['uploadedOn'])
     return res
 
 def getUploadList(uploadsPage, onExtend = uploadsCallback):
     return YtApiList(uploadsPage, ctrlp.uploadsApiUrl, ctrlp.uploadScrapeFmt, getInitalData=True, onExtend = onExtend)
 
 
+
+
+# comments
 def commentCallback(res):
     for i,comment in enumerate(res):
         res[i] = ''.join(comment)
@@ -26,6 +33,8 @@ def getCommentList(videoPage: YtInitalPage, onExtend = commentCallback):
 
 
 
+
+# video Info
 def processVideoInfo(info):
     # Todo join description
     return info
@@ -36,11 +45,13 @@ def getVideoInfo(videoPage: YtInitalPage):
 
 
 
-
+# related videos
 def getRelatedVideoList(videoPage):
     return YtApiList(videoPage, ctrlp.relatedVideosApiUrl, ctrlp.relatedVideosScrapeFmt)
 
 
+
+# Channel Info
 def getChannelInfoFromInitalPage(channelPage):
     data = channelPage.scrapeInitalData(ctrlp.channelInfoScrapeFmt)
 
@@ -61,6 +72,18 @@ def getChannelInfo(channelUrl):
     channelUrl = sanitizeChannelUrl(channelUrl)
     channelPage = YtInitalPage.fromUrl(channelUrl)
     return getChannelInfoFromInitalPage(channelPage)
+
+
+
+# Search
+def searchCallback(res):
+    return res
+
+def getSearchList(term, onExtend = searchCallback):
+    url = ctrlp.searchUrl + quote_plus(term)
+    searchInitalPage = YtInitalPage.fromUrl(url)
+    return YtApiList(searchInitalPage, ctrlp.searchApiUrl, ctrlp.searchScrapeFmt, getInitalData = True, onExtend = onExtend)
+
 
 
 def sanitizeChannelUrl(channelUrl: str, path:str = ''):
@@ -85,4 +108,3 @@ def approxTimeToUnix(currentTime:int, approxTime: str)->int:
         raise UnableToGetUploadTime(f"Error When Processing Time String: {approxTime}")
 
     return currentTime - number*ctrlp.ytTimeConversion[delineation]
-

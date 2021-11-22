@@ -71,9 +71,9 @@ apiContinuationBodyFmt = '''{{
 }}'''
 
 
-# subsequent scraping formats will be wrapped by scraper nodes with these keys
+# subsequent scraping formats will be wrapped by scraper nodes with these keys (unless specified otherwise)
 continuationPageDataContainerKey = "continuationItems"
-initalPageDataContainerKey = "tabs"
+initalPageDataContainerKey = "contents"
 
 
 
@@ -88,7 +88,7 @@ def _uploadAndRelatedFmt(titleTextKey: str, durationTextContainerKey: str):
 
          ScrapeNode("publishedTimeText", ScrapeNum.First,[
              ScrapeNode("simpleText", ScrapeNum.First,[], collapse=True)
-         ], rename = "uploaded on"),
+         ], rename = "uploadedOn"),
 
          ScrapeNode("viewCountText", ScrapeNum.First,[
              ScrapeNode("simpleText", ScrapeNum.First,[], collapse=True)
@@ -217,3 +217,43 @@ relatedVideosApiUrl = '/youtubei/v1/next'
 
 relatedVideosScrapeFmt = ScrapeNode("compactVideoRenderer", ScrapeNum.All, _uploadAndRelatedFmt("simpleText", "lengthText"), collapse = True)
 
+
+
+# >Search< #
+searchUrl = "https://www.youtube.com/results?search_query="
+searchApiUrl = '/youtubei/v1/search'
+
+searchScrapeFmt = \
+        ScrapeNode("twoColumnSearchResultsRenderer", ScrapeNum.First,[
+            ScrapeNode("itemSectionRenderer", ScrapeNum.First,[
+                ScrapeNode("videoRenderer", ScrapeNum.All,[
+                    ScrapeNode("title", ScrapeNum.First,[
+                        ScrapeNode("text", ScrapeNum.First,[],collapse=True)
+                    ]),
+
+                    ScrapeNode("longBylineText", ScrapeNum.First,[
+                        ScrapeNode("text", ScrapeNum.First, [],  collapse=True),
+                    ], rename= "name"),
+
+                    ScrapeNode("longBylineText", ScrapeNum.First,[
+                        ScrapeNode("canonicalBaseUrl", ScrapeNum.First, [], collapse=True)
+                    ],rename="channelUrlFragment"),
+
+                    ScrapeNode("videoId", ScrapeNum.First,[]),
+
+                    ScrapeNode("thumbnails", ScrapeNum.First,[]),
+
+                    ScrapeNode("viewCountText", ScrapeNum.First,[
+                        ScrapeNode("simpleText", ScrapeNum.First,[],collapse=True)
+                    ], rename="views"),
+
+                    ScrapeNode("lengthText", ScrapeNum.First,[
+                        ScrapeNode("simpleText", ScrapeNum.First,[],collapse=True)
+                    ], rename="duration"),
+
+                    ScrapeNode("publishedTimeText", ScrapeNum.First,[
+                        ScrapeNode("simpleText", ScrapeNum.First,[],collapse=True)
+                    ], rename="uploadedOn"),
+                ], collapse = True)
+            ], collapse = True)
+        ], collapse= True)

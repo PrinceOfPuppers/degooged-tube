@@ -18,8 +18,6 @@ def listsOverlap(l1, l2):
 
 @dataclass
 class SubBoxChannel:
-    name: str
-
     scrapedData:dict
 
     uploadList: ytapih.YtApiList
@@ -30,14 +28,12 @@ class SubBoxChannel:
     @classmethod
     def fromInitalPage(cls, initalPage: ytapih.YtInitalPage, channelTags:list[str]) -> 'SubBoxChannel':
         d = ytapih.getChannelInfoFromInitalPage(initalPage)
-        name = d['name']
-
         scrapedData = d
 
         uploadList = ytapih.getUploadList(initalPage)
         channelUrl = d['channelUrl']
 
-        return cls(name, scrapedData, uploadList, channelUrl, 0, channelTags)
+        return cls(scrapedData, uploadList, channelUrl, 0, channelTags)
 
     @classmethod
     def fromUrl(cls, url: str, channelTags:list[str]) -> 'SubBoxChannel':
