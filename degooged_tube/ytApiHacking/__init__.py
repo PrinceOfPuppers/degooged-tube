@@ -40,19 +40,39 @@ def getVideoInfo(videoPage: YtInitalPage):
 def getRelatedVideoList(videoPage):
     return YtApiList(videoPage, ctrlp.relatedVideosApiUrl, ctrlp.relatedVideosScrapeFmt)
 
-def getChannelInfo(channelUrl: str):
+
+def getChannelInfoFromInitalPage(channelPage):
+    data = channelPage.scrapeInitalData(ctrlp.channelInfoScrapeFmt)
+
+    if len(data) != 2:
+        raise Exception("Update GetChannelInfoFromInitalPage")
+
+    resultIndex = 0 if list(data[0].keys())[0] != 'metadata' else 1
+
+    result = data[resultIndex]
+    metadata = data[(resultIndex+1)%2]['metadata']
+
+    result['channelUrl'] = sanitizeChannelUrl(metadata['channelUrl'])
+    result['description'] = metadata['description']
+
+    return result
+
+def getChannelInfo(channelUrl):
     channelUrl = sanitizeChannelUrl(channelUrl)
     channelPage = YtInitalPage.fromUrl(channelUrl)
-    data = channelPage.scrapeInitalData(ctrlp.channelInfoScrapeFmt)
-    return data
+    return getChannelInfoFromInitalPage(channelPage)
+
 
 def sanitizeChannelUrl(channelUrl: str, path:str = ''):
     channelUrl = channelUrl.strip(' ')
 
-    for splitStr in ctrlp.channelUrlSanitizationSplits:
+    for splitStr in ctrlp.channelUrlSanitizationSplitsPostfix:
         channelUrl = channelUrl.split(splitStr,1)[0]
 
-    return channelUrl + path
+    for splitStr in ctrlp.channelUrlSanitizationSplitsPrefix:
+        channelUrl = channelUrl.split(splitStr,1)[-1]
+
+    return "https" + channelUrl + path
 
 def approxTimeToUnix(currentTime:int, approxTime: str)->int:
     matches = ctrlp.approxTimeRe.search(approxTime)

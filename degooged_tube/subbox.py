@@ -18,10 +18,31 @@ def listsOverlap(l1, l2):
 
 @dataclass
 class SubBoxChannel:
+    name: str
+
+    scrapedData:dict
+
     uploadList: ytapih.YtApiList
     channelUrl:  str
     extensionIndex: int
     tags: list[str]
+
+    @classmethod
+    def fromInitalPage(cls, initalPage: ytapih.YtInitalPage, channelTags:list[str]) -> 'SubBoxChannel':
+        d = ytapih.getChannelInfoFromInitalPage(initalPage)
+        name = d['name']
+
+        scrapedData = d
+
+        uploadList = ytapih.getUploadList(initalPage)
+        channelUrl = d['channelUrl']
+
+        return cls(name, scrapedData, uploadList, channelUrl, 0, channelTags)
+
+    @classmethod
+    def fromUrl(cls, url: str, channelTags:list[str]) -> 'SubBoxChannel':
+        initalPage = ytapih.YtInitalPage.fromUrl( ytapih.sanitizeChannelUrl(url, ytapih.ctrlp.channelVideoPath) )
+        return cls.fromInitalPage(initalPage, channelTags)
 
 
 class SubBox:
@@ -34,22 +55,13 @@ class SubBox:
     prevOrdering: list[str]
     
 
-    def __init__(self, uploadLists: list[ytapih.YtApiList], channelUrls: list[str], channelTags: Union[list[list[str]],None], prevOrdering: list):
+    def __init__(self, subBoxChannels: list[SubBoxChannel], prevOrdering: list):
+        self.channels = subBoxChannels
 
-        if len(uploadLists) != len(channelUrls):
-            raise Exception("Upload Lists and Channel Urls must be Same Length")
-
-        self.channels = []
         self.channelDict = {}
-        for i in range(len(uploadLists)):
-            self.channelDict.values()
-            tags = channelTags[i] if channelTags is not None else list()
-            channel = \
-                SubBoxChannel(
-                    uploadLists[i], channelUrls[i], 0, tags
-                )
-            self.channels.append(channel)
-            self.channelDict[channelUrls[i]] = channel
+
+        for channel in self.channels:
+            self.channelDict[channel.channelUrl] = channel
 
         self.orderedUploads = []
 
@@ -57,23 +69,45 @@ class SubBox:
 
         if prevOrdering != []:
             raise NotImplementedError
+
         self.prevOrdering = prevOrdering
 
 
     @classmethod
-    def fromInitalPages(cls, initalPages: list[ytapih.YtInitalPage], channelTags = None, prevOrdering:list = list()) -> 'SubBox':
+    def fromInitalPages(cls, initalPages: list[ytapih.YtInitalPage], channelTags:list[list[str]] = None, prevOrdering:list = list()) -> 'SubBox':
+        cfg.logger.debug(f"Creating SubBox From InitalPages")
 
-        uploadLists = [ytapih.getUploadList(initalPage) for initalPage in initalPages]
-        channelUrls = [initalPage.url for initalPage in initalPages]
-        cfg.logger.debug(f"Creating SubBox With the following Channels:\n{channelUrls}")
+        if channelTags is not None:
+            assert len(initalPages) == len(channelTags)
 
-        return cls(uploadLists, channelUrls, channelTags, prevOrdering)
+        channels = []
+        for i, initalPage in enumerate(initalPages):
+            channels.append(
+                SubBoxChannel.fromInitalPage(
+                    initalPage, 
+                    list() if channelTags is None else channelTags[i]
+                )
+            )
+
+        return cls(channels, prevOrdering)
 
 
     @classmethod
     def fromUrls(cls, urls: list[str], channelTags = None, prevOrdering:list = list()) -> 'SubBox':
-        uploadLists = [ ytapih.getUploadList( ytapih.YtInitalPage.fromUrl( ytapih.sanitizeChannelUrl(url, ytapih.ctrlp.channelVideoPath) ) ) for url in urls ]
-        return cls(uploadLists, urls, channelTags, prevOrdering)
+        cfg.logger.debug(f"Creating SubBox From Urls:\n{urls}")
+        if channelTags is not None:
+            assert len(urls) == len(channelTags)
+
+        channels = []
+        for i, url in enumerate(urls):
+            channels.append(
+                SubBoxChannel.fromUrl(
+                    url, 
+                    list() if channelTags is None else channelTags[i]
+                )
+            )
+
+        return cls(channels, prevOrdering)
 
 
     def _getNextChannelWithMoreUploads(self, startIndex: int):
@@ -199,31 +233,17 @@ class SubBox:
         return self.getUploads(limit, offset, tags)
 
     def addChannelFromInitalPage(self, initalPage: ytapih.YtInitalPage, tags: list[str] = list()):
-        cfg.logger.debug(f"Adding new Channel to SubBox {initalPage.url}")
-        channelUploadList = ytapih.getUploadList(initalPage)
+        channel = SubBoxChannel.fromInitalPage(initalPage, tags)
+        cfg.logger.debug(f"Adding new Channel to SubBox {channel.channelUrl}")
 
-        # heuristic to see if already subscribed (we dont have a channel id)
-        # note we check multiple recent videos because channel may have uploaded new videos since last refresh
-        for i in range(0,2):
-            try:
-                newChannelVideo = channelUploadList[i]
-            except IndexError:
-                pass
-            else:
-                for channel in self.channels:
-                    try:
-                        oldChannelVideo = channel.uploadList[0]
-                    except IndexError:
-                        continue
-                    else:
-                        if newChannelVideo == oldChannelVideo:
-                            raise AlreadySubscribed()
+        if channel.channelUrl in self.channelDict.keys():
+            raise AlreadySubscribed()
 
         channelUploadIndex = 0
 
         orderedUploadIndex = 0
         while orderedUploadIndex < len(self.orderedUploads):
-            c1Upload = channelUploadList[channelUploadIndex]
+            c1Upload = channel.uploadList[channelUploadIndex]
             orderedUpload = self.orderedUploads[orderedUploadIndex]
 
             if c1Upload['unixTime'] >= orderedUpload['unixTime']:
@@ -232,24 +252,25 @@ class SubBox:
                     f"New Insert Id : {c1Upload['videoId']} Unix Time: {c1Upload['unixTime']} Title: {c1Upload['title']}\n"
                     f"Pushed Back Id: {orderedUpload['videoId']} Unix Time: {orderedUpload['unixTime']} Title: {orderedUpload['title']}"
                 )
-                self._insertUpload(orderedUploadIndex, c1Upload,initalPage.url)
+                self._insertUpload(orderedUploadIndex, c1Upload, channel.channelUrl)
                 channelUploadIndex+=1
 
             orderedUploadIndex+=1
 
-        channel = SubBoxChannel(channelUploadList, initalPage.url, channelUploadIndex, tags)
         self.channels.append(
             channel
         )
-        self.channelDict[initalPage.url] = channel
+        self.channelDict[channel.channelUrl] = channel
 
     def addChannelFromUrl(self, url: str, tags: list[str] = list()):
         url = ytapih.sanitizeChannelUrl(url, ytapih.ctrlp.channelVideoPath)
-        for channel in self.channels:
-            if url == channel.channelUrl:
-                cfg.logger.error(f"url: {url} Already exists in SubBox Urls:\n{[channel.channelUrl for channel in self.channels]}")
-                raise AlreadySubscribed()
+
+        if url in self.channelDict.keys():
+            cfg.logger.error(f"url: {url} Already exists in SubBox Urls:\n{[channel.channelUrl for channel in self.channels]}")
+            raise AlreadySubscribed()
+
         self.addChannelFromInitalPage(ytapih.YtInitalPage.fromUrl(url), tags)
+
 
     def removeChannel(self, channelIndex: int):
         channelUrl = self.channels[channelIndex].channelUrl
@@ -264,14 +285,16 @@ class SubBox:
 
             self.orderedUploads.pop(i)
 
+        self.channelDict.pop(self.channels[channelIndex].channelUrl)
         self.channels.pop(channelIndex)
 
     def getChannelIndex(self, channelUrl: str):
-        channelUrl = ytapih.sanitizeChannelUrl(channelUrl, ytapih.ctrlp.channelVideoPath)
+        channelUrl = ytapih.sanitizeChannelUrl(channelUrl)
         for channelIndex in range(len(self.channels)):
             channel = self.channels[channelIndex]
             if channel.channelUrl == channelUrl:
                 return channelIndex
+        cfg.logger.debug(f"Channel Urls: {[key for key in self.channelDict.keys()]}")
         raise KeyError(f"No Channel with Channel URL: {channelUrl}")
 
 

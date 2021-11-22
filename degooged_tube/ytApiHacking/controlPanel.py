@@ -127,15 +127,17 @@ channelInfoScrapeFmt = \
             ScrapeNode("subscriberCountText", ScrapeNum.First,[
                 ScrapeNode("simpleText", ScrapeNum.All,[], collapse=True),
             ], rename='subscribers'),
-        ],collapse=True),
+        ], collapse= True),
 
         ScrapeNode("metadata", ScrapeNum.First, [
-            ScrapeNode("vanityChannelUrl", ScrapeNum.First,[], rename='channelUrl')
-        ], collapse = True),
+            ScrapeNode("vanityChannelUrl", ScrapeNum.First,[], rename='channelUrl'),
+            ScrapeNode("description", ScrapeNum.First,[]),
+        ]),
     ]
 
 
-channelUrlSanitizationSplits = ['?', '&', '/channels', '/channels', '/about', '/featured', '/videos']
+channelUrlSanitizationSplitsPostfix = ['?', '&', '/channels', '/channels', '/about', '/featured', '/videos']
+channelUrlSanitizationSplitsPrefix = ['https', 'http']
 
 
 videoInfoScrapeFmt = \

@@ -115,7 +115,7 @@ class test_SubBox(TestCase):
         numExtensionBeforeFail = 3
 
         newChannelUrl = 'https://www.youtube.com/c/GamersNexus'
-        sanitizedChannelUrl = sanitizeChannelUrl(newChannelUrl, ctrlp.channelVideoPath)
+        sanitizedChannelUrl = sanitizeChannelUrl(newChannelUrl)
 
         for _ in range(numExtensionBeforeFail):
             initalUploads = getUploads(pageSize, numPages, self.subBox)
