@@ -239,14 +239,15 @@ def scrapeJsonTree(j, fmt: Union[ScrapeNode, list[ScrapeNode]], debugDataList:li
         base.getKeys(requiredKeys)
         base.getOldKeyToNewKeyMap(map)
 
-        if base.collapse:
-            result.append(r[base.key])
-            try:
-                keys.remove(base.key)
-            except:
-                pass
-        else:
-            result.append(r)
+        if len(r) > 0:
+            if base.collapse:
+                result.append(r[base.key])
+                try:
+                    keys.remove(base.key)
+                except:
+                    pass
+            else:
+                result.append(r)
 
 
     if percentRequiredKeys != 0.0:

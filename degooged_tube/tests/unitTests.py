@@ -2,17 +2,17 @@ from unittest import TestCase
 import inspect
 import json
 import degooged_tube.config as cfg
-from degooged_tube.ytApiHacking.jsonScraping import scrapeJsonTree, ScrapeNode, ScrapeNum
+from degooged_tube.ytApiHacking.jsonScraping import scrapeJsonTree, ScrapeNode, ScrapeNum, ScrapeError
 
 def logName(testInstance, frame):
     assert frame is not None
     name = frame.f_code.co_name
     cfg.logger.info(f"Running {testInstance.__class__.__name__}: {name}")
 
-def test_scrapeJsonTreeHelper(jsonName, fmt):
+def test_scrapeJsonTreeHelper(jsonName, fmt, percentRequiredKeys = None):
     with open(f"{cfg.testJsonPath}/{jsonName}") as  f:
         j = json.load(f)
-        return scrapeJsonTree(j, fmt)
+        return scrapeJsonTree(j, fmt, percentRequiredKeys = percentRequiredKeys)
 
 class test_scrapeJsonTree(TestCase):
     def test_handmade_1(self):
@@ -321,6 +321,36 @@ class test_scrapeJsonTree(TestCase):
             self.fail("Scrape Json Tree Missed Key")
 
         self.assertEqual(answer, solution)
+
+    def test_someMissing_1(self):
+        logName(self, inspect.currentframe())
+
+        uploadScrapeFmt = \
+              [
+                  ScrapeNode("nested", ScrapeNum.First,[
+                          ScrapeNode("name", ScrapeNum.All,[], rename="names")
+                  ], collapse = True ),
+
+                  ScrapeNode("colors", ScrapeNum.First,[]),
+
+                  ScrapeNode("should_be_missing", ScrapeNum.First,[])
+              ]
+
+        try:
+            _ = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt, 1.0)
+        except ScrapeError:
+            pass
+        else:
+            self.fail("ScrapeJsonTree Should have Raised Excpetion")
+
+        try:
+            answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt, 0.5)
+        except ScrapeError:
+            self.fail("ScrapeJsonTree Should Not Have Raised Excpetion")
+
+        solution = [ {"names" : ['partner', 'alice', 'bob', 'carol', 'dave']},  {"colors": ["purple", "green" ,"red" ]} ]
+        self.assertEqual(answer, solution)
+
 
     def test_example_1(self):
         logName(self, inspect.currentframe())
