@@ -30,8 +30,8 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     include_package_data=True,
     install_requires=['requests',
-        # 'youtube-dl', 
-        # 'mpv'
+        'yt-dlp', 
+        'python-mpv'
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
