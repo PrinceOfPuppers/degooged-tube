@@ -79,11 +79,32 @@ def getChannelInfo(channelUrl):
 def searchCallback(res):
     return res
 
-def getSearchList(term, onExtend = searchCallback):
-    url = ctrlp.searchUrl + quote_plus(term)
-    searchInitalPage = YtInitalPage.fromUrl(url)
-    return YtApiList(searchInitalPage, ctrlp.searchApiUrl, ctrlp.searchScrapeFmt, getInitalData = True, onExtend = onExtend)
+def processFilterData(res):
+    result = {}
 
+    for filterSet in res:
+        x = {}
+        searchType = filterSet['searchType']
+        filters = filterSet['filters']
+        for filter in filters:
+
+            try:
+                label = filter['label']
+                searchUrlFragment = filter['searchUrlFragment']
+            except KeyError:
+                continue
+
+            x[label] = searchUrlFragment
+        result[searchType] = x
+
+    return result
+
+def getSearchList(term, onExtend = searchCallback, processData = processFilterData):
+    url = ctrlp.searchUrl + term
+    searchInitalPage = YtInitalPage.fromUrl(url)
+    searchList = YtApiList(searchInitalPage, ctrlp.searchApiUrl, ctrlp.searchScrapeFmt, getInitalData = True, onExtend = onExtend)
+    filterData = processData( searchInitalPage.scrapeInitalData(ctrlp.searchFilterScraper) )
+    return searchList, filterData
 
 
 def sanitizeChannelUrl(channelUrl: str, path:str = ''):

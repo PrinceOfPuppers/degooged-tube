@@ -223,6 +223,7 @@ relatedVideosScrapeFmt = ScrapeNode("compactVideoRenderer", ScrapeNum.All, _uplo
 searchUrl = "https://www.youtube.com/results?search_query="
 searchApiUrl = '/youtubei/v1/search'
 
+
 searchScrapeFmt = \
         ScrapeNode("twoColumnSearchResultsRenderer", ScrapeNum.First,[
             ScrapeNode("itemSectionRenderer", ScrapeNum.First,[
@@ -256,4 +257,24 @@ searchScrapeFmt = \
                     ], rename="uploadedOn"),
                 ], collapse = True)
             ], collapse = True)
+        ], collapse= True)
+
+
+searchFilterScraper = \
+        ScrapeNode("searchFilterGroupRenderer", ScrapeNum.All,[
+                ScrapeNode("title", ScrapeNum.First,[
+                    ScrapeNode("simpleText", ScrapeNum.First, [],  collapse=True),
+                ], rename= "searchType"),
+
+                ScrapeNode("filters", ScrapeNum.First,[
+                    ScrapeNode("searchFilterRenderer", ScrapeNum.All, [
+
+                        ScrapeNode("label", ScrapeNum.First,[
+                            ScrapeNode("simpleText", ScrapeNum.First, [],  collapse=True),
+                        ]),
+
+                        ScrapeNode("url", ScrapeNum.First, [], rename="searchUrlFragment"), #could also just get param
+
+                    ],  collapse=True),
+                ]),
         ], collapse= True)

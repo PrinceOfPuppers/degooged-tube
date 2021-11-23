@@ -228,6 +228,8 @@ class test_getFunctionsAndFmts(TestCase):
     def test_search(self):
         logName(self, inspect.currentframe())
 
-        searchList = getSearchList("test")
+        searchList,filters = getSearchList("test")
         searchList[0]
+
+        #filteredSearch = getSearchList(filters['type']['channel'])
 

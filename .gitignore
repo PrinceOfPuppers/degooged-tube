@@ -3,6 +3,7 @@ __pycache__
 /build
 /dist
 tmp
+tmp2
 testing.log
 notepad.py
 dataDump.log
