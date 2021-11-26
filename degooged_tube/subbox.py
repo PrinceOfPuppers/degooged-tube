@@ -16,6 +16,9 @@ class AlreadySubscribed(Exception):
 def listsOverlap(l1, l2):
     return not set(l1).isdisjoint(l2)
 
+def setsOverlap(s1:set, s2:set):
+    return not s1.isdisjoint(s2)
+
 @dataclass
 class SubBoxChannel:
     scrapedData:dict
@@ -23,10 +26,10 @@ class SubBoxChannel:
     uploadList: ytapih.YtApiList
     channelUrl:  str
     extensionIndex: int
-    tags: list[str]
+    tags: set[str]
 
     @classmethod
-    def fromInitalPage(cls, initalPage: ytapih.YtInitalPage, channelTags:list[str]) -> 'SubBoxChannel':
+    def fromInitalPage(cls, initalPage: ytapih.YtInitalPage, channelTags:set[str]) -> 'SubBoxChannel':
         d = ytapih.getChannelInfoFromInitalPage(initalPage)
         scrapedData = d
 
@@ -36,7 +39,7 @@ class SubBoxChannel:
         return cls(scrapedData, uploadList, channelUrl, 0, channelTags)
 
     @classmethod
-    def fromUrl(cls, url: str, channelTags:list[str]) -> 'SubBoxChannel':
+    def fromUrl(cls, url: str, channelTags:set[str]) -> 'SubBoxChannel':
         initalPage = ytapih.YtInitalPage.fromUrl( ytapih.sanitizeChannelUrl(url, ytapih.ctrlp.channelVideoPath) )
         return cls.fromInitalPage(initalPage, channelTags)
 
@@ -70,7 +73,7 @@ class SubBox:
 
 
     @classmethod
-    def fromInitalPages(cls, initalPages: list[ytapih.YtInitalPage], channelTags:list[list[str]] = None, prevOrdering:list = list()) -> 'SubBox':
+    def fromInitalPages(cls, initalPages: list[ytapih.YtInitalPage], channelTags:list[set[str]] = None, prevOrdering:list = list()) -> 'SubBox':
         cfg.logger.debug(f"Creating SubBox From InitalPages")
 
         if channelTags is not None:
@@ -81,7 +84,7 @@ class SubBox:
             channels.append(
                 SubBoxChannel.fromInitalPage(
                     initalPage, 
-                    list() if channelTags is None else channelTags[i]
+                    set() if channelTags is None else channelTags[i]
                 )
             )
 
@@ -99,7 +102,7 @@ class SubBox:
             channels.append(
                 SubBoxChannel.fromUrl(
                     url, 
-                    list() if channelTags is None else channelTags[i]
+                    set() if channelTags is None else channelTags[i]
                 )
             )
 
@@ -155,16 +158,16 @@ class SubBox:
         mostRecentChannel.extensionIndex += 1
             
 
-    def _numUploadsWithTags(self, tags: list[str]):
+    def _numUploadsWithTags(self, tags: set[str]):
         num = 0
         for upload in self.orderedUploads:
             channelTags = self.channelDict[upload['channelUrl']].tags
-            if listsOverlap(channelTags, tags):
+            if channelTags.issubset(tags):
                 num+=1
 
         return num
 
-    def _extendOrderedUploads(self, desiredLen: int, tags: Union[list[str], None]):
+    def _extendOrderedUploads(self, desiredLen: int, tags: Union[set[str], None]):
         initalLength = len(self.orderedUploads) 
 
         debugMessage = \
@@ -196,7 +199,7 @@ class SubBox:
         cfg.logger.debug(debugMessage)
 
 
-    def getUploads(self, limit: int, offset: int, tags: Union[list[str], None]):
+    def getUploads(self, limit: int, offset: int, tags: Union[set[str], None]):
         desiredLen = limit + offset
         try:
             self._extendOrderedUploads(desiredLen, tags)
@@ -207,7 +210,7 @@ class SubBox:
             uploads = self.orderedUploads
 
         else:
-            uploads = list(filter(lambda upload: listsOverlap(self.channelDict[upload['channelUrl']].tags, tags) , self.orderedUploads))
+            uploads = list(filter(lambda upload: self.channelDict[upload['channelUrl']].tags.issubset(tags) , self.orderedUploads))
             cfg.logger.debug(
                 f"Filtering Subbox by Tags:{tags}\n"
                 f"SubBox Len Before Filtering: {len(self.orderedUploads)}"
@@ -223,12 +226,12 @@ class SubBox:
         
         return uploads[offset: offset+limit]
 
-    def getPaginatedUploads(self, pageNum: int, pageSize: int, tags: Union[list[str], None] = None):
+    def getPaginatedUploads(self, pageNum: int, pageSize: int, tags: Union[set[str], None] = None):
         limit = pageSize
         offset = (pageNum - 1)*pageSize
         return self.getUploads(limit, offset, tags)
 
-    def addChannelFromInitalPage(self, initalPage: ytapih.YtInitalPage, tags: list[str] = list()):
+    def addChannelFromInitalPage(self, initalPage: ytapih.YtInitalPage, tags: set[str] = set()):
         channel = SubBoxChannel.fromInitalPage(initalPage, tags)
         cfg.logger.debug(f"Adding new Channel to SubBox {channel.channelUrl}")
 
@@ -258,17 +261,20 @@ class SubBox:
         )
         self.channelDict[channel.channelUrl] = channel
 
-    def addChannelFromUrl(self, url: str, tags: list[str] = list()):
+        return channel
+
+    def addChannelFromUrl(self, url: str, tags: set[str] = set()):
         url = ytapih.sanitizeChannelUrl(url, ytapih.ctrlp.channelVideoPath)
 
         if url in self.channelDict.keys():
             cfg.logger.error(f"url: {url} Already exists in SubBox Urls:\n{[channel.channelUrl for channel in self.channels]}")
             raise AlreadySubscribed()
 
-        self.addChannelFromInitalPage(ytapih.YtInitalPage.fromUrl(url), tags)
+        channel = self.addChannelFromInitalPage(ytapih.YtInitalPage.fromUrl(url), tags)
+        return channel
 
 
-    def removeChannel(self, channelIndex: int):
+    def popChannel(self, channelIndex: int):
         channelUrl = self.channels[channelIndex].channelUrl
         cfg.logger.debug(f"Remvoing Channel from SubBox, URL: {channelUrl}")
 
@@ -281,8 +287,11 @@ class SubBox:
 
             self.orderedUploads.pop(i)
 
+        channel = self.channels[channelIndex]
         self.channelDict.pop(self.channels[channelIndex].channelUrl)
         self.channels.pop(channelIndex)
+
+        return channel
 
     def getChannelIndex(self, channelUrl: str):
         channelUrl = ytapih.sanitizeChannelUrl(channelUrl)

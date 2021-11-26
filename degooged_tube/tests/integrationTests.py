@@ -4,7 +4,7 @@ import inspect
 import degooged_tube.config as cfg
 from degooged_tube.subbox import SubBox, listsOverlap
 from degooged_tube.ytApiHacking import sanitizeChannelUrl, getChannelInfo, getCommentList, getRelatedVideoList, getUploadList, getVideoInfo, YtInitalPage, getSearchList
-import degooged_tube.ytApiHacking.controlPanel as ctrlp
+#import degooged_tube.ytApiHacking.controlPanel as ctrlp
 from .unitTests import logName
 
 
@@ -130,14 +130,14 @@ class test_SubBox(TestCase):
 
             if sanitizedChannelUrl not in videoChannels:
                 pageSize += pageSizeExtension
-                self.subBox.removeChannel(self.subBox.getChannelIndex(newChannelUrl))
+                self.subBox.popChannel(self.subBox.getChannelIndex(newChannelUrl))
                 cfg.logger.info("videoId belonging to newly added channel not found in subbox")
                 continue
 
             self.assertTrue(checkNoMisses(uploads, self.subBox))
             self.assertTrue(checkOrdering(uploads))
 
-            self.subBox.removeChannel(self.subBox.getChannelIndex(newChannelUrl))
+            self.subBox.popChannel(self.subBox.getChannelIndex(newChannelUrl))
 
             endUploads = getUploads(pageSize, numPages, self.subBox)
             endVideoIds = [upload['videoId'] for upload in endUploads]
@@ -228,7 +228,7 @@ class test_getFunctionsAndFmts(TestCase):
     def test_search(self):
         logName(self, inspect.currentframe())
 
-        searchList,filters = getSearchList("test")
+        searchList,_ = getSearchList("test")
         searchList[0]
 
         #filteredSearch = getSearchList(filters['type']['channel'])

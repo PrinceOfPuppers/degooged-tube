@@ -1,8 +1,11 @@
 import sys
-import degooged_tube.ytApiHacking as ytapih
 import logging
+
+import degooged_tube.ytApiHacking as ytapih
 import degooged_tube.config as cfg
-import json
+import degooged_tube.prompts as prompts
+
+import commands as cmds
 
 def setupLogger():
     stream = logging.StreamHandler(sys.stdout)
@@ -11,31 +14,74 @@ def setupLogger():
     cfg.logger.addHandler(stream)
 
 
-def exampleCode1():
-    channelData = ytapih.getChannelInfo('https://www.youtube.com/c/MattMcMuscles')
-    uploadsUrl = 'https://www.youtube.com' + channelData['baseUrl'] + '/videos'
+def createNewUserPrompt():
+    username = input("No Users Found, Please Enter a New Username: ")
 
-    uploadsPage = ytapih.YtInitalPage.fromUrl(uploadsUrl)
-    uploads = ytapih.getUploadList(uploadsPage)
+    if(not prompts.yesNoPrompt('Would you Like add Subscriptions Now? \n(can be done later)')):
+        return cmds.createNewUser(username)
 
-    upload = uploads[20]
+    cfg.logger.info("Enter the URLS of Channels You Want to Subscribe to, Hitting (Enter) After Each. \n Enter (q) When Finished")
 
-    videoUrl = f"https://www.youtube.com/watch?v={upload['videoId']}"
-    videoPage = ytapih.YtInitalPage.fromUrl(videoUrl)
-    if videoPage is None:
-        raise Exception("Error Getting Page for video")
+    channels = []
+    prompts.qPrompt(
+        'Enter the URLs of Channels You Want to Subscribe to, Hitting (Enter) After Each', 
+        'Channel Url', 
+        lambda channelUrl: channels.append(ytapih.sanitizeChannelUrl(channelUrl))
+    )
 
-    relatedVideos = ytapih.getRelatedVideoList(videoPage)
-    print(relatedVideos[10])
+    subbox = cmds.createNewUser(username, channels)
+    if(not prompts.yesNoPrompt('Would You Like to Tag Any of These Channels? \n(tags can be used to filter subbox, can be added later)')):
+        return subbox
 
-    comments = ytapih.getCommentList(videoPage)
-    print(comments[10])
+    prompts.listChannels(subbox.channels)
+
+    def callback(response: str):
+        try:
+            index = int(response)
+        except:
+            cfg.logger.error(f"{response} is Not an Integer")
+            return
+
+        if index < 0 or index >= len(channels):
+            cfg.logger.error("Number Not in List")
+            return
+
+        tags = input('Space Seperated Tags: ')
+        tags = tags.split()
+
+        channel = channels[index]
+
+        for tag in tags:
+            channel.tags.add(tag.strip())
+
+        prompts.listChannels(subbox.channels)
 
 
+    prompts.qPrompt(
+        'Enter the Number of the Channel From the Above List', 
+        'Channel Number', 
+        callback
+    )
+    
+    cfg.logger.info("User Created!")
+
+
+def startup():
+    users = cmds.getUsers()
+    if len(users) == 0:
+        return createNewUserPrompt()
+    if len(users) == 1:
+        return cmds.loadUserSubbox(users[0])
+
+    while(True):
+        try:
+            return cmds.loadUserSubbox(users[prompts.numPrompt('Pick a User Number', users)])
+        except IndexError:
+            pass
+    
 def cli():
     setupLogger()
-    videoPage = ytapih.YtInitalPage.fromUrl("https://www.youtube.com/watch?v=AFrQ1_2bbsI")
-    print(ytapih.getVideoInfo(videoPage))
-    #related = ytapih.getRelatedVideoList(vid)
-    #print(related[0])
-    print(json.dumps(videoPage.initalData, indent=2))
+    subbox = startup()
+    
+
+
