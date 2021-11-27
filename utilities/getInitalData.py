@@ -26,8 +26,5 @@ if __name__ == '__main__':
     setupLogger()
     args = parseArgs()
     page = YtInitalPage.fromUrl(args.URL)
-    #print(json.dumps(page.scrapeInitalData(ytapih.ctrlp.searchFilterScraper), indent=2))
-    #searchList, filters = ytapih.getSearchList("test")
-    #print(json.dumps(filters, indent = 2))
 
     print(json.dumps(page.initalData, indent = 2))

@@ -101,7 +101,6 @@ def _uploadAndRelatedFmt(titleTextKey: str, durationTextContainerKey: str):
          ScrapeNode("title", ScrapeNum.First,[
              ScrapeNode(titleTextKey, ScrapeNum.First,[], collapse=True)
          ]),
-         #ScrapeNode("canonicalBaseUrl", ScrapeNum.First,[]),
     ]
 
 
