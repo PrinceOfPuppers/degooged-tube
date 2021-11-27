@@ -7,7 +7,7 @@ contains all global variables, also parses config into global variables
 '''
 
 _parser = configparser.ConfigParser(allow_no_value=True)
-parser.optionxform = str 
+_parser.optionxform = str 
 
 def writeToConfig(key,value):
     _parser.set('CONFIG',key,value)
@@ -18,11 +18,15 @@ def _getConfig():
     defaultConfig = {
         'userDataPath': 'userData'
     }
-    
-    if not os.path.exists(f'{modulePath}/config.ini'):
+    cfgPath = f'{modulePath}/config.ini'
+
+    if not os.path.exists(cfgPath):
         _parser['CONFIG'] = defaultConfig
-        with open(f'{modulePath}/config.ini','w+') as f:
+        with open(cfgPath) as f:
             _parser.write(f)
+    else:
+        _parser.read(cfgPath)
+    
 
     config = _parser['CONFIG']
 
@@ -37,14 +41,16 @@ def _getConfig():
 modulePath = dirname(__file__)
 _config = _getConfig()
 
-# global variables
+# global constants
 testJsonPath     = f"{modulePath}/tests/testJson"
 testDataDumpPath = f"{modulePath}/tests/dataDump.log"
 testLogPath = f"{modulePath}/tests/testing.log"
-testing = False
-
 integrationTestPath = f"{modulePath}/tests/integrationTests.py"
 unitTestPath = f"{modulePath}/tests/unitTest.py"
+
+# global variables
+testing = False
+
 
 # config variables
 userDataPath = _config['userDataPath']

@@ -12,12 +12,12 @@ from degooged_tube.mpvWrapper import playVideo
 
 from typing import Callable, Tuple, Union
 
-import commands as cmds
+import degooged_tube.commands as cmds
 
 def setupLogger():
     stream = logging.StreamHandler(sys.stdout)
-    cfg.logger.setLevel(logging.DEBUG)
-    stream.setFormatter(logging.Formatter("[%(levelname)s] %(message)s"))
+    cfg.logger.setLevel(logging.INFO)
+    stream.setFormatter(logging.Formatter("%(message)s"))
     cfg.logger.addHandler(stream)
 
 
@@ -28,11 +28,9 @@ def createNewUserPrompt():
     if(not prompts.yesNoPrompt('Would you Like add Subscriptions Now? \n(can be done later)')):
         return cmds.createNewUser(username)
 
-    cfg.logger.info("Enter the URLS of Channels You Want to Subscribe to, Hitting (Enter) After Each. \n Enter (q) When Finished")
-
     channels = []
     prompts.qPrompt(
-        'Enter the URLs of Channels You Want to Subscribe to, Hitting (Enter) After Each', 
+        'Enter the URLs of Channels You Want to Subscribe to', 
         'Channel Url', 
         lambda channelUrl: channels.append(ytapih.sanitizeChannelUrl(channelUrl))
     )
@@ -71,7 +69,7 @@ def createNewUserPrompt():
         callback
     )
     
-    cfg.logger.info("User Created!")
+    cfg.logger.info("\nUser Created!")
     return subbox
 
 
@@ -120,7 +118,7 @@ def channelInfoPage(state: CliState, channel: SubBoxChannel):
 
 def subboxPage(state: CliState, pageNum: int = 0, tags:Union[set[str], None] = None) -> Tuple[Callable, list]:
     _, termHeight = getTerminalSize()
-    pageSize = int(termHeight/2 - 1)
+    pageSize = int(termHeight/2 - 2)
 
     uploads = state.subbox.getPaginatedUploads(pageNum, pageSize, tags)
 
@@ -128,7 +126,7 @@ def subboxPage(state: CliState, pageNum: int = 0, tags:Union[set[str], None] = N
         for upload in uploads:
             cfg.logger.info(upload)
 
-        chosenOption = input('Video Options: (w)atch, (r)elated videos, (v)ideo info, (c)hannel info \nGeneral Options: (s)earch, (e)dit subscriptions, (l)ogout').strip().lower()
+        chosenOption = input('\nVideo Options: (w)atch, (r)elated videos, (v)ideo info, (c)hannel info \nGeneral Options: (s)earch, (e)dit subscriptions, (l)ogout').strip().lower()
 
         if(len(chosenOption)!= 1 or chosenOption not in ['w', 'r', 'v', 'c', 's', 'e', 'l']):
             cfg.logger.error(f"{chosenOption} is not an Option")

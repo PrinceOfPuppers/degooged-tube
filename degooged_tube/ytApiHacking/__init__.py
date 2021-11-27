@@ -11,6 +11,7 @@ currentTime = int(time.time())
 # uploads
 class Upload:
     def __init__(self, data:dict):
+        print(data)
         self.videoId:str            = data['videoId']
         self.url:str                = 'https://www.youtube.com/watch?v=' + data['videoId']
         self.unixTime:int           = approxTimeToUnix(currentTime, data['uploadedOn'])
@@ -19,7 +20,7 @@ class Upload:
         self.views:str              = data['views']
         self.duration:str           = data['duration']
         self.title:str              = data['title']
-        self.channelUrlFragment:str = data['channelUrlFragment']
+        #self.channelUrlFragment:str = data['channelUrlFragment']
 
         # the following are added by subbox
         self.channelName:str = ''
@@ -76,8 +77,8 @@ class ChannelInfo:
     def __init__(self, data:dict):
         self.channelName:str        = data['channelName']
         self.avatar:list            = data['avatar']
-        self.banner:list            = data['banner']
-        self.mobileBanner:list      = data['mobileBanner']
+        self.banners:list           = data['banners']
+        self.mobileBanners:list     = data['mobileBanners']
         self.subscribers:str        = data['subscribers']
         self.channelUrl:str         = data['channelUrl']
         self.description:str        = data['description']

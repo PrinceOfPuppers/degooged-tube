@@ -1,7 +1,7 @@
 import degooged_tube.ytApiHacking as ytapih
 import degooged_tube.config as cfg
 from dataclasses import dataclass
-from typing import Union
+from typing import Union, Tuple
 
 class EndOfSubBox(Exception):
     pass
@@ -94,7 +94,7 @@ class SubBox:
 
 
     @classmethod
-    def fromUrls(cls, urls: list[str], channelTags = None, prevOrdering:list = list()) -> 'SubBox':
+    def fromUrls(cls, urls: list[str], channelTags:list[set[str]] = None, prevOrdering:list = list()) -> 'SubBox':
         cfg.logger.debug(f"Creating SubBox From Urls:\n{urls}")
         if channelTags is not None:
             assert len(urls) == len(channelTags)
@@ -111,7 +111,7 @@ class SubBox:
         return cls(channels, prevOrdering)
 
 
-    def _getNextChannelWithMoreUploads(self, startIndex: int):
+    def _getNextChannelWithMoreUploads(self, startIndex: int) -> Tuple[int, SubBoxChannel, ytapih.Upload]:
         channelIndex = startIndex
 
         while channelIndex < len(self.channels):
@@ -153,7 +153,7 @@ class SubBox:
             except NoVideo:
                 break
 
-            if contenderVideo['unixTime'] < mostRecentVideo['unixTime']:
+            if contenderVideo.unixTime < mostRecentVideo.unixTime:
                 mostRecentIndex = contenderIndex
                 mostRecentChannel = contenderChannel
                 mostRecentVideo = contenderVideo

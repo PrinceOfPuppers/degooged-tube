@@ -3,12 +3,12 @@ import inspect
 
 import degooged_tube.config as cfg
 from degooged_tube.subbox import SubBox, listsOverlap
-from degooged_tube.ytApiHacking import sanitizeChannelUrl, getChannelInfo, getCommentList, getRelatedVideoList, getUploadList, getVideoInfo, YtInitalPage, getSearchList
+from degooged_tube.ytApiHacking import sanitizeChannelUrl, getChannelInfo, getCommentList, getRelatedVideoList, getUploadList, getVideoInfo, YtInitalPage, getSearchList, Upload
 #import degooged_tube.ytApiHacking.controlPanel as ctrlp
 from .unitTests import logName
 
 
-def getUploads(pageSize: int, numPages: int, subBox: SubBox, tags = None):
+def getUploads(pageSize: int, numPages: int, subBox: SubBox, tags:set[str] = None) -> list[Upload]:
     uploads = []
     for pageNum in range(numPages):
         page = subBox.getPaginatedUploads(pageNum, pageSize, tags)
@@ -28,20 +28,20 @@ def checkNoOverlap(videoIds1, videoIds2):
         return False
     return True
 
-def checkNoMisses(uploads, subBox: SubBox, tags = list()):
+def checkNoMisses(uploads:list[Upload], subBox: SubBox, tags = list()):
 
-    videoIds = [upload['videoId'] for upload in uploads]
+    videoIds = [upload.videoId for upload in uploads]
 
     count = 0
     for channel in subBox.channels:
         for upload in channel.uploadList:
-            if upload['videoId'] in videoIds:
+            if upload.videoId in videoIds:
 
                 # ensure channnel has correct tags
                 if len(tags) != 0 and not listsOverlap(channel.tags, tags):
                     cfg.logger.error(
                         f"Video Found in SubBox From Channel That Should Have Been Filtered\n"
-                        f"VideoId Tags: {upload['videoId']}\n"
+                        f"VideoId Tags: {upload.videoId}\n"
                         f"Channel Tags: {channel.tags}\n"
                         f"SubBox Tags: {tags}\n"
                     )
@@ -53,16 +53,16 @@ def checkNoMisses(uploads, subBox: SubBox, tags = list()):
 
     return count == len(uploads)
 
-def checkOrdering(uploads):
+def checkOrdering(uploads: list[Upload]):
     for i in range(0,len(uploads)-1):
         upload1 = uploads[i]
         upload2 = uploads[i+1]
-        if upload1['videoId'] == upload2['videoId']:
+        if upload1.videoId == upload2.videoId:
             cfg.logger.error(f"Duplicate Video Ids Found For Uploads:\n{upload1}\nAnd\n{upload2}")
             return False
 
 
-        if upload1['unixTime'] < upload2['unixTime']:
+        if upload1.unixTime < upload2.unixTime:
             cfg.logger.error(f"Incorrect Upload Order for Uploads:\n{upload1}\nAnd\n{upload2}")
             return False
 
@@ -73,7 +73,7 @@ class test_SubBox(TestCase):
 
     exception = None
     # Cleans up exception Message
-    subBox = SubBox.fromUrls(subscribed, [['gaming'], ['speedrunning']])
+    subBox = SubBox.fromUrls(subscribed, [{'gaming'}, {'speedrunning'}])
 
     def test_noOverlap(self):
         logName(self, inspect.currentframe())
@@ -81,10 +81,10 @@ class test_SubBox(TestCase):
 
         uploads1 = self.subBox.getPaginatedUploads(1, pageSize)
 
-        videoIds1 = [upload['videoId'] for upload in uploads1]
+        videoIds1 = [upload.videoId for upload in uploads1]
 
         uploads2 = self.subBox.getPaginatedUploads(2, pageSize)
-        videoIds2 = [upload['videoId'] for upload in uploads2]
+        videoIds2 = [upload.videoId for upload in uploads2]
 
         self.assertTrue(checkNoOverlap(videoIds1, videoIds2))
 
@@ -119,13 +119,18 @@ class test_SubBox(TestCase):
 
         for _ in range(numExtensionBeforeFail):
             initalUploads = getUploads(pageSize, numPages, self.subBox)
-            initalVideoIds = [upload['videoId'] for upload in initalUploads]
+            initalVideoIds = [upload.videoId for upload in initalUploads]
 
             self.subBox.addChannelFromUrl(newChannelUrl)
 
             uploads = getUploads(pageSize, numPages, self.subBox)
 
-            videoChannels = [upload['channelUrl'] for upload in uploads]
+            videoChannels = [
+                upload.channelUrl 
+                    if upload.channelUrl != '' 
+                    else self.fail() 
+                    for upload in uploads
+            ]
             
 
             if sanitizedChannelUrl not in videoChannels:
@@ -140,7 +145,7 @@ class test_SubBox(TestCase):
             self.subBox.popChannel(self.subBox.getChannelIndex(newChannelUrl))
 
             endUploads = getUploads(pageSize, numPages, self.subBox)
-            endVideoIds = [upload['videoId'] for upload in endUploads]
+            endVideoIds = [upload.videoId for upload in endUploads]
 
             self.assertTrue(checkNoMisses(endUploads, self.subBox))
             self.assertTrue(checkOrdering(endUploads))
@@ -154,12 +159,12 @@ class test_SubBox(TestCase):
         logName(self, inspect.currentframe())
         pageSize = 10
 
-        uploads1 = self.subBox.getPaginatedUploads(1, pageSize, ['gaming'])
+        uploads1 = self.subBox.getPaginatedUploads(1, pageSize, {'gaming'})
 
-        videoIds1 = [upload['videoId'] for upload in uploads1]
+        videoIds1 = [upload.videoId for upload in uploads1]
 
-        uploads2 = self.subBox.getPaginatedUploads(2, pageSize, ['gaming'])
-        videoIds2 = [upload['videoId'] for upload in uploads2]
+        uploads2 = self.subBox.getPaginatedUploads(2, pageSize, {'gaming'})
+        videoIds2 = [upload.videoId for upload in uploads2]
 
         self.assertTrue(checkNoOverlap(videoIds1, videoIds2))
 
@@ -167,8 +172,8 @@ class test_SubBox(TestCase):
         logName(self, inspect.currentframe())
         pageSize = 10
         numPages = 2
-        uploads = getUploads(pageSize, numPages, self.subBox, ['speedrunning'])
-        self.assertTrue(checkNoMisses(uploads, self.subBox, ['speedrunning']))
+        uploads = getUploads(pageSize, numPages, self.subBox, {'speedrunning'})
+        self.assertTrue(checkNoMisses(uploads, self.subBox, {'speedrunning'}))
 
 
     def test_ordering_tags(self):
@@ -176,7 +181,7 @@ class test_SubBox(TestCase):
         pageSize = 10
         numPages = 2
 
-        uploads = getUploads(pageSize, numPages, self.subBox, ['gaming'])
+        uploads = getUploads(pageSize, numPages, self.subBox, {'gaming'})
 
         self.assertTrue(checkOrdering(uploads))
 

@@ -6,19 +6,20 @@ class Cancel(Exception):
     pass
 
 def yesNoPrompt(prompt: str):
-    answer = input(f'{prompt} \n(y)es/(n)o: ').strip().lower()
+    answer = input(f'\n{prompt} \n(y)es/(n)o: ').strip().lower()
     if answer == 'y':
         return True
     return False
 
 
 def listChannels(channels: list[SubBoxChannel]):
+    cfg.logger.info('')
     for i,channel in enumerate(channels):
         cfg.logger.info(f'{i}) {channel.channelName}\n  tags:{channel.tags}')
 
 
 def qPrompt(initalPrompt: str, inputPrompt: str, onInput: Callable[[str],None], onError: Callable[[str], None] = None):
-    cfg.logger.info(f"{initalPrompt}\n Enter (q) When Finished")
+    cfg.logger.info(f"\n{initalPrompt} \nEnter (q) When Finished")
 
     while True:
         response = input(f'{inputPrompt}: ')
@@ -40,6 +41,7 @@ def qPrompt(initalPrompt: str, inputPrompt: str, onInput: Callable[[str],None], 
 
 
 def numPrompt(prompt: str, options: list, cancelable:bool = False) -> int:
+    cfg.logger.info('')
     for i,option in options:
         cfg.logger.info(f'{i}) {option}')
     while True:

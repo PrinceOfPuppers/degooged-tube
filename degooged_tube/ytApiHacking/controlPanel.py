@@ -82,7 +82,7 @@ initalPageDataContainerKey = "contents"
 # some stuff shares scraper formats, such as uploads and recommended videos, so we create wrappers for them
 def _uploadAndRelatedFmt(titleTextKey: str, durationTextContainerKey: str):
     return [
-        ScrapeNode("videoId", ScrapeNum.First,[]),
+         ScrapeNode("videoId", ScrapeNum.First,[]),
 
          ScrapeNode("thumbnails", ScrapeNum.All,[]),
 
@@ -101,7 +101,7 @@ def _uploadAndRelatedFmt(titleTextKey: str, durationTextContainerKey: str):
          ScrapeNode("title", ScrapeNum.First,[
              ScrapeNode(titleTextKey, ScrapeNum.First,[], collapse=True)
          ]),
-         ScrapeNode("canonicalBaseUrl", ScrapeNum.First,[], collapse=True, rename="channelUrlFragment")
+         #ScrapeNode("canonicalBaseUrl", ScrapeNum.First,[]),
     ]
 
 

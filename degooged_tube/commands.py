@@ -57,6 +57,8 @@ def loadUserSubbox(username:str) -> SubBox:
     return SubBox.fromUrls(channelUrls, channelTags)
 
 def getUsers() -> list[str]:
+    if not os.path.exists(cfg.userDataPath):
+        return []
     return os.listdir(path=cfg.userDataPath) 
 
 
