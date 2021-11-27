@@ -8,12 +8,31 @@ import time
 currentTime = int(time.time())
 
 
-
 # uploads
-def uploadsCallback(res):
-    for r in res:
-        r['unixTime'] = approxTimeToUnix(currentTime, r['uploadedOn'])
-    return res
+class Upload:
+    def __init__(self, data:dict):
+        self.videoId:str            = data['videoId']
+        self.url:str                = 'https://www.youtube.com/watch?v=' + data['videoId']
+        self.unixTime:int           = approxTimeToUnix(currentTime, data['uploadedOn'])
+        self.thumbnails:dict        = data['thumbnails']
+        self.uploadedOn:str         = data['uploadedOn']
+        self.views:str              = data['views']
+        self.duration:str           = data['duration']
+        self.title:str              = data['title']
+        self.channelUrlFragment:str = data['channelUrlFragment']
+
+        # the following are added by subbox
+        self.channelName:str = ''
+        self.channelUrl:str = ''
+    
+    def __repr__(self):
+        f'{self.title}\n    c:{self.channelName} {self.views}'
+
+    def __str__(self):
+        return self.__repr__()
+
+def uploadsCallback(res) -> list[Upload]:
+    return [Upload(x) for x in res]
 
 def getUploadList(uploadsPage, onExtend = uploadsCallback):
     return YtApiList(uploadsPage, ctrlp.uploadsApiUrl, ctrlp.uploadScrapeFmt, getInitalData=True, onExtend = onExtend)
@@ -51,8 +70,19 @@ def getRelatedVideoList(videoPage):
 
 
 
+
 # Channel Info
-def getChannelInfoFromInitalPage(channelPage):
+class ChannelInfo:
+    def __init__(self, data:dict):
+        self.channelName:str        = data['channelName']
+        self.avatar:list            = data['avatar']
+        self.banner:list            = data['banner']
+        self.mobileBanner:list      = data['mobileBanner']
+        self.subscribers:str        = data['subscribers']
+        self.channelUrl:str         = data['channelUrl']
+        self.description:str        = data['description']
+
+def getChannelInfoFromInitalPage(channelPage) -> ChannelInfo:
     data = channelPage.scrapeInitalData(ctrlp.channelInfoScrapeFmt)
 
     if len(data) != 2:
@@ -66,12 +96,13 @@ def getChannelInfoFromInitalPage(channelPage):
     result['channelUrl'] = sanitizeChannelUrl(metadata['channelUrl'])
     result['description'] = metadata['description']
 
-    return result
+    return ChannelInfo(result)
 
-def getChannelInfo(channelUrl):
+def getChannelInfo(channelUrl) -> ChannelInfo:
     channelUrl = sanitizeChannelUrl(channelUrl)
     channelPage = YtInitalPage.fromUrl(channelUrl)
     return getChannelInfoFromInitalPage(channelPage)
+
 
 
 

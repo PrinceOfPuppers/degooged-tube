@@ -21,22 +21,24 @@ def setsOverlap(s1:set, s2:set):
 
 @dataclass
 class SubBoxChannel:
-    scrapedData:dict
+    channelInfo:ytapih.ChannelInfo
 
     uploadList: ytapih.YtApiList
+    channelName: str
     channelUrl:  str
     extensionIndex: int
     tags: set[str]
 
     @classmethod
     def fromInitalPage(cls, initalPage: ytapih.YtInitalPage, channelTags:set[str]) -> 'SubBoxChannel':
-        d = ytapih.getChannelInfoFromInitalPage(initalPage)
-        scrapedData = d
+        channelInfo = ytapih.getChannelInfoFromInitalPage(initalPage)
+        channelInfo = channelInfo
 
         uploadList = ytapih.getUploadList(initalPage)
-        channelUrl = d['channelUrl']
+        channelName = channelInfo.channelName
+        channelUrl = channelInfo.channelUrl
 
-        return cls(scrapedData, uploadList, channelUrl, 0, channelTags)
+        return cls(channelInfo, uploadList, channelName, channelUrl, 0, channelTags)
 
     @classmethod
     def fromUrl(cls, url: str, channelTags:set[str]) -> 'SubBoxChannel':
@@ -50,7 +52,7 @@ class SubBox:
 
     atMaxLen: bool
 
-    orderedUploads: list
+    orderedUploads: list[ytapih.Upload]
     prevOrdering: list[str]
     
 
@@ -121,12 +123,14 @@ class SubBox:
 
         raise NoVideo
 
-    def _insertUpload(self, index, upload, channelUrl):
-        upload['channelUrl'] = channelUrl
+    def _insertUpload(self, index, upload:ytapih.Upload, channelUrl:str, channelName:str):
+        setattr(upload, 'channelUrl', channelUrl)
+        setattr(upload, 'channelName', channelName)
         self.orderedUploads.insert(index,upload)
 
-    def _appendUpload(self, upload, channelUrl):
-        upload['channelUrl'] = channelUrl
+    def _appendUpload(self, upload, channelUrl:str, channelName:str):
+        setattr(upload, 'channelUrl', channelUrl)
+        setattr(upload, 'channelName', channelName)
         self.orderedUploads.append(upload)
 
     def _appendNextUpload(self):
@@ -154,14 +158,14 @@ class SubBox:
                 mostRecentChannel = contenderChannel
                 mostRecentVideo = contenderVideo
 
-        self._appendUpload(mostRecentVideo, mostRecentChannel.channelUrl)
+        self._appendUpload(mostRecentVideo, mostRecentChannel.channelUrl, mostRecentChannel.channelName)
         mostRecentChannel.extensionIndex += 1
             
 
     def _numUploadsWithTags(self, tags: set[str]):
         num = 0
         for upload in self.orderedUploads:
-            channelTags = self.channelDict[upload['channelUrl']].tags
+            channelTags = self.channelDict[upload.channelUrl].tags
             if channelTags.issubset(tags):
                 num+=1
 
@@ -199,7 +203,7 @@ class SubBox:
         cfg.logger.debug(debugMessage)
 
 
-    def getUploads(self, limit: int, offset: int, tags: Union[set[str], None]):
+    def getUploads(self, limit: int, offset: int, tags: Union[set[str], None]) -> list[ytapih.Upload]:
         desiredLen = limit + offset
         try:
             self._extendOrderedUploads(desiredLen, tags)
@@ -210,7 +214,13 @@ class SubBox:
             uploads = self.orderedUploads
 
         else:
-            uploads = list(filter(lambda upload: self.channelDict[upload['channelUrl']].tags.issubset(tags) , self.orderedUploads))
+            uploads = list(
+                filter(
+                    lambda upload: self.channelDict[upload.channelUrl].tags.issubset(tags), 
+                    self.orderedUploads
+                )
+            )
+
             cfg.logger.debug(
                 f"Filtering Subbox by Tags:{tags}\n"
                 f"SubBox Len Before Filtering: {len(self.orderedUploads)}"
@@ -226,7 +236,7 @@ class SubBox:
         
         return uploads[offset: offset+limit]
 
-    def getPaginatedUploads(self, pageNum: int, pageSize: int, tags: Union[set[str], None] = None):
+    def getPaginatedUploads(self, pageNum: int, pageSize: int, tags: Union[set[str], None] = None) -> list[ytapih.Upload]:
         limit = pageSize
         offset = (pageNum - 1)*pageSize
         return self.getUploads(limit, offset, tags)
@@ -245,13 +255,13 @@ class SubBox:
             c1Upload = channel.uploadList[channelUploadIndex]
             orderedUpload = self.orderedUploads[orderedUploadIndex]
 
-            if c1Upload['unixTime'] >= orderedUpload['unixTime']:
+            if c1Upload.unixTime >= orderedUpload.unixTime:
                 cfg.logger.debug(
                     f"Inserting New Channel Video Into SubBox\n"
-                    f"New Insert Id : {c1Upload['videoId']} Unix Time: {c1Upload['unixTime']} Title: {c1Upload['title']}\n"
-                    f"Pushed Back Id: {orderedUpload['videoId']} Unix Time: {orderedUpload['unixTime']} Title: {orderedUpload['title']}"
+                    f"New Insert Id : {c1Upload.videoId} Unix Time: {c1Upload.unixTime} Title: {c1Upload.title}\n"
+                    f"Pushed Back Id: {orderedUpload.videoId} Unix Time: {orderedUpload.unixTime} Title: {orderedUpload.title}"
                 )
-                self._insertUpload(orderedUploadIndex, c1Upload, channel.channelUrl)
+                self._insertUpload(orderedUploadIndex, c1Upload, channel.channelUrl, channel.channelName)
                 channelUploadIndex+=1
 
             orderedUploadIndex+=1
@@ -281,7 +291,7 @@ class SubBox:
         i = 0
         while i < len(self.orderedUploads):
             upload = self.orderedUploads[i]
-            if upload['channelUrl'] != channelUrl:
+            if upload.channelUrl != channelUrl:
                 i+=1
                 continue
 

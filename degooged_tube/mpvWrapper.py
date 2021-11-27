@@ -5,7 +5,7 @@ player = mpv.MPV(ytdl=True, input_default_bindings=True, input_vo_keyboard=True,
 #player['vo'] = 'gpu'
 #player['stream-buffer-size']='1MiB'
 
-def playVideo(url):
+def playVideo(url:str):
     try:
         player.play(url)
         player.wait_for_playback()

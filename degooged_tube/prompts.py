@@ -1,6 +1,9 @@
 from typing import Callable
-from degooged_tube.subbox import SubBoxChannel
+from degooged_tube.subbox import SubBoxChannel, SubBox
 import degooged_tube.config as cfg
+
+class Cancel(Exception):
+    pass
 
 def yesNoPrompt(prompt: str):
     answer = input(f'{prompt} \n(y)es/(n)o: ').strip().lower()
@@ -11,12 +14,7 @@ def yesNoPrompt(prompt: str):
 
 def listChannels(channels: list[SubBoxChannel]):
     for i,channel in enumerate(channels):
-        try:
-            label = channel.scrapedData['name']
-        except KeyError:
-            label = channel.channelUrl
-
-        cfg.logger.info(f'{i}) {label}\n  tags:{channel.tags}')
+        cfg.logger.info(f'{i}) {channel.channelName}\n  tags:{channel.tags}')
 
 
 def qPrompt(initalPrompt: str, inputPrompt: str, onInput: Callable[[str],None], onError: Callable[[str], None] = None):
@@ -40,19 +38,23 @@ def qPrompt(initalPrompt: str, inputPrompt: str, onInput: Callable[[str],None], 
         except:
             onError(response)
 
-def numPrompt(prompt: str, options: list[str]) -> int:
+
+def numPrompt(prompt: str, options: list, cancelable:bool = False) -> int:
     for i,option in options:
         cfg.logger.info(f'{i}) {option}')
-    response = input(f'{prompt}: ').strip()
+    while True:
+        response = input(f'{prompt}' + ', or (c)ancel: ' if cancelable else '').strip().lower()
+        if cancelable and response == 'q':
+            raise Cancel
 
-    try:
-        index = int(response)
-    except:
-        cfg.logger.error(f"{response} is Not an Integer")
-        raise IndexError
+        try:
+            index = int(response)
+        except:
+            cfg.logger.error(f"{response} is Not an Integer")
+            continue
 
-    if index < 0 or index >= len(options):
-        cfg.logger.error(f"{index} is Not an Option")
-        raise IndexError
+        if index < 0 or index >= len(options):
+            cfg.logger.error(f"{index} is Not an Option")
+            continue
 
-    return index
+        return index

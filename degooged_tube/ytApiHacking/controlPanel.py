@@ -114,7 +114,7 @@ def _uploadAndRelatedFmt(titleTextKey: str, durationTextContainerKey: str):
 channelInfoScrapeFmt = \
     [
         ScrapeNode("header", ScrapeNum.First,[
-            ScrapeNode("title", ScrapeNum.First,[], rename='name'),
+            ScrapeNode("title", ScrapeNum.First,[], rename='channelName'),
             ScrapeNode("avatar", ScrapeNum.First,[
                 ScrapeNode("thumbnails", ScrapeNum.All,[], collapse=True),
             ]),
