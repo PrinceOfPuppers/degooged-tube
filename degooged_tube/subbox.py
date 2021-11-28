@@ -237,6 +237,7 @@ class SubBox:
         return uploads[offset: offset+limit]
 
     def getPaginatedUploads(self, pageNum: int, pageSize: int, tags: Union[set[str], None] = None) -> list[ytapih.Upload]:
+        pageNum = max(1, pageNum)
         limit = pageSize
         offset = (pageNum - 1)*pageSize
         return self.getUploads(limit, offset, tags)
@@ -311,5 +312,11 @@ class SubBox:
                 return channelIndex
         cfg.logger.debug(f"Channel Urls: {[key for key in self.channelDict.keys()]}")
         raise KeyError(f"No Channel with Channel URL: {channelUrl}")
+
+    def getAllTags(self):
+        tags = set()
+        for channel in self.channels:
+            tags.update(channel.tags)
+        return tags
 
 

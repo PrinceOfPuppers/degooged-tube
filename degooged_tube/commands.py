@@ -27,13 +27,13 @@ def removeSubFromUserData(subs, channelUrl: str):
 def createNewUser(username:str, initalSubUrls: list[str] = list(), initalTags: list[set[str]] = None) -> SubBox:
     subbox = SubBox.fromUrls(initalSubUrls, initalTags);
 
-    createPath(cfg.userDataPath)
 
     userPath = f"{cfg.userDataPath}/{username}"
     
     if os.path.exists(userPath) and len(os.listdir(userPath)) != 0:
         raise UserAlreadyExistsException()
 
+    createPath(userPath)
 
     with shelve.open(f"{cfg.userDataPath}/{username}/data", 'c',writeback=True) as userData:
         subs = {}

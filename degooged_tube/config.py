@@ -53,7 +53,7 @@ testing = False
 
 
 # config variables
-userDataPath = _config['userDataPath']
+userDataPath = f"{modulePath}/{_config['userDataPath']}"
 
 # logger
 import logging

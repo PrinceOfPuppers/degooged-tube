@@ -7,7 +7,6 @@ import degooged_tube.config as cfg
 import degooged_tube.prompts as prompts
 from degooged_tube.helpers import getTerminalSize
 from degooged_tube.subbox import SubBox, SubBoxChannel
-
 from degooged_tube.mpvWrapper import playVideo
 
 from typing import Callable, Tuple, Union
@@ -55,7 +54,7 @@ def createNewUserPrompt():
         tags = input('Space Seperated Tags: ')
         tags = tags.split()
 
-        channel = channels[index]
+        channel = subbox.channels[index]
 
         for tag in tags:
             channel.tags.add(tag.strip())
@@ -116,24 +115,77 @@ def channelInfoPage(state: CliState, channel: SubBoxChannel):
     raise NotImplementedError
 
 
-def subboxPage(state: CliState, pageNum: int = 0, tags:Union[set[str], None] = None) -> Tuple[Callable, list]:
+def subboxPage(state: CliState, pageNum: int = 1, tags:Union[set[str], None] = None) -> Tuple[Callable, list]:
     _, termHeight = getTerminalSize()
     pageSize = int(termHeight/2 - 2)
 
     uploads = state.subbox.getPaginatedUploads(pageNum, pageSize, tags)
 
     while True:
-        for upload in uploads:
-            cfg.logger.info(upload)
+        cfg.logger.info(f'Subbox Page {pageNum}:')
+        for i,upload in enumerate(uploads):
+            cfg.logger.info(f'{i}) {upload}')
 
-        chosenOption = input('\nVideo Options: (w)atch, (r)elated videos, (v)ideo info, (c)hannel info \nGeneral Options: (s)earch, (e)dit subscriptions, (l)ogout').strip().lower()
+        # TODO: add subbox tag filtering
+        chosenOption = input(
+            '\n'
+            'Video Options: (w)atch, (r)elated videos, (v)ideo info, (c)hannel info \n'
+            'General Options: (p)revious/(n)ext page, (f)ilter by tag, (s)earch, (e)dit subs, (l)ogout\n'
+            'Option: '
+        ).strip().lower()
 
-        if(len(chosenOption)!= 1 or chosenOption not in ['w', 'r', 'v', 'c', 's', 'e', 'l']):
+        options = [
+            'w', 'r', 'v', 'c', 
+            'p', 'n', 'f', 's', 'e', 'l'
+        ]
+
+        if(len(chosenOption)!= 1 or chosenOption not in options):
             cfg.logger.error(f"{chosenOption} is not an Option")
             continue
 
 
         # general options
+        if chosenOption == 'n':
+            pageNum += 1
+            _, termHeight = getTerminalSize()
+            pageSize = int(termHeight/2 - 3)
+            uploads = state.subbox.getPaginatedUploads(pageNum, pageSize, tags)
+            continue
+
+        if chosenOption == 'p':
+            if pageNum < 2:
+                cfg.logger.error('Already On First Page')
+                continue
+            pageNum -= 1
+            _, termHeight = getTerminalSize()
+            pageSize = int(termHeight/2 - 2)
+            uploads = state.subbox.getPaginatedUploads(pageNum, pageSize, tags)
+            continue
+
+        if chosenOption == 'f':
+            t = set()
+            allTags = state.subbox.getAllTags()
+            if len(allTags) == 0:
+                input('\nNo Channels are Currently Tagged \nHit Enter to Go Back To Subbox: ')
+                continue
+
+            cfg.logger.info(f"\n Channel Tags: {allTags}")
+
+            def onInput(r):
+                if r not in allTags:
+                    raise Exception()
+                t.add(r)
+
+            def onError(r):
+                cfg.logger.error(f'No Tag: {r} in Channel Tags {allTags}')
+
+            prompts.qPrompt(
+                'Enter Tags to Filter By',
+                'Tag',
+                onInput,
+                onError= onError
+            )
+
         if chosenOption == 's':
             return searchPage, []
 
@@ -142,7 +194,7 @@ def subboxPage(state: CliState, pageNum: int = 0, tags:Union[set[str], None] = N
 
         if chosenOption == 'l':
             state.subbox = loginPage()
-            return subboxPage, [0, None]
+            return subboxPage, [1, None]
 
 
         # video options
@@ -181,7 +233,7 @@ def cli():
     state = CliState(subbox)
 
     page:Callable = subboxPage
-    args = [0, None]
+    args = [1, None]
 
     while True:
         page, args = page(state, *args)

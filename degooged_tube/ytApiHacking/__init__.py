@@ -25,7 +25,7 @@ class Upload:
         self.channelUrl:str = ''
     
     def __repr__(self):
-        f'{self.title}\n    c:{self.channelName} {self.views}'
+        return f'{self.title}\n     > {self.channelName} - {self.views}'
 
     def __str__(self):
         return self.__repr__()

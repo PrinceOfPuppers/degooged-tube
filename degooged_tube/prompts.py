@@ -15,7 +15,10 @@ def yesNoPrompt(prompt: str):
 def listChannels(channels: list[SubBoxChannel]):
     cfg.logger.info('')
     for i,channel in enumerate(channels):
-        cfg.logger.info(f'{i}) {channel.channelName}\n  tags:{channel.tags}')
+        numPrefix = f'{i}) '
+        spaces = len(numPrefix)*' '
+        tags = f'tags: {channel.tags}' if len(channel.tags) > 0 else 'tags: {}'
+        cfg.logger.info(f'{numPrefix}{channel.channelName}\n{spaces}{tags}')
 
 
 def qPrompt(initalPrompt: str, inputPrompt: str, onInput: Callable[[str],None], onError: Callable[[str], None] = None):
@@ -26,13 +29,14 @@ def qPrompt(initalPrompt: str, inputPrompt: str, onInput: Callable[[str],None], 
         response.strip()
         if response == 'q' or response == 'Q':
             break
+
         if len(response) == 0:
             cfg.logger.info("Enter (q) if You're Finished")
             continue
         
         if onError is None:
             onInput(response)
-            return
+            continue
 
         try:
             onInput(response)
@@ -42,11 +46,11 @@ def qPrompt(initalPrompt: str, inputPrompt: str, onInput: Callable[[str],None], 
 
 def numPrompt(prompt: str, options: list, cancelable:bool = False) -> int:
     cfg.logger.info('')
-    for i,option in options:
+    for i,option in enumerate(options):
         cfg.logger.info(f'{i}) {option}')
     while True:
         response = input(f'{prompt}' + ', or (c)ancel: ' if cancelable else '').strip().lower()
-        if cancelable and response == 'q':
+        if cancelable and response == 'c':
             raise Cancel
 
         try:
