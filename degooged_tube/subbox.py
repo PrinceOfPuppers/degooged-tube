@@ -36,7 +36,8 @@ class SubBoxChannel:
 
         uploadList = ytapih.getUploadList(initalPage)
         channelName = channelInfo.channelName
-        channelUrl = channelInfo.channelUrl
+        #channelUrl = channelInfo.channelUrl
+        channelUrl = initalPage.url # to keep channelUrl consistant
 
         return cls(channelInfo, uploadList, channelName, channelUrl, 0, channelTags)
 
@@ -76,6 +77,7 @@ class SubBox:
 
     @classmethod
     def fromInitalPages(cls, initalPages: list[ytapih.YtInitalPage], channelTags:list[set[str]] = None, prevOrdering:list = list()) -> 'SubBox':
+        cfg.logger.info("Loading SubBox... ")
         cfg.logger.debug(f"Creating SubBox From InitalPages")
 
         if channelTags is not None:
@@ -95,6 +97,7 @@ class SubBox:
 
     @classmethod
     def fromUrls(cls, urls: list[str], channelTags:list[set[str]] = None, prevOrdering:list = list()) -> 'SubBox':
+        cfg.logger.info("Loading SubBox... ")
         cfg.logger.debug(f"Creating SubBox From Urls:\n{urls}")
         if channelTags is not None:
             assert len(urls) == len(channelTags)

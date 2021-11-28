@@ -49,7 +49,7 @@ def numPrompt(prompt: str, options: list, cancelable:bool = False) -> int:
     for i,option in enumerate(options):
         cfg.logger.info(f'{i}) {option}')
     while True:
-        response = input(f'{prompt}' + ', or (c)ancel: ' if cancelable else '').strip().lower()
+        response = input(f'{prompt}' + (', or (c)ancel' if cancelable else '') + ': ').strip().lower()
         if cancelable and response == 'c':
             raise Cancel
 

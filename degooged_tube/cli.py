@@ -21,11 +21,18 @@ def setupLogger():
 
 
 
-def createNewUserPrompt():
-    username = input("No Users Found, Please Enter a New Username: ")
+def createNewUserPrompt() -> Tuple[SubBox, str]:
+    while True:
+        username = input("Enter a New Username: ")
+        existingUsers = cmds.getUsers()
+        if username in existingUsers:
+            cfg.logger.error(f"Username: {username} is taken")
+            continue
+        break
+
 
     if(not prompts.yesNoPrompt('Would you Like add Subscriptions Now? \n(can be done later)')):
-        return cmds.createNewUser(username)
+        return cmds.createNewUser(username), username
 
     channels = []
     prompts.qPrompt(
@@ -36,7 +43,7 @@ def createNewUserPrompt():
 
     subbox = cmds.createNewUser(username, channels)
     if(not prompts.yesNoPrompt('Would You Like to Tag Any of These Channels? \n(tags can be used to filter subbox, can be added later)')):
-        return subbox
+        return subbox, username
 
     prompts.listChannels(subbox.channels)
 
@@ -52,12 +59,11 @@ def createNewUserPrompt():
             return
 
         tags = input('Space Seperated Tags: ')
-        tags = tags.split()
+        tags = set(tags.split())
 
         channel = subbox.channels[index]
 
-        for tag in tags:
-            channel.tags.add(tag.strip())
+        cmds.addTags(username, channel, tags)
 
         prompts.listChannels(subbox.channels)
 
@@ -69,7 +75,7 @@ def createNewUserPrompt():
     )
     
     cfg.logger.info("\nUser Created!")
-    return subbox
+    return subbox, username
 
 
 
@@ -83,16 +89,45 @@ def createNewUserPrompt():
 @dataclass
 class CliState:
     subbox:SubBox
+    username:str
 
 
-def loginPage():
+def loginPage(autoLogin:bool = True) -> Tuple[SubBox, str]:
     users = cmds.getUsers()
-    if len(users) == 0:
-        return createNewUserPrompt()
-    if len(users) == 1:
-        return cmds.loadUserSubbox(users[0])
 
-    return cmds.loadUserSubbox(users[prompts.numPrompt('Pick a User Number', users)])
+    while True:
+        if len(users) == 0:
+            cfg.logger.info("No Existing Users Detected, Creating New User")
+            return createNewUserPrompt()
+
+        if len(users) == 1 and autoLogin:
+            return cmds.loadUserSubbox(users[0])
+        
+        if autoLogin:
+            cfg.logger.info('Login: ')
+            return cmds.loadUserSubbox(users[prompts.numPrompt('Pick a User Number', users)])
+
+        optionChosen = input('\n(l)ogin, (n)ew user, (r)emove user\nSelect an Option: ').strip().lower()
+        if optionChosen not in ['l', 'n', 'r']:
+            cfg.logger.error(f'{optionChosen} is Not an Option')
+            continue
+
+        if optionChosen == 'l':
+            return cmds.loadUserSubbox(users[prompts.numPrompt('Pick a User Number', users)])
+
+        if optionChosen == 'n':
+            return createNewUserPrompt()
+
+        if optionChosen == 'r':
+            index = prompts.numPrompt('Pick a User Number to Remove', users)
+            u = users[index]
+            if(not prompts.yesNoPrompt(f'Are You Sure You Want to Permanently Remove User: {u}')):
+                continue
+
+            cmds.removeUser(u)
+            cfg.logger.info(f'{u} Removed!')
+            users = cmds.getUsers()
+            continue
 
 
 def subscriptionsPage(state: CliState):
@@ -122,7 +157,13 @@ def subboxPage(state: CliState, pageNum: int = 1, tags:Union[set[str], None] = N
     uploads = state.subbox.getPaginatedUploads(pageNum, pageSize, tags)
 
     while True:
-        cfg.logger.info(f'Subbox Page {pageNum}:')
+
+        if tags != None and len(tags) > 0:
+            subboxTitle = f'Subbox Page {pageNum}, Tags: {tags}:' 
+        else:
+            subboxTitle = f'Subbox Page {pageNum}:' 
+
+        cfg.logger.info(subboxTitle)
         for i,upload in enumerate(uploads):
             cfg.logger.info(f'{i}) {upload}')
 
@@ -186,6 +227,9 @@ def subboxPage(state: CliState, pageNum: int = 1, tags:Union[set[str], None] = N
                 onError= onError
             )
 
+            tags = t
+            continue
+
         if chosenOption == 's':
             return searchPage, []
 
@@ -193,7 +237,7 @@ def subboxPage(state: CliState, pageNum: int = 1, tags:Union[set[str], None] = N
             return subscriptionsPage, []
 
         if chosenOption == 'l':
-            state.subbox = loginPage()
+            state.subbox, state.username = loginPage(autoLogin = False)
             return subboxPage, [1, None]
 
 
@@ -229,8 +273,8 @@ def subboxPage(state: CliState, pageNum: int = 1, tags:Union[set[str], None] = N
 def cli():
     setupLogger()
 
-    subbox = loginPage()
-    state = CliState(subbox)
+    subbox, username = loginPage()
+    state = CliState(subbox, username)
 
     page:Callable = subboxPage
     args = [1, None]

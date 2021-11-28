@@ -1,9 +1,12 @@
 import shelve
 import os
+import shutil
 
 from degooged_tube.subbox import SubBox, SubBoxChannel
 from degooged_tube.helpers import createPath
 import degooged_tube.config as cfg
+
+from typing import Tuple
 
 class UserAlreadyExistsException(Exception):
     pass
@@ -21,12 +24,13 @@ def removeSubFromUserData(subs, channelUrl: str):
 
 
 
+
+
 ########################
 # Creation and Loading #
 ########################
 def createNewUser(username:str, initalSubUrls: list[str] = list(), initalTags: list[set[str]] = None) -> SubBox:
     subbox = SubBox.fromUrls(initalSubUrls, initalTags);
-
 
     userPath = f"{cfg.userDataPath}/{username}"
     
@@ -44,7 +48,7 @@ def createNewUser(username:str, initalSubUrls: list[str] = list(), initalTags: l
 
     return subbox
 
-def loadUserSubbox(username:str) -> SubBox:
+def loadUserSubbox(username:str) -> Tuple[SubBox, str]:
     channelUrls = []
     channelTags = []
     with shelve.open(f"{cfg.userDataPath}/{username}/data", 'c',writeback=True) as userData:
@@ -54,12 +58,20 @@ def loadUserSubbox(username:str) -> SubBox:
             channelUrls.append(channelUrl)
             channelTags.append(subs[channelUrl]['tags'])
 
-    return SubBox.fromUrls(channelUrls, channelTags)
+    return SubBox.fromUrls(channelUrls, channelTags), username
 
 def getUsers() -> list[str]:
     if not os.path.exists(cfg.userDataPath):
         return []
     return os.listdir(path=cfg.userDataPath) 
+
+def removeUser(username: str):
+    userPath = f'{cfg.userDataPath}/{username}'
+    if not os.path.exists(userPath):
+        return
+
+    shutil.rmtree(userPath)
+
 
 
 
@@ -86,22 +98,19 @@ def unsubscribe(username:str, subbox: SubBox, channelUrl: str):
         removeSubFromUserData(userData['subscriptions'], channelUrl)
 
 
-def addTags(username:str, subbox: SubBox, channelUrl: str, tags: set[str]):
-    channel = subbox.channelDict[channelUrl]
+def addTags(username:str, channel: SubBoxChannel, tags: set[str]):
     channel.tags.update(tags)
 
     with shelve.open(f"{cfg.userDataPath}/{username}/data", 'c',writeback=True) as userData:
-        userData['subscriptions'][channelUrl]['tags'].update(tags)
+        userData['subscriptions'][channel.channelUrl]['tags'].update(tags)
 
 
-def removeTags(username:str, subbox: SubBox, channelUrl: str, tags: set[str]):
-    channel = subbox.channelDict[channelUrl]
-
+def removeTags(username:str, channel: SubBoxChannel, tags: set[str]):
     for tag in tags:
         channel.tags.discard(tag)
 
     with shelve.open(f"{cfg.userDataPath}/{username}/data", 'c',writeback=True) as userData:
         for tag in tags:
-            userData['subscriptions'][channelUrl]['tags'].discard(tags)
+            userData['subscriptions'][channel.channelUrl]['tags'].discard(tags)
 
 
