@@ -12,6 +12,9 @@ class NoVideo(Exception):
 class AlreadySubscribed(Exception):
     pass
 
+class ChannelLoadIssue(Exception):
+    pass
+
 
 def listsOverlap(l1, l2):
     return not set(l1).isdisjoint(l2)
@@ -31,13 +34,16 @@ class SubBoxChannel:
 
     @classmethod
     def fromInitalPage(cls, initalPage: ytapih.YtInitalPage, channelTags:set[str]) -> 'SubBoxChannel':
-        channelInfo = ytapih.getChannelInfoFromInitalPage(initalPage)
-        channelInfo = channelInfo
+        channelUrl = ytapih.sanitizeChannelUrl(initalPage.url) # to keep channelUrl consistant
+        try:
+            channelInfo = ytapih.getChannelInfoFromInitalPage(initalPage)
+            channelInfo = channelInfo
+            uploadList = ytapih.getUploadList(initalPage)
+        except Exception as e:
+            cfg.logger.debug(e)
+            raise ChannelLoadIssue(channelUrl)
 
-        uploadList = ytapih.getUploadList(initalPage)
         channelName = channelInfo.channelName
-        #channelUrl = channelInfo.channelUrl
-        channelUrl = initalPage.url # to keep channelUrl consistant
 
         return cls(channelInfo, uploadList, channelName, channelUrl, 0, channelTags)
 
@@ -46,6 +52,13 @@ class SubBoxChannel:
         initalPage = ytapih.YtInitalPage.fromUrl( ytapih.sanitizeChannelUrl(url, ytapih.ctrlp.channelVideoPath) )
         return cls.fromInitalPage(initalPage, channelTags)
 
+    
+    def __repr__(self):
+        tags = f'tags: {self.tags}' if len(self.tags) > 0 else 'tags: {}'
+        return f'{self.channelName}\n     > {tags} - URL: {self.channelUrl}'
+
+    def __str__(self):
+        return self.__repr__()
 
 class SubBox:
     channels: list[SubBoxChannel]
@@ -76,42 +89,67 @@ class SubBox:
 
 
     @classmethod
+    def _constructor(cls, initalPages, urls, channelTags, prevOrdering) -> 'SubBox':
+        channels = []
+
+        # are we getting subscriptions from inital pages or urls
+        if urls is not None:
+            sources = urls
+            subboxChannelConstructor = SubBoxChannel.fromUrl
+        elif initalPages is not None:
+            sources = initalPages
+            subboxChannelConstructor = SubBoxChannel.fromInitalPage
+        else:
+            raise Exception("Subbox Requires Either InitalPages or URLs to be Constructed")
+
+        if channelTags is not None:
+            assert len(sources) == len(channelTags)
+
+        # load channels
+        for i, source in enumerate(sources):
+            try:
+                channels.append(
+                    subboxChannelConstructor(
+                        source, 
+                        set() if channelTags is None else channelTags[i]
+                ))
+            except ChannelLoadIssue:
+                if initalPages is not None:
+                    url = source.url
+                else:
+                    url = source
+                cfg.logger.info(f"Unable to Subscribe to {url} \nAre You Sure the URL is Correct?")
+
+
+        # Remove Duplicate Channels
+        duplicateIndices = []
+        for i in range(len(channels)):
+            for j in range(i+1, len(channels)):
+                ch1 = channels[i]
+                ch2 = channels[j]
+                if ch1.channelName == ch2.channelName:
+                    cfg.logger.info(f'{ch1.channelUrl} \nand \n{ch2.channelUrl} \nHave the Same Name: {ch1.channelName}, Removing Duplicate channel')
+                    duplicateIndices.append(i)
+
+        for i in duplicateIndices:
+            channels.pop(i)
+
+
+        return cls(channels, prevOrdering)
+
+    @classmethod
     def fromInitalPages(cls, initalPages: list[ytapih.YtInitalPage], channelTags:list[set[str]] = None, prevOrdering:list = list()) -> 'SubBox':
         cfg.logger.info("Loading SubBox... ")
         cfg.logger.debug(f"Creating SubBox From InitalPages")
 
-        if channelTags is not None:
-            assert len(initalPages) == len(channelTags)
-
-        channels = []
-        for i, initalPage in enumerate(initalPages):
-            channels.append(
-                SubBoxChannel.fromInitalPage(
-                    initalPage, 
-                    set() if channelTags is None else channelTags[i]
-                )
-            )
-
-        return cls(channels, prevOrdering)
+        return cls._constructor(initalPages, None, channelTags, prevOrdering)
 
 
     @classmethod
     def fromUrls(cls, urls: list[str], channelTags:list[set[str]] = None, prevOrdering:list = list()) -> 'SubBox':
         cfg.logger.info("Loading SubBox... ")
         cfg.logger.debug(f"Creating SubBox From Urls:\n{urls}")
-        if channelTags is not None:
-            assert len(urls) == len(channelTags)
-
-        channels = []
-        for i, url in enumerate(urls):
-            channels.append(
-                SubBoxChannel.fromUrl(
-                    url, 
-                    set() if channelTags is None else channelTags[i]
-                )
-            )
-
-        return cls(channels, prevOrdering)
+        return cls._constructor(None, urls, channelTags, prevOrdering)
 
 
     def _getNextChannelWithMoreUploads(self, startIndex: int) -> Tuple[int, SubBoxChannel, ytapih.Upload]:
@@ -156,7 +194,7 @@ class SubBox:
             except NoVideo:
                 break
 
-            if contenderVideo.unixTime < mostRecentVideo.unixTime:
+            if contenderVideo.unixTime > mostRecentVideo.unixTime:
                 mostRecentIndex = contenderIndex
                 mostRecentChannel = contenderChannel
                 mostRecentVideo = contenderVideo
@@ -249,8 +287,11 @@ class SubBox:
         channel = SubBoxChannel.fromInitalPage(initalPage, tags)
         cfg.logger.debug(f"Adding new Channel to SubBox {channel.channelUrl}")
 
-        if channel.channelUrl in self.channelDict.keys():
-            raise AlreadySubscribed()
+        for c in self.channels:
+            if channel.channelName == c.channelName:
+                cfg.logger.debug(f"Channel Name: {channel.channelName} Already exists in SubBox:\n{[channel.channelName for channel in self.channels]}")
+                cfg.logger.error(f"You're Already Subscribed to {channel.channelName}")
+                raise AlreadySubscribed()
 
         channelUploadIndex = 0
 
@@ -281,7 +322,8 @@ class SubBox:
         url = ytapih.sanitizeChannelUrl(url, ytapih.ctrlp.channelVideoPath)
 
         if url in self.channelDict.keys():
-            cfg.logger.error(f"url: {url} Already exists in SubBox Urls:\n{[channel.channelUrl for channel in self.channels]}")
+            cfg.logger.debug(f"url: {url} Already exists in SubBox Urls:\n{[channel.channelUrl for channel in self.channels]}")
+            cfg.logger.info(f"You're Already Subscribed to {url}")
             raise AlreadySubscribed()
 
         channel = self.addChannelFromInitalPage(ytapih.YtInitalPage.fromUrl(url), tags)

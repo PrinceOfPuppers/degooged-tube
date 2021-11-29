@@ -16,12 +16,10 @@ def listChannels(channels: list[SubBoxChannel]):
     cfg.logger.info('')
     for i,channel in enumerate(channels):
         numPrefix = f'{i}) '
-        spaces = len(numPrefix)*' '
-        tags = f'tags: {channel.tags}' if len(channel.tags) > 0 else 'tags: {}'
-        cfg.logger.info(f'{numPrefix}{channel.channelName}\n{spaces}{tags}')
+        cfg.logger.info(f'{numPrefix}{channel}')
 
 
-def qPrompt(initalPrompt: str, inputPrompt: str, onInput: Callable[[str],None], onError: Callable[[str], None] = None):
+def qPrompt(initalPrompt: str, inputPrompt: str, onInput: Callable[[str],None], onError: Callable[[str], None] = None, errorType = Exception):
     cfg.logger.info(f"\n{initalPrompt} \nEnter (q) When Finished")
 
     while True:
@@ -40,7 +38,8 @@ def qPrompt(initalPrompt: str, inputPrompt: str, onInput: Callable[[str],None], 
 
         try:
             onInput(response)
-        except:
+            
+        except errorType:
             onError(response)
 
 

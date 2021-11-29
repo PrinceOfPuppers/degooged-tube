@@ -2,9 +2,10 @@ import shelve
 import os
 import shutil
 
-from degooged_tube.subbox import SubBox, SubBoxChannel
+from degooged_tube.subbox import SubBox, SubBoxChannel, AlreadySubscribed
 from degooged_tube.helpers import createPath
 import degooged_tube.config as cfg
+import degooged_tube.prompts as prompts
 
 from typing import Tuple
 
@@ -51,6 +52,7 @@ def createNewUser(username:str, initalSubUrls: list[str] = list(), initalTags: l
 def loadUserSubbox(username:str) -> Tuple[SubBox, str]:
     channelUrls = []
     channelTags = []
+
     with shelve.open(f"{cfg.userDataPath}/{username}/data", 'c',writeback=True) as userData:
         subs = userData['subscriptions']
         assert isinstance(subs,dict)
@@ -58,7 +60,20 @@ def loadUserSubbox(username:str) -> Tuple[SubBox, str]:
             channelUrls.append(channelUrl)
             channelTags.append(subs[channelUrl]['tags'])
 
-    return SubBox.fromUrls(channelUrls, channelTags), username
+    subbox = SubBox.fromUrls(channelUrls, channelTags)
+
+    # Sanitize Subscriptions
+    for channelUrl in channelUrls:
+        if channelUrl not in subbox.channelDict.keys():
+            if(prompts.yesNoPrompt(f"Issue Loading {channelUrl} \nWould You Like to Unsubscribe from it?")):
+                with shelve.open(f"{cfg.userDataPath}/{username}/data", 'c',writeback=True) as userData:
+                    removeSubFromUserData(userData['subscriptions'], channelUrl)
+
+                cfg.logger.info(f"Unsubscribed to {channelUrl}")
+
+
+    return subbox, username
+    
 
 def getUsers() -> list[str]:
     if not os.path.exists(cfg.userDataPath):
@@ -79,23 +94,34 @@ def removeUser(username: str):
 ###########################
 # Subbox State Management #
 ###########################
-def subscribe(username:str, subbox: SubBox, channelUrl:str, tags:set[str]) -> SubBoxChannel:
-    channel = subbox.addChannelFromUrl(channelUrl, tags)
+def subscribe(username:str, subbox: SubBox, channelUrl:str, tags:set[str]):
+    try:
+        channel = subbox.addChannelFromUrl(channelUrl, tags)
+    except AlreadySubscribed:
+        return
+    except:
+        cfg.logger.error(f"Unable to Subscribe to {channelUrl} \nAre You Sure The URL is Correct?")
+        return
 
     with shelve.open(f"{cfg.userDataPath}/{username}/data", 'c',writeback=True) as userData:
         addSubToUserData(userData['subscriptions'], channelUrl, tags)
 
-    return channel
+    cfg.logger.info(f"Subscribed to {channel.channelName}")
+
+
 
 
 def unsubscribe(username:str, subbox: SubBox, channelUrl: str):
     try:
-        _ = subbox.popChannel(subbox.getChannelIndex(channelUrl))
+        channel = subbox.popChannel(subbox.getChannelIndex(channelUrl))
     except KeyError:
         cfg.logger.error(f"Not Subscribed to {channelUrl}")
+        return
 
     with shelve.open(f"{cfg.userDataPath}/{username}/data", 'c',writeback=True) as userData:
         removeSubFromUserData(userData['subscriptions'], channelUrl)
+
+    cfg.logger.info(f"Unsubscribed to {channel.channelName}")
 
 
 def addTags(username:str, channel: SubBoxChannel, tags: set[str]):

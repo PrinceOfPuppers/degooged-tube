@@ -6,7 +6,7 @@ import degooged_tube.ytApiHacking as ytapih
 import degooged_tube.config as cfg
 import degooged_tube.prompts as prompts
 from degooged_tube.helpers import getTerminalSize
-from degooged_tube.subbox import SubBox, SubBoxChannel
+from degooged_tube.subbox import SubBox, SubBoxChannel, ChannelLoadIssue
 from degooged_tube.mpvWrapper import playVideo
 
 from typing import Callable, Tuple, Union
@@ -18,7 +18,6 @@ def setupLogger():
     cfg.logger.setLevel(logging.INFO)
     stream.setFormatter(logging.Formatter("%(message)s"))
     cfg.logger.addHandler(stream)
-
 
 
 def createNewUserPrompt() -> Tuple[SubBox, str]:
@@ -38,7 +37,9 @@ def createNewUserPrompt() -> Tuple[SubBox, str]:
     prompts.qPrompt(
         'Enter the URLs of Channels You Want to Subscribe to', 
         'Channel Url', 
-        lambda channelUrl: channels.append(ytapih.sanitizeChannelUrl(channelUrl))
+        lambda channelUrl: channels.append(ytapih.sanitizeChannelUrl(channelUrl)),
+        lambda channelUrl: cfg.logger.error(f"Unable to Subscribe to {channelUrl}\n Are You Sure the URL is Correct?"),
+        ChannelLoadIssue
     )
 
     subbox = cmds.createNewUser(username, channels)
@@ -74,7 +75,6 @@ def createNewUserPrompt() -> Tuple[SubBox, str]:
         callback
     )
     
-    cfg.logger.info("\nUser Created!")
     return subbox, username
 
 
@@ -97,7 +97,7 @@ def loginPage(autoLogin:bool = True) -> Tuple[SubBox, str]:
 
     while True:
         if len(users) == 0:
-            cfg.logger.info("No Existing Users Detected, Creating New User")
+            cfg.logger.info("\nNo Existing Users Detected, Creating New User")
             return createNewUserPrompt()
 
         if len(users) == 1 and autoLogin:
@@ -131,7 +131,87 @@ def loginPage(autoLogin:bool = True) -> Tuple[SubBox, str]:
 
 
 def subscriptionsPage(state: CliState):
-    raise NotImplementedError
+    while True:
+        cfg.logger.info('\nEdit Subscriptions:')
+        chosenOption = input(
+            'Options: (l)ist subs, (n)ew sub, (u)nsubscribe, (a)dd tags, (r)emove tags, (q) to return\n'
+            'Option: '
+        ).strip().lower()
+
+        options = [
+            'l', 'n', 'u', 'a', 'r', 'q'
+        ]
+
+        if(len(chosenOption)!= 1 or chosenOption not in options):
+            cfg.logger.error(f"{chosenOption} is not an Option")
+            continue
+
+
+        if chosenOption == 'q':
+            return
+
+        if chosenOption == 'l':
+            cfg.logger.info(f'Subscriptions for {state.username}:')
+            prompts.listChannels(state.subbox.channels)
+            continue
+
+        if chosenOption == 'n':
+            prompts.qPrompt(
+                'Enter the URLs of Channels You Want to Subscribe to', 
+                'Channel Url', 
+                lambda channelUrl: cmds.subscribe(state.username, state.subbox, ytapih.sanitizeChannelUrl(channelUrl), set()),
+                lambda channelUrl: cfg.logger.error(f"Unable to Subscribe to {channelUrl}, Are You Sure the URL is Correct?"),
+                ChannelLoadIssue
+            )
+            continue
+
+        if chosenOption == 'u':
+            try: 
+                index = prompts.numPrompt(
+                    'Enter the Number of the Channel to Unsubscribe to it',
+                    state.subbox.channels,
+                    cancelable = True
+                )
+            except prompts.Cancel:
+                continue
+            cmds.unsubscribe(state.username, state.subbox, ytapih.sanitizeChannelUrl(state.subbox.channels[index].channelUrl))
+            continue
+
+        if chosenOption == 'a':
+            try: 
+                index = prompts.numPrompt(
+                    'Enter the Number of the Channel You Want to Add Tags to',
+                    state.subbox.channels,
+                    cancelable = True
+                )
+            except prompts.Cancel:
+                continue
+
+            channel = state.subbox.channels[index]
+            tags = input('Space Seperated Tags: ')
+            tags = set(tags.split())
+            cmds.addTags(state.username, channel, tags)
+            cfg.logger.info(f'Tags: {tags} Have Been Added to {channel.channelName}')
+            continue
+
+        if chosenOption == 'r':
+            try: 
+                index = prompts.numPrompt(
+                    'Enter the Number of the Channel you Wish to Remove Tags From',
+                    state.subbox.channels,
+                    cancelable = True
+                )
+            except prompts.Cancel:
+                continue
+
+            channel = state.subbox.channels[index]
+            tags = input('Space Seperated Tags: ')
+            tags = set(tags.split())
+            cmds.removeTags(state.username, channel, tags)
+            cfg.logger.info(f'Tags: {tags} Have Been Removed from {channel.channelName}')
+            continue
+
+
 
 
 def searchPage(state: CliState):
@@ -184,7 +264,6 @@ def subboxPage(state: CliState, pageNum: int = 1, tags:Union[set[str], None] = N
             cfg.logger.error(f"{chosenOption} is not an Option")
             continue
 
-
         # general options
         if chosenOption == 'n':
             pageNum += 1
@@ -234,7 +313,8 @@ def subboxPage(state: CliState, pageNum: int = 1, tags:Union[set[str], None] = N
             return searchPage, []
 
         if chosenOption == 'e':
-            return subscriptionsPage, []
+            subscriptionsPage(state)
+            continue
 
         if chosenOption == 'l':
             state.subbox, state.username = loginPage(autoLogin = False)
