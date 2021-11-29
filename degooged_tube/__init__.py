@@ -1,6 +1,8 @@
 from degooged_tube import config as cfg
 from signal import signal,SIGINT,SIGABRT,SIGTERM,Signals
+import multiprocessing
 import sys
+
 
 __version__ = "0.0.1"
 
@@ -36,6 +38,8 @@ class _NoInterrupt:
 
 noInterrupt = _NoInterrupt()
 signal(SIGINT,noInterrupt.handler)
+
+pool = multiprocessing.Pool(processes=multiprocessing.cpu_count())
 
 def main():
     from degooged_tube.cli import cli

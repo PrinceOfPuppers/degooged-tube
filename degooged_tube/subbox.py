@@ -2,6 +2,9 @@ import degooged_tube.ytApiHacking as ytapih
 import degooged_tube.config as cfg
 from dataclasses import dataclass
 from typing import Union, Tuple
+from degooged_tube.subboxChannel import SubBoxChannel, ChannelLoadIssue, loadChannel
+from degooged_tube import pool
+
 
 class EndOfSubBox(Exception):
     pass
@@ -12,8 +15,6 @@ class NoVideo(Exception):
 class AlreadySubscribed(Exception):
     pass
 
-class ChannelLoadIssue(Exception):
-    pass
 
 
 def listsOverlap(l1, l2):
@@ -22,43 +23,6 @@ def listsOverlap(l1, l2):
 def setsOverlap(s1:set, s2:set):
     return not s1.isdisjoint(s2)
 
-@dataclass
-class SubBoxChannel:
-    channelInfo:ytapih.ChannelInfo
-
-    uploadList: ytapih.YtApiList
-    channelName: str
-    channelUrl:  str
-    extensionIndex: int
-    tags: set[str]
-
-    @classmethod
-    def fromInitalPage(cls, initalPage: ytapih.YtInitalPage, channelTags:set[str]) -> 'SubBoxChannel':
-        channelUrl = ytapih.sanitizeChannelUrl(initalPage.url) # to keep channelUrl consistant
-        try:
-            channelInfo = ytapih.getChannelInfoFromInitalPage(initalPage)
-            channelInfo = channelInfo
-            uploadList = ytapih.getUploadList(initalPage)
-        except Exception as e:
-            cfg.logger.debug(e)
-            raise ChannelLoadIssue(channelUrl)
-
-        channelName = channelInfo.channelName
-
-        return cls(channelInfo, uploadList, channelName, channelUrl, 0, channelTags)
-
-    @classmethod
-    def fromUrl(cls, url: str, channelTags:set[str]) -> 'SubBoxChannel':
-        initalPage = ytapih.YtInitalPage.fromUrl( ytapih.sanitizeChannelUrl(url, ytapih.ctrlp.channelVideoPath) )
-        return cls.fromInitalPage(initalPage, channelTags)
-
-    
-    def __repr__(self):
-        tags = f'tags: {self.tags}' if len(self.tags) > 0 else 'tags: {}'
-        return f'{self.channelName}\n     > {tags} - URL: {self.channelUrl}'
-
-    def __str__(self):
-        return self.__repr__()
 
 class SubBox:
     channels: list[SubBoxChannel]
@@ -87,39 +51,25 @@ class SubBox:
 
         self.prevOrdering = prevOrdering
 
-
     @classmethod
-    def _constructor(cls, initalPages, urls, channelTags, prevOrdering) -> 'SubBox':
+    def fromUrls(cls, urls: list[str], channelTags:list[set[str]] = None, prevOrdering:list = list()) -> 'SubBox':
+        cfg.logger.info("Loading SubBox... ")
+        cfg.logger.debug(f"Creating SubBox From Urls:\n{urls}")
+
         channels = []
 
-        # are we getting subscriptions from inital pages or urls
-        if urls is not None:
-            sources = urls
-            subboxChannelConstructor = SubBoxChannel.fromUrl
-        elif initalPages is not None:
-            sources = initalPages
-            subboxChannelConstructor = SubBoxChannel.fromInitalPage
+        if channelTags is None:
+            channelTags = [set() for _ in range(len(urls))]
         else:
-            raise Exception("Subbox Requires Either InitalPages or URLs to be Constructed")
+            assert len(urls) == len(channelTags)
 
-        if channelTags is not None:
-            assert len(sources) == len(channelTags)
+        channels = pool.map(loadChannel, zip(urls, channelTags))
+        #channels = [loadChannel(data) for data in zip(urls, channelTags)]
 
-        # load channels
-        for i, source in enumerate(sources):
-            try:
-                channels.append(
-                    subboxChannelConstructor(
-                        source, 
-                        set() if channelTags is None else channelTags[i]
-                ))
-            except ChannelLoadIssue:
-                if initalPages is not None:
-                    url = source.url
-                else:
-                    url = source
-                cfg.logger.info(f"Unable to Subscribe to {url} \nAre You Sure the URL is Correct?")
-
+        for i,channel in enumerate(reversed(channels)):
+            if isinstance(channel, str):
+                cfg.logger.info(f"Unable to Subscribe to {channel} \nAre You Sure the URL is Correct?")
+                channels.pop(i)
 
         # Remove Duplicate Channels
         duplicateIndices = []
@@ -127,6 +77,8 @@ class SubBox:
             for j in range(i+1, len(channels)):
                 ch1 = channels[i]
                 ch2 = channels[j]
+                assert not isinstance(ch1,str)
+                assert not isinstance(ch2,str)
                 if ch1.channelName == ch2.channelName:
                     cfg.logger.info(f'{ch1.channelUrl} \nand \n{ch2.channelUrl} \nHave the Same Name: {ch1.channelName}, Removing Duplicate channel')
                     duplicateIndices.append(i)
@@ -136,20 +88,6 @@ class SubBox:
 
 
         return cls(channels, prevOrdering)
-
-    @classmethod
-    def fromInitalPages(cls, initalPages: list[ytapih.YtInitalPage], channelTags:list[set[str]] = None, prevOrdering:list = list()) -> 'SubBox':
-        cfg.logger.info("Loading SubBox... ")
-        cfg.logger.debug(f"Creating SubBox From InitalPages")
-
-        return cls._constructor(initalPages, None, channelTags, prevOrdering)
-
-
-    @classmethod
-    def fromUrls(cls, urls: list[str], channelTags:list[set[str]] = None, prevOrdering:list = list()) -> 'SubBox':
-        cfg.logger.info("Loading SubBox... ")
-        cfg.logger.debug(f"Creating SubBox From Urls:\n{urls}")
-        return cls._constructor(None, urls, channelTags, prevOrdering)
 
 
     def _getNextChannelWithMoreUploads(self, startIndex: int) -> Tuple[int, SubBoxChannel, ytapih.Upload]:

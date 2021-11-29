@@ -2,7 +2,6 @@ from .ytContIter import YtInitalPage
 from . import controlPanel as ctrlp 
 from .ytApiList import YtApiList
 from .customExceptions import UnableToGetUploadTime
-from urllib.parse import quote_plus
 import time
 
 currentTime = int(time.time())
