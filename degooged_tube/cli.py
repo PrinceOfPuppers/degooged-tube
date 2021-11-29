@@ -231,10 +231,9 @@ def channelInfoPage(state: CliState, channel: SubBoxChannel):
 
 
 def subboxPage(state: CliState, pageNum: int = 1, tags:Union[set[str], None] = None) -> Tuple[Callable, list]:
-    _, termHeight = getTerminalSize()
-    pageSize = int(termHeight/2 - 2)
+    getPageSize = lambda : int((getTerminalSize()[1] - 5)/2)
 
-    uploads = state.subbox.getPaginatedUploads(pageNum, pageSize, tags)
+    uploads = state.subbox.getPaginatedUploads(pageNum, getPageSize(), tags)
 
     while True:
 
@@ -267,9 +266,7 @@ def subboxPage(state: CliState, pageNum: int = 1, tags:Union[set[str], None] = N
         # general options
         if chosenOption == 'n':
             pageNum += 1
-            _, termHeight = getTerminalSize()
-            pageSize = int(termHeight/2 - 3)
-            uploads = state.subbox.getPaginatedUploads(pageNum, pageSize, tags)
+            uploads = state.subbox.getPaginatedUploads(pageNum, getPageSize(), tags)
             continue
 
         if chosenOption == 'p':
@@ -277,9 +274,7 @@ def subboxPage(state: CliState, pageNum: int = 1, tags:Union[set[str], None] = N
                 cfg.logger.error('Already On First Page')
                 continue
             pageNum -= 1
-            _, termHeight = getTerminalSize()
-            pageSize = int(termHeight/2 - 2)
-            uploads = state.subbox.getPaginatedUploads(pageNum, pageSize, tags)
+            uploads = state.subbox.getPaginatedUploads(pageNum, getPageSize(), tags)
             continue
 
         if chosenOption == 'f':
