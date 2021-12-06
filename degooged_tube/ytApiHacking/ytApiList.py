@@ -6,10 +6,11 @@ from . import controlPanel as ctrlp
 
 import degooged_tube.config as cfg
 
-from typing import Union
+from typing import Union, TypeVar, Generic
 
-class YtApiList:
-    _list: list
+_T = TypeVar('_T')
+class YtApiList(Generic[_T]):
+    _list: list[_T]
     _iter: YtContIter
     _index: int = 0
 
@@ -18,7 +19,7 @@ class YtApiList:
     scrapeFmt: ScrapeNode
     onExtend: Callable
 
-    def __init__(self, initalPage: YtInitalPage, apiUrl: str, scrapeFmt: Union[ScrapeNode, list[ScrapeNode]], getInitalData: bool= False, onExtend: Callable = lambda res: res):
+    def __init__(self, initalPage: YtInitalPage, apiUrl: str, scrapeFmt: Union[ScrapeNode, list[ScrapeNode]], getInitalData: bool= False, onExtend: Callable[[list[dict]], list[_T]] = lambda res: res):
         self._list = []
 
         self.apiUrl = apiUrl
@@ -55,7 +56,7 @@ class YtApiList:
         while not self.atMaxLen:
             self._extend(self._scrapeFmt)
 
-    def __getitem__(self, index):
+    def __getitem__(self, index) -> _T:
         while True:
             if 0 <= index < len(self._list):
                 return self._list[index]

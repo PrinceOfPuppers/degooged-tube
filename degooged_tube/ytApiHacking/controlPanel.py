@@ -1,35 +1,15 @@
 from .jsonScraping import ScrapeNode, ScrapeNum
+from typing import Union
+from .helpers import tryGet, approxTimeToUnix
 import re
+from dataclasses import dataclass
+
+import time
+currentTime = int(time.time())
 
 ####################
 #  General Stuff  ##
 ####################
-
-ytTimeConversion = {
-    "second":  1,
-    "seconds": 1,
-
-    "minute":  60,
-    "minutes": 60,
-
-    "hour":    3600,
-    "hours":   3600,
-
-    "day":     86400,
-    "days":    86400,
-
-    "week":    604800,
-    "weeks":   604800,
-
-    "month":   2419200,
-    "months":  2419200,
-
-    "year":    29030400,
-    "years":   29030400,
-}
-timeDelineations = "|".join(ytTimeConversion.keys())
-approxTimeRe = re.compile(r"(\d+)\s+("+timeDelineations +r")\s+ago", re.I)
-
 channelVideoPath = '/videos'
 
 # scraping regexs for inital pages
@@ -74,8 +54,6 @@ apiContinuationBodyFmt = '''{{
 # subsequent scraping formats will be wrapped by scraper nodes with these keys (unless specified otherwise)
 continuationPageDataContainerKey = "continuationItems"
 initalPageDataContainerKey = "contents"
-
-
 
 
 
@@ -134,6 +112,27 @@ channelInfoScrapeFmt = \
         ]),
     ]
 
+@dataclass
+class ChannelInfo:
+    channelName:str
+    avatar:list
+    banners:list
+    mobileBanners:list
+    subscribers:str
+    channelUrl:str
+    description:str
+
+    @classmethod
+    def fromData(cls, data:dict) -> 'ChannelInfo':
+        channelName:str        = data['channelName']
+        avatar:list            = data['avatar']
+        banners:list           = data['banners']
+        mobileBanners:list     = data['mobileBanners']
+        subscribers:str        = data['subscribers']
+        channelUrl:str         = data['channelUrl']
+        description:str        = data['description']
+        return cls(channelName, avatar, banners, mobileBanners, subscribers, channelUrl, description)
+
 
 channelUrlSanitizationSplitsPostfix = ['?', '&', '/channels', '/channels', '/about', '/featured', '/videos']
 channelUrlSanitizationSplitsPrefix = ['https', 'http']
@@ -188,7 +187,9 @@ videoInfoScrapeFmt = \
 # Each Route Requires:
 # - a url fragment to be put into apiContinuationUrlFmt (you can get a list of them using YtInitalPage.apiUrls if getInitalData = True is passed)
 # - a format to use with scrapeJsonTree
-# - (optional) a callback, called by onExtend in YtApiList whenever new data is requested and appended (defined in .__init__.py)
+# - (optional) a class to unpack the json into, and deal with cases where data is missing
+
+# wrapper funcitons to get this data will be in __init__.py, along with the onExtend functions passed to ytapilist
 
 # res in callbacks will be an array of what is dictated by the format
 
@@ -198,6 +199,43 @@ videoInfoScrapeFmt = \
 uploadsApiUrl = '/youtubei/v1/browse'
 
 uploadScrapeFmt = ScrapeNode("gridVideoRenderer", ScrapeNum.All, _uploadAndRelatedFmt("text", "thumbnailOverlayTimeStatusRenderer"), collapse = True)
+
+@dataclass
+class Upload:
+    videoId:str
+    url:str
+    unixTime:int
+    thumbnails:dict
+    uploadedOn:str
+    views:str
+    duration:str
+    title:str
+    channelName:str
+    channelUrl:str
+
+    @classmethod
+    def fromData(cls, data:dict) -> 'Upload':
+        videoId:str            = data['videoId']
+        url:str                = 'https://www.youtube.com/watch?v=' + data['videoId']
+        unixTime:int           = approxTimeToUnix(currentTime, data['uploadedOn'])
+        thumbnails:dict        = data['thumbnails']
+        uploadedOn:str         = data['uploadedOn']
+        views:str              = data['views']
+        duration:str           = data['duration']
+        title:str              = data['title']
+
+        # the following are added by subbox
+        channelName:str = ''
+        channelUrl:str = ''
+        return cls(videoId, url, unixTime, thumbnails, uploadedOn, views, duration, title, channelName, channelUrl)
+    
+    def __repr__(self):
+        return f'{self.title}\n     > {self.channelName} - {self.views}'
+
+    def __str__(self):
+        return self.__repr__()
+
+
 
 # >Comments< #
 commentsApiUrl = '/youtubei/v1/next'
@@ -213,7 +251,6 @@ commentScrapeFmt = \
 
 # >RelatedVideos< #
 relatedVideosApiUrl = '/youtubei/v1/next'
-
 relatedVideosScrapeFmt = ScrapeNode("compactVideoRenderer", ScrapeNum.All, _uploadAndRelatedFmt("simpleText", "lengthText"), collapse = True)
 
 
@@ -221,59 +258,190 @@ relatedVideosScrapeFmt = ScrapeNode("compactVideoRenderer", ScrapeNum.All, _uplo
 # >Search< #
 searchUrl = "https://www.youtube.com/results?search_query="
 searchApiUrl = '/youtubei/v1/search'
+searchFilterSelectedStatus = "FILTER_STATUS_SELECTED"
 
 
-searchScrapeFmt = \
-        ScrapeNode("twoColumnSearchResultsRenderer", ScrapeNum.First,[
-            ScrapeNode("itemSectionRenderer", ScrapeNum.First,[
-                ScrapeNode("videoRenderer", ScrapeNum.All,[
-                    ScrapeNode("title", ScrapeNum.First,[
-                        ScrapeNode("text", ScrapeNum.First,[],collapse=True)
+# Search Filters
+searchFilterScrapeFmt = \
+    ScrapeNode("searchFilterGroupRenderer", ScrapeNum.All,[
+            ScrapeNode("title", ScrapeNum.First,[
+                ScrapeNode("simpleText", ScrapeNum.First, [],  collapse=True),
+            ], rename= "searchType"),
+
+            ScrapeNode("filters", ScrapeNum.First,[
+                ScrapeNode("searchFilterRenderer", ScrapeNum.All, [
+
+                    ScrapeNode("label", ScrapeNum.First,[
+                        ScrapeNode("simpleText", ScrapeNum.First, [],  collapse=True),
                     ]),
 
-                    ScrapeNode("longBylineText", ScrapeNum.First,[
-                        ScrapeNode("text", ScrapeNum.First, [],  collapse=True),
-                    ], rename= "name"),
+                    ScrapeNode("url", ScrapeNum.First, [], rename="searchUrlFragment"),
+                    ScrapeNode("status", ScrapeNum.First, [], rename="searchUrlFragment", optional = True)
 
-                    ScrapeNode("longBylineText", ScrapeNum.First,[
-                        ScrapeNode("canonicalBaseUrl", ScrapeNum.First, [], collapse=True)
-                    ],rename="channelUrlFragment"),
+                ],  collapse=True),
+            ]),
+    ], collapse= True)
 
-                    ScrapeNode("videoId", ScrapeNum.First,[]),
+@dataclass
+class SearchFilter:
+    label:str
+    searchUrlFragment:str
+    selected:bool
 
-                    ScrapeNode("thumbnails", ScrapeNum.First,[]),
+@dataclass
+class SearchType:
+    searchType:str
+    filters:list[SearchFilter]
 
-                    ScrapeNode("viewCountText", ScrapeNum.First,[
-                        ScrapeNode("simpleText", ScrapeNum.First,[],collapse=True)
-                    ], rename="views"),
+    @classmethod
+    def fromData(cls, data:dict):
+        try:
+            searchType = data['searchType']
+        except KeyError:
+            searchType = ''
 
-                    ScrapeNode("lengthText", ScrapeNum.First,[
-                        ScrapeNode("simpleText", ScrapeNum.First,[],collapse=True)
-                    ], rename="duration"),
+        try:
+            filterData = data['filters']
+        except KeyError:
+            filterData = []
 
-                    ScrapeNode("publishedTimeText", ScrapeNum.First,[
-                        ScrapeNode("simpleText", ScrapeNum.First,[],collapse=True)
-                    ], rename="uploadedOn"),
-                ], collapse = True)
-            ], collapse = True)
-        ], collapse= True)
+        filters = []
+        for f in filterData:
+            try:
+                label = f['label']
+                searchUrlFragment = f['searchUrlFragment']
+            except KeyError:
+                continue
+
+            try:
+                selected = f['status'] == searchFilterSelectedStatus
+            except KeyError:
+                selected = False
+
+            filters.append(SearchFilter(label, searchUrlFragment, selected))
+
+        return cls(searchType, filters)
 
 
-searchFilterScraper = \
-        ScrapeNode("searchFilterGroupRenderer", ScrapeNum.All,[
+
+
+searchVideoScrapeFmt = \
+    ScrapeNode("twoColumnSearchResultsRenderer", ScrapeNum.First,[
+        ScrapeNode("itemSectionRenderer", ScrapeNum.First,[
+            ScrapeNode("videoRenderer", ScrapeNum.All,[
                 ScrapeNode("title", ScrapeNum.First,[
-                    ScrapeNode("simpleText", ScrapeNum.First, [],  collapse=True),
-                ], rename= "searchType"),
-
-                ScrapeNode("filters", ScrapeNum.First,[
-                    ScrapeNode("searchFilterRenderer", ScrapeNum.All, [
-
-                        ScrapeNode("label", ScrapeNum.First,[
-                            ScrapeNode("simpleText", ScrapeNum.First, [],  collapse=True),
-                        ]),
-
-                        ScrapeNode("url", ScrapeNum.First, [], rename="searchUrlFragment"), #could also just get param
-
-                    ],  collapse=True),
+                    ScrapeNode("text", ScrapeNum.First,[],collapse=True)
                 ]),
-        ], collapse= True)
+
+                ScrapeNode("longBylineText", ScrapeNum.First,[
+                    ScrapeNode("text", ScrapeNum.First, [],  collapse=True),
+                ], rename= "channelName"),
+
+                ScrapeNode("longBylineText", ScrapeNum.First,[
+                    ScrapeNode("canonicalBaseUrl", ScrapeNum.First, [], collapse=True)
+                ],rename="channelUrlFragment"),
+
+                ScrapeNode("videoId", ScrapeNum.First,[]),
+
+                ScrapeNode("thumbnails", ScrapeNum.First,[]),
+
+                ScrapeNode("viewCountText", ScrapeNum.First,[
+                    ScrapeNode("simpleText", ScrapeNum.First,[],collapse=True)
+                ], rename="views"),
+
+                ScrapeNode("lengthText", ScrapeNum.First,[
+                    ScrapeNode("simpleText", ScrapeNum.First,[],collapse=True)
+                ], rename="duration"),
+
+                ScrapeNode("publishedTimeText", ScrapeNum.First,[
+                    ScrapeNode("simpleText", ScrapeNum.First,[],collapse=True)
+                ], rename="uploadedOn"),
+            ], collapse = True)
+        ], collapse = True)
+    ], collapse= True)
+
+@dataclass
+class SearchVideo:
+    title:str
+    channelName:str
+    channelUrlFragment:str
+    videoId:str
+    thumbnails: list
+    views:str
+    duration:str
+    uploadedOn:str
+
+    @classmethod
+    def fromData(cls, data:dict) -> Union['SearchVideo', None]:
+        try:
+            videoId = data['videoId']
+            title   = data["title"]
+        except KeyError:
+            return None
+
+        channelName        = tryGet(data, "name")
+        channelUrlFragment = tryGet(data, "channelUrlFragment")
+        videoId            = tryGet(data, "videoId")
+        thumbnails         = tryGet(data, "thumbnails", [])
+        views              = tryGet(data, "views")
+        duration           = tryGet(data, "duration")
+        uploadedOn         = tryGet(data, "uploadedOn")
+
+        return cls(title, channelName, channelUrlFragment, videoId, thumbnails, views, duration, uploadedOn)
+
+
+searchChannelScrapeFmt = \
+    ScrapeNode("contents", ScrapeNum.First,[
+
+        ScrapeNode("title", ScrapeNum.First,[
+            ScrapeNode("text", ScrapeNum.First,[],collapse=True)
+        ], rename = 'channelName'),
+
+        ScrapeNode("browseEndpoint", ScrapeNum.First,[
+            ScrapeNode("canonicalBaseUrl", ScrapeNum.First, [],  collapse=True),
+        ], rename = 'channelUrlFragment'),
+
+        ScrapeNode("thumbnails", ScrapeNum.First,[
+            ScrapeNode("text", ScrapeNum.First, [],  collapse=True),
+        ], rename = 'channelIcons'),
+
+        ScrapeNode("descriptionSnippet", ScrapeNum.First,[
+            ScrapeNode("text", ScrapeNum.First, [],  collapse=True),
+        ], rename = 'channelDescription'),
+
+        ScrapeNode("subscriberCountText", ScrapeNum.First,[
+            ScrapeNode("simpleText", ScrapeNum.First,[],collapse=True)
+        ], rename = "subscribers"),
+
+        ScrapeNode("videoCountText", ScrapeNum.First,[
+            ScrapeNode("runs", ScrapeNum.First,[
+                ScrapeNode("text", ScrapeNum.All,[], collapse=True)
+            ],collapse=True)
+        ], rename = "videoCount"),
+
+    ], collapse= True)
+
+
+@dataclass
+class SearchChannel:
+    channelName:str
+    channelUrlFragment:str
+    channelIcons: list
+    channelDescription:str
+    subscribers:str
+    videoCount:str
+
+    @classmethod
+    def fromData(cls, data:dict) -> Union['SearchChannel', None]:
+        try:
+            channelName        = data['channelName']
+            channelUrlFragment = data['channelUrlFragment ']
+        except KeyError:
+            return None
+
+        channelIcons       = tryGet(data, 'channelIcons', [])
+        channelDescription = tryGet(data, 'channelDescription')
+        subscribers        = tryGet(data, 'subscribers')
+        videoCount         = " ".join(tryGet(data, 'videoCount', [""]))
+
+        return cls(channelName, channelUrlFragment, channelIcons, channelDescription, subscribers, videoCount)

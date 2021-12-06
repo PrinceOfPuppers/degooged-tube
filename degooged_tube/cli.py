@@ -215,6 +215,7 @@ def subscriptionsPage(state: CliState):
 
 
 def searchPage(state: CliState):
+    ytapih.getSearchList
     raise NotImplementedError
 
 
@@ -313,7 +314,7 @@ def subboxPage(state: CliState, pageNum: int = 1, tags:Union[set[str], None] = N
 
         if chosenOption == 'l':
             state.subbox, state.username = loginPage(autoLogin = False)
-            return subboxPage, [1, None]
+            continue
 
 
         # video options
@@ -326,19 +327,19 @@ def subboxPage(state: CliState, pageNum: int = 1, tags:Union[set[str], None] = N
 
         if chosenOption == 'w':
             playVideo(upload.url)
-            return subboxPage, [pageNum, tags]
+            continue
 
         if chosenOption == 'r':
             relatedVideosPage(state, upload)
-            return subboxPage, [pageNum, tags]
+            continue
 
         if chosenOption == 'v':
             videoInfoPage(state, upload)
-            return subboxPage, [pageNum, tags]
+            continue
 
         if chosenOption == 'c':
             channelInfoPage(state, state.subbox.channelDict[upload.channelUrl])
-            return subboxPage, [pageNum, tags]
+            continue
 
         raise Exception(f'Reached End Of SubBoxPage Switch, Option Chosen {chosenOption}, Index {index}\n This Should Never Occur')
 

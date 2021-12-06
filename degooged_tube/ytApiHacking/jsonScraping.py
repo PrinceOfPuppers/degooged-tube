@@ -93,6 +93,7 @@ class ScrapeNode:
 
     collapse: bool = False
     rename: str = ""
+    optional: bool = False
 
     def _strIndent(self, numIndent):
         indent = numIndent*'  '
@@ -112,11 +113,14 @@ class ScrapeNode:
     def __str__(self):
         return self.__repr__()
 
-    def getKeys(self, result:set[str]):
+    def getRequiredKeys(self, result:set[str]):
         for child in self.children:
-            child.getKeys(result)
+            child.getRequiredKeys(result)
 
         if self.collapse:
+            return
+
+        if self.optional:
             return
 
         if self.rename:
@@ -236,7 +240,7 @@ def scrapeJsonTree(j, fmt: Union[ScrapeNode, list[ScrapeNode]], debugDataList:li
     for base in baseNodes:
         r = {}
         _scrapeJsonTree(j, base, r, keys)
-        base.getKeys(requiredKeys)
+        base.getRequiredKeys(requiredKeys)
         base.getOldKeyToNewKeyMap(map)
 
         if len(r) > 0:
