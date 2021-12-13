@@ -2,7 +2,7 @@ from .ytContIter import YtInitalPage
 from . import controlPanel as ctrlp 
 from .ytApiList import YtApiList
 #from urllib.parse import quote_plus
-from .controlPanel import Upload, SearchType, SearchVideo, SearchChannel, ChannelInfo
+from .controlPanel import Upload, SearchType, SearchVideo, SearchChannel, ChannelInfo, SearchFilter
 from typing import Tuple
 
 
@@ -95,7 +95,6 @@ def searchChannelCallback(res) -> list[SearchChannel]:
     return l
 
 def getSearchVideoList(term:str) -> Tuple[YtApiList[SearchVideo], list[SearchType]]:
-    '''if search video is true, use video scraping, else use channel scraping'''
     url = ctrlp.searchUrl + term
 
     searchInitalPage = YtInitalPage.fromUrl(url)
@@ -104,7 +103,6 @@ def getSearchVideoList(term:str) -> Tuple[YtApiList[SearchVideo], list[SearchTyp
     return searchList, filterData
 
 def getSearchChannelList(term:str) -> Tuple[YtApiList[SearchChannel], list[SearchType]]:
-    '''if search video is true, use video scraping, else use channel scraping'''
     url = ctrlp.searchUrl + term
 
     searchInitalPage = YtInitalPage.fromUrl(url)

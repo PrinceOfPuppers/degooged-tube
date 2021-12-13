@@ -1,15 +1,15 @@
 import sys
 import logging
 from dataclasses import dataclass
+from urllib.parse import quote_plus
+from typing import Callable, Tuple, Union
 
 import degooged_tube.ytApiHacking as ytapih
 import degooged_tube.config as cfg
 import degooged_tube.prompts as prompts
-from degooged_tube.helpers import getTerminalSize
+from degooged_tube.helpers import getTerminalSize, ignoreReturn
 from degooged_tube.subbox import SubBox, SubBoxChannel, ChannelLoadIssue
 from degooged_tube.mpvWrapper import playVideo
-
-from typing import Callable, Tuple, Union
 
 import degooged_tube.commands as cmds
 
@@ -159,7 +159,9 @@ def subscriptionsPage(state: CliState):
             prompts.qPrompt(
                 'Enter the URLs of Channels You Want to Subscribe to', 
                 'Channel Url', 
-                lambda channelUrl: cmds.subscribe(state.username, state.subbox, ytapih.sanitizeChannelUrl(channelUrl), set()),
+                lambda channelUrl: ignoreReturn(
+                    cmds.subscribe(state.username, state.subbox, ytapih.sanitizeChannelUrl(channelUrl), set())
+                ),
                 lambda channelUrl: cfg.logger.error(f"Unable to Subscribe to {channelUrl}, Are You Sure the URL is Correct?"),
                 ChannelLoadIssue
             )
@@ -212,18 +214,185 @@ def subscriptionsPage(state: CliState):
             continue
 
 
+def searchPage(state: CliState, searchVideo = True, pageNum: int = 1):
+    getPageSize = lambda : int((getTerminalSize()[1] - 5)/2)
+
+    searchTerm = input("Search Term: ")
+    sanitizedSearchTerm = quote_plus(searchTerm)
+
+    if searchVideo:
+        searchList, filters = ytapih.getSearchVideoList(sanitizedSearchTerm)
+    else:
+        searchList, filters = ytapih.getSearchChannelList(sanitizedSearchTerm)
+        # TODO: filter channel
+
+    searchRes = searchList.getPaginated(pageNum, getPageSize())
+
+    while True:
+        searchTitle = f'Search: {searchTerm}, Page: {pageNum}, ' 
+
+        if searchVideo:
+            searchTitle += 'Showing Videos:'
+        else:
+            searchTitle += 'Showing Channels:'
 
 
-def searchPage(state: CliState):
-    ytapih.getSearchList
+        cfg.logger.info(searchTitle)
+
+        for i,searchItem in enumerate(searchRes):
+            cfg.logger.info(f'{i}) {searchItem}')
+
+        # TODO: add subbox tag filtering
+        if searchVideo:
+            chosenOption = input(
+                'Video Options: (w)atch, (r)elated videos, (v)ideo info, (c)hannel info \n'
+                'General Options: (p)revious/(n)ext page, (f)ilters, (s)earch, (t)oggle videos/channels, (b)ack to subbox\n'
+                'Option: '
+            ).strip().lower()
+
+            videoOptions   = ['w', 'r', 'v', 'c']
+            generalOptions = ['p', 'n', 'f', 's', 't', 'b']
+            options        = videoOptions + generalOptions
+
+            if(len(chosenOption)!= 1 or chosenOption not in options):
+                cfg.logger.error(f"{chosenOption} is not an Option")
+                continue
+
+            if chosenOption in videoOptions:
+                try:
+                    index = prompts.numPrompt('Choose a Video Number', searchRes, cancelable = True)
+                except prompts.Cancel:
+                    continue
+
+                searchVid = searchRes[index]
+                assert isinstance(searchVid, ytapih.SearchVideo)
+
+                if chosenOption == 'w':
+                    playVideo(searchVid.url)
+                    continue
+
+                if chosenOption == 'r':
+                    relatedVideosPage(state, searchVid)
+                    continue
+
+                if chosenOption == 'v':
+                    videoInfoPage(state, searchVid)
+                    continue
+
+                if chosenOption == 'c':
+                    channel = SubBoxChannel.fromUrl(searchVid.channelUrl, set())
+                    channelInfoPage(state, channel)
+                    continue
+
+        else:
+            chosenOption = input(
+                'Channel Options: (s)ubscribe/unsubscribe (c)hannel info\n'
+                'General Options: (p)revious/(n)ext page, (f)ilters, (s)earch, (t)oggle videos/channels, (b)ack to subbox\n'
+                'Option: '
+            ).strip().lower()
+
+            channelOptions   = ['s', 'c']
+            generalOptions = ['p', 'n', 'f', 's', 't', 'b']
+            options        = channelOptions + generalOptions
+
+            if(len(chosenOption)!= 1 or chosenOption not in options):
+                cfg.logger.error(f"{chosenOption} is not an Option")
+                continue
+
+            if chosenOption in channelOptions:
+                try:
+                    index = prompts.numPrompt('Choose a Channel Number', searchRes, cancelable = True)
+                except prompts.Cancel:
+                    continue
+
+                searchChannel = searchRes[index]
+                assert isinstance(searchChannel, ytapih.SearchChannel)
+
+                if chosenOption == 's':
+                    cmds.subscribeUnsubscribe(state.username, state.subbox, searchChannel.channelUrl, searchChannel.channelName)
+                    continue
+
+                if chosenOption == 'c':
+                    channel = SubBoxChannel.fromUrl(searchChannel.channelUrl, set())
+                    channelInfoPage(state, channel)
+                    continue
+
+        # general options
+        if chosenOption == 'b':
+            return
+
+        if chosenOption == 'n':
+            pageNum += 1
+            searchRes = searchList.getPaginated(pageNum, getPageSize())
+            continue
+
+        if chosenOption == 'p':
+            if pageNum < 2:
+                cfg.logger.error('Already On First Page')
+                continue
+            pageNum -= 1
+            searchRes = searchList.getPaginated(pageNum, getPageSize())
+            continue
+
+        if chosenOption == 'f':
+            try:
+                num = prompts.numPrompt("Select a Filter Catigory", filters, cancelable = True)
+            except prompts.Cancel:
+                continue
+
+            filterCatigory = filters[num]
+
+            try:
+                num = prompts.numPrompt("Select a Filter", filterCatigory.filters, cancelable = True)
+            except prompts.Cancel:
+                continue
+
+            filter = filterCatigory.filters[num]
+
+            if searchVideo:
+                searchList, filters = ytapih.getSearchVideoList(filter.searchUrlFragment)
+            else:
+                searchList, filters = ytapih.getSearchChannelList(filter.searchUrlFragment)
+
+            pageNum = 0
+            searchRes = searchList.getPaginated(pageNum, getPageSize())
+            continue
+
+
+        if chosenOption == 's':
+            searchTerm = input("Search Term: ")
+            sanitizedSearchTerm = quote_plus(searchTerm)
+
+            if searchVideo:
+                searchList, filters = ytapih.getSearchVideoList(sanitizedSearchTerm)
+            else:
+                searchList, filters = ytapih.getSearchChannelList(sanitizedSearchTerm)
+
+            pageNum = 0
+            searchRes = searchList.getPaginated(pageNum, getPageSize())
+            continue
+
+        if chosenOption == 't':
+            searchVideo = not searchVideo
+
+            if searchVideo:
+                searchList, filters = ytapih.getSearchVideoList(sanitizedSearchTerm)
+            else:
+                searchList, filters = ytapih.getSearchChannelList(sanitizedSearchTerm)
+
+            pageNum = 0
+            searchRes = searchList.getPaginated(pageNum, getPageSize())
+            continue
+
+
+
+
+
+def relatedVideosPage(state: CliState, upload: Union[ytapih.Upload, ytapih.SearchVideo]):
     raise NotImplementedError
 
 
-def relatedVideosPage(state: CliState, upload: ytapih.Upload):
-    raise NotImplementedError
-
-
-def videoInfoPage(state: CliState, upload: ytapih.Upload):
+def videoInfoPage(state: CliState, upload: Union[ytapih.Upload, ytapih.SearchVideo]):
     raise NotImplementedError
 
 
@@ -232,7 +401,7 @@ def channelInfoPage(state: CliState, channel: SubBoxChannel):
 
 
 def subboxPage(state: CliState, pageNum: int = 1, tags:Union[set[str], None] = None) -> Tuple[Callable, list]:
-    getPageSize = lambda : int((getTerminalSize()[1] - 5)/2)
+    getPageSize = lambda : int((getTerminalSize()[1] - 4)/3)
 
     uploads = state.subbox.getPaginatedUploads(pageNum, getPageSize(), tags)
 
@@ -249,7 +418,6 @@ def subboxPage(state: CliState, pageNum: int = 1, tags:Union[set[str], None] = N
 
         # TODO: add subbox tag filtering
         chosenOption = input(
-            '\n'
             'Video Options: (w)atch, (r)elated videos, (v)ideo info, (c)hannel info \n'
             'General Options: (p)revious/(n)ext page, (f)ilter by tag, (s)earch, (e)dit subs, (l)ogout\n'
             'Option: '

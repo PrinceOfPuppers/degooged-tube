@@ -230,7 +230,7 @@ class Upload:
         return cls(videoId, url, unixTime, thumbnails, uploadedOn, views, duration, title, channelName, channelUrl)
     
     def __repr__(self):
-        return f'{self.title}\n     > {self.channelName} - {self.views}'
+        return f'{self.title}\n     > {self.channelName} | {self.duration} | {self.uploadedOn} | {self.views}\n'
 
     def __str__(self):
         return self.__repr__()
@@ -288,6 +288,17 @@ class SearchFilter:
     searchUrlFragment:str
     selected:bool
 
+    def __repr__(self):
+        s = f"{self.label}"
+
+        if self.selected:
+            s = f"> {s} <"
+
+        return s
+
+    def __str__(self):
+        return self.__repr__()
+
 @dataclass
 class SearchType:
     searchType:str
@@ -322,6 +333,14 @@ class SearchType:
 
         return cls(searchType, filters)
 
+    def __len__(self):
+        return len(self.filters)
+
+    def __repr__(self):
+        return self.searchType
+
+    def __str__(self):
+        return self.__repr__()
 
 
 
@@ -365,7 +384,9 @@ class SearchVideo:
     title:str
     channelName:str
     channelUrlFragment:str
+    channelUrl:str
     videoId:str
+    url:str
     thumbnails: list
     views:str
     duration:str
@@ -376,6 +397,10 @@ class SearchVideo:
         try:
             videoId = data['videoId']
             title   = data["title"]
+            url = 'https://www.youtube.com/watch?v=' + videoId
+            channelUrlFragment = data["channelUrlFragment"]
+            channelUrl = 'https://www.youtube.com' + channelUrlFragment
+            
         except KeyError:
             return None
 
@@ -387,7 +412,13 @@ class SearchVideo:
         duration           = tryGet(data, "duration")
         uploadedOn         = tryGet(data, "uploadedOn")
 
-        return cls(title, channelName, channelUrlFragment, videoId, thumbnails, views, duration, uploadedOn)
+        return cls(title, channelName, channelUrlFragment, channelUrl, videoId, url, thumbnails, views, duration, uploadedOn)
+
+    def __repr__(self):
+        return f'{self.title}\n     > {self.channelName} | {self.duration} | {self.uploadedOn} | {self.views}\n'
+
+    def __str__(self):
+        return self.__repr__()
 
 
 searchChannelScrapeFmt = \
@@ -426,6 +457,7 @@ searchChannelScrapeFmt = \
 class SearchChannel:
     channelName:str
     channelUrlFragment:str
+    channelUrl:str
     channelIcons: list
     channelDescription:str
     subscribers:str
@@ -436,6 +468,7 @@ class SearchChannel:
         try:
             channelName        = data['channelName']
             channelUrlFragment = data['channelUrlFragment ']
+            channelUrl         = 'https://www.youtube.com' + channelUrlFragment
         except KeyError:
             return None
 
@@ -444,4 +477,10 @@ class SearchChannel:
         subscribers        = tryGet(data, 'subscribers')
         videoCount         = " ".join(tryGet(data, 'videoCount', [""]))
 
-        return cls(channelName, channelUrlFragment, channelIcons, channelDescription, subscribers, videoCount)
+        return cls(channelName, channelUrlFragment, channelUrl, channelIcons, channelDescription, subscribers, videoCount)
+
+    def __repr__(self):
+        return f'{self.channelName}\n     > {self.subscribers} | {self.videoCount}'
+
+    def __str__(self):
+        return self.__repr__()

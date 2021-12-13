@@ -7,7 +7,7 @@ from degooged_tube.helpers import createPath
 import degooged_tube.config as cfg
 import degooged_tube.prompts as prompts
 
-from typing import Tuple
+from typing import Tuple, Union
 
 class UserAlreadyExistsException(Exception):
     pass
@@ -94,19 +94,25 @@ def removeUser(username: str):
 ###########################
 # Subbox State Management #
 ###########################
-def subscribe(username:str, subbox: SubBox, channelUrl:str, tags:set[str]):
-    try:
+def subscribe(username:str, subbox: SubBox, channelUrl:str, tags:set[str], throwIfSubscribed:bool = False) -> Union[None, SubBoxChannel]:
+    if throwIfSubscribed:
         channel = subbox.addChannelFromUrl(channelUrl, tags)
-    except AlreadySubscribed:
-        return
-    except:
-        cfg.logger.error(f"Unable to Subscribe to {channelUrl} \nAre You Sure The URL is Correct?")
-        return
+    else:
+        try:
+            channel = subbox.addChannelFromUrl(channelUrl, tags)
+        except AlreadySubscribed:
+            return None
+        except:
+            cfg.logger.error(f"Unable to Subscribe to {channelUrl} \nAre You Sure The URL is Correct?")
+            return None
 
     with shelve.open(f"{cfg.userDataPath}/{username}/data", 'c',writeback=True) as userData:
         addSubToUserData(userData['subscriptions'], channelUrl, tags)
 
     cfg.logger.info(f"Subscribed to {channel.channelName}")
+    return channel
+
+
 
 
 
@@ -122,6 +128,31 @@ def unsubscribe(username:str, subbox: SubBox, channelUrl: str):
         removeSubFromUserData(userData['subscriptions'], channelUrl)
 
     cfg.logger.info(f"Unsubscribed to {channel.channelName}")
+
+
+def subscribeUnsubscribe(username, subbox: SubBox, channelUrl: str, channelName:str):
+    try:
+        channel = subscribe(username, subbox, channelUrl, set(), throwIfSubscribed = True)
+        if channel is None:
+            raise Exception()
+    except AlreadySubscribed:
+        if(prompts.yesNoPrompt(f"Are You Sure You Want to Unsubscribe from {channelName}")):
+            unsubscribe(username, subbox, channelUrl)
+            return
+        return
+    except:
+        cfg.logger.error(f"Issue Getting Channel for {channelName} From URL: {channelUrl}")
+        return
+
+    if(prompts.yesNoPrompt(f"Would you Like to Add Tags to Channel")):
+        tags = input('Space Seperated Tags: ')
+        tags = set(tags.split())
+        addTags(username, channel, tags)
+        cfg.logger.info(f'Tags: {tags} Have Been Added to {channel.channelName}')
+
+    return
+
+
 
 
 def addTags(username:str, channel: SubBoxChannel, tags: set[str]):

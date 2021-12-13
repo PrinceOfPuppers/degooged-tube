@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Union, Tuple
 from degooged_tube.subboxChannel import SubBoxChannel, ChannelLoadIssue, loadChannel
 from degooged_tube import pool
+from degooged_tube.helpers import paginationCalculator
 
 
 class EndOfSubBox(Exception):
@@ -216,9 +217,7 @@ class SubBox:
         return uploads[offset: offset+limit]
 
     def getPaginatedUploads(self, pageNum: int, pageSize: int, tags: Union[set[str], None] = None) -> list[ytapih.Upload]:
-        pageNum = max(1, pageNum)
-        limit = pageSize
-        offset = (pageNum - 1)*pageSize
+        limit, offset = paginationCalculator(pageNum, pageSize)
         return self.getUploads(limit, offset, tags)
 
     def addChannelFromInitalPage(self, initalPage: ytapih.YtInitalPage, tags: set[str] = set()):

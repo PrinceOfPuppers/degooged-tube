@@ -3,6 +3,7 @@ from typing import Callable
 from .ytContIter import YtContIter, YtInitalPage
 from .jsonScraping import ScrapeNode, ScrapeNum
 from . import controlPanel as ctrlp 
+from degooged_tube.helpers import paginationCalculator
 
 import degooged_tube.config as cfg
 
@@ -69,7 +70,7 @@ class YtApiList(Generic[_T]):
 
             self._extend(self._scrapeFmt)
 
-    def __setitem__(self, index, val):
+    def __setitem__(self, index:int, val:_T):
         while True:
             if 0 <= index < len(self._list):
                 self._list[index] = val
@@ -84,7 +85,7 @@ class YtApiList(Generic[_T]):
 
             self._extend(self._scrapeFmt)
 
-    def __len__(self):
+    def __len__(self) -> int:
         self.getAll()
         return len(self._list)
 
@@ -100,7 +101,7 @@ class YtApiList(Generic[_T]):
         self.getAll()
         return f"{self.__class__.__name__}({str(self._list)})"  
 
-    def __next__(self):
+    def __next__(self) -> _T:
         try:
             val = self[self.index]
             self.index += 1
@@ -108,3 +109,19 @@ class YtApiList(Generic[_T]):
         except IndexError:
             self.index = 0
             raise StopIteration
+
+    def getPaginated(self, pageNum:int, pageSize:int) -> list[_T]:
+        limit, offset = paginationCalculator(pageNum, pageSize)
+
+        res = []
+        while offset + limit > len(self._list):
+            if self.atMaxLen:
+                break
+            self._extend(self._scrapeFmt)
+
+        upperBound = min(limit+offset, len(self._list))
+        for i in range(offset, upperBound):
+            res.append(self._list[i])
+
+        return res
+
