@@ -6,3 +6,6 @@ class UnableToGetPage(Exception):
 
 class UnableToGetUploadTime(Exception):
     pass
+
+class UnableToGetApproximateNum(Exception):
+    pass

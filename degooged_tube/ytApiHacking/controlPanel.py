@@ -1,6 +1,6 @@
 from .jsonScraping import ScrapeNode, ScrapeNum
 from typing import Union
-from .helpers import tryGet, approxTimeToUnix
+from .helpers import tryGet, approxTimeToUnix, tryGetMultiKey, getApproximateNum
 import re
 from dataclasses import dataclass
 
@@ -140,20 +140,39 @@ channelUrlSanitizationSplitsPrefix = ['https', 'http']
 
 videoInfoScrapeFmt = \
     ScrapeNode("twoColumnWatchNextResults", ScrapeNum.First,[
+
         ScrapeNode("description", ScrapeNum.First,[
             ScrapeNode("text", ScrapeNum.All,[], collapse=True),
         ]),
 
         ScrapeNode("videoPrimaryInfoRenderer", ScrapeNum.First,[
                 ScrapeNode("title", ScrapeNum.First,[]),
+
                 ScrapeNode("videoViewCountRenderer", ScrapeNum.First,[
                     ScrapeNode("viewCount", ScrapeNum.First,[
                         ScrapeNode("simpleText", ScrapeNum.First,[],collapse=True)
-                    ],),
-            ], collapse = True),
+                    ],rename = "exactViews"),
+                    ScrapeNode("shortViewCount", ScrapeNum.First,[
+                        ScrapeNode("simpleText", ScrapeNum.First,[],collapse=True)
+                    ],rename = "approxViews"),
+                ], collapse = True),
+
+                # likes
+                ScrapeNode("topLevelButtons", ScrapeNum.First,[
+                    ScrapeNode("topLevelButtons", ScrapeNum.First,[ # assumes likes is the first button in this button list
+                        ScrapeNode("DefaultText", ScrapeNum.First,[
+                            ScrapeNode("accessibilityData", ScrapeNum.First,[
+                                ScrapeNode("label",ScrapeNum.First, [], rename = "exactLikes")
+                            ],collapse=True),
+                            ScrapeNode("simpleText", ScrapeNum.First, [], rename = "approxLikes")
+                        ], collapse = True)
+                    ], collapse = True)
+                ], collapse=True)
+
             #ScrapeNode("sentimentBar", ScrapeNum.First,[
             #    ScrapeNode("tooltip", ScrapeNum.First,[], collapse=True)
             #],rename="likeDislike"),
+            
         ]),
 
         ScrapeNode("videoSecondaryInfoRenderer", ScrapeNum.First,[
@@ -167,17 +186,55 @@ videoInfoScrapeFmt = \
 
             ScrapeNode("subscriberCountText", ScrapeNum.First,[
                 ScrapeNode("simpleText", ScrapeNum.First,[], collapse=True)
-            ],rename="subscriberCount"),
+            ],rename="subscribers"),
         ]),
 
         ScrapeNode("dateText", ScrapeNum.First,[
             ScrapeNode("simpleText", ScrapeNum.First,[], collapse=True),
-        ], rename='date'),
+        ], rename='uploadedOn'),
 
         ScrapeNode("subscriberCountText", ScrapeNum.First,[
             ScrapeNode("simpleText", ScrapeNum.All,[], collapse=True),
         ], rename='subscribers'),
     ],collapse=True)
+
+@dataclass
+class VideoInfo:
+    description:str
+    title:str
+
+    views:str
+    viewsNum:int
+
+    likes:str
+    likesNum:int
+
+    channelName:str
+    channelUrlFragment:str
+    channelUrl:str
+
+    uploadedOn:str
+    subscribers:str
+    thumbnails:list
+
+    @classmethod
+    def fromData(cls, data:dict) -> 'VideoInfo':
+        description:str         = tryGet(data, 'description')
+        title:str               = tryGet(data, 'title')
+
+        views:str               = tryGetMultiKey(data, "0", "exactViews", "approxViews")
+        viewsNum:int            = getApproximateNum(views)
+        likes:str               = tryGetMultiKey(data, "0", "exactLikes", "approxLikes")
+        likesNum:int            = getApproximateNum(likes)
+
+        channelName:str         = tryGet(data, 'channelName')
+        channelUrlFragment:str  = data['channelUrlFragment']
+        channelUrl:str          = data['channelUrl']
+        uploadedOn:str          = data['uploadedOn']
+        subscribers:str         = data['subscribers']
+        thumbnails:list         = data['thumbnails']
+
+        return cls(description, title, views, viewsNum, likes, likesNum, channelName, channelUrlFragment, channelUrl, uploadedOn, subscribers, thumbnails, )
 
 
 ############################################

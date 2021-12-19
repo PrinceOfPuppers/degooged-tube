@@ -2,7 +2,7 @@ from .ytContIter import YtInitalPage
 from . import controlPanel as ctrlp 
 from .ytApiList import YtApiList
 #from urllib.parse import quote_plus
-from .controlPanel import Upload, SearchType, SearchVideo, SearchChannel, ChannelInfo, SearchFilter
+from .controlPanel import Upload, SearchType, SearchVideo, SearchChannel, ChannelInfo, SearchFilter, VideoInfo
 from typing import Tuple
 
 
@@ -10,7 +10,7 @@ from typing import Tuple
 def uploadsCallback(res) -> list[Upload]:
     return [Upload.fromData(x) for x in res]
 
-def getUploadList(uploadsPage, onExtend = uploadsCallback) -> YtApiList[Upload]:
+def getUploadList(uploadsPage:YtInitalPage, onExtend = uploadsCallback) -> YtApiList[Upload]:
     return YtApiList(uploadsPage, ctrlp.uploadsApiUrl, ctrlp.uploadScrapeFmt, getInitalData=True, onExtend = onExtend)
 
 
@@ -31,9 +31,9 @@ def getCommentList(videoPage: YtInitalPage, onExtend = commentCallback) -> YtApi
 # video Info
 def processVideoInfo(info):
     # Todo join description
-    return info
+    return VideoInfo.fromData(info)
 
-def getVideoInfo(videoPage: YtInitalPage):
+def getVideoInfo(videoPage: YtInitalPage) -> VideoInfo:
     info = videoPage.scrapeInitalData(ctrlp.videoInfoScrapeFmt)
     return processVideoInfo(info)
 
@@ -47,7 +47,6 @@ def getRelatedVideoList(videoPage):
 
 
 # Channel Info
-
 def getChannelInfoFromInitalPage(channelPage) -> ChannelInfo:
     data = channelPage.scrapeInitalData(ctrlp.channelInfoScrapeFmt)
 

@@ -3,6 +3,7 @@ import logging
 from dataclasses import dataclass
 from urllib.parse import quote_plus
 from typing import Callable, Tuple, Union
+from degooged_tube import pool
 
 import degooged_tube.ytApiHacking as ytapih
 import degooged_tube.config as cfg
@@ -134,12 +135,12 @@ def subscriptionsPage(state: CliState):
     while True:
         cfg.logger.info('\nEdit Subscriptions:')
         chosenOption = input(
-            'Options: (l)ist subs, (n)ew sub, (u)nsubscribe, (a)dd tags, (r)emove tags, (q) to return\n'
+            'Options: (l)ist subs, (n)ew sub, (u)nsubscribe, (a)dd tags, (r)emove tags, (h)ome\n'
             'Option: '
         ).strip().lower()
 
         options = [
-            'l', 'n', 'u', 'a', 'r', 'q'
+            'l', 'n', 'u', 'a', 'r', 'h'
         ]
 
         if(len(chosenOption)!= 1 or chosenOption not in options):
@@ -147,7 +148,7 @@ def subscriptionsPage(state: CliState):
             continue
 
 
-        if chosenOption == 'q':
+        if chosenOption == 'h':
             return
 
         if chosenOption == 'l':
@@ -214,7 +215,8 @@ def subscriptionsPage(state: CliState):
             continue
 
 
-def searchPage(state: CliState, searchVideo = True, pageNum: int = 1):
+def searchPage(state: CliState, searchVideo = True, pageNum: int = 1) -> bool:
+    '''return value specifies whether or not to go back to subbox'''
     getPageSize = lambda : int((getTerminalSize()[1] - 5)/2)
 
     searchTerm = input("Search Term: ")
@@ -246,12 +248,12 @@ def searchPage(state: CliState, searchVideo = True, pageNum: int = 1):
         if searchVideo:
             chosenOption = input(
                 'Video Options: (w)atch, (r)elated videos, (v)ideo info, (c)hannel info \n'
-                'General Options: (p)revious/(n)ext page, (f)ilters, (s)earch, (t)oggle videos/channels, (b)ack to subbox\n'
+                'General Options: (p)revious/(n)ext page, (f)ilters, (s)earch, (t)oggle videos/channels, (h)ome, (b)ack\n'
                 'Option: '
             ).strip().lower()
 
             videoOptions   = ['w', 'r', 'v', 'c']
-            generalOptions = ['p', 'n', 'f', 's', 't', 'b']
+            generalOptions = ['p', 'n', 'f', 's', 't', 'h', 'b']
             options        = videoOptions + generalOptions
 
             if(len(chosenOption)!= 1 or chosenOption not in options):
@@ -272,27 +274,30 @@ def searchPage(state: CliState, searchVideo = True, pageNum: int = 1):
                     continue
 
                 if chosenOption == 'r':
-                    relatedVideosPage(state, searchVid)
+                    if relatedVideosPage(state, searchVid):
+                        return True
                     continue
 
                 if chosenOption == 'v':
-                    videoInfoPage(state, searchVid)
+                    if videoInfoPage(state, searchVid.url):
+                        return True
                     continue
 
                 if chosenOption == 'c':
                     channel = SubBoxChannel.fromUrl(searchVid.channelUrl, set())
-                    channelInfoPage(state, channel)
+                    if channelInfoPage(state, channel):
+                        return True
                     continue
 
         else:
             chosenOption = input(
                 'Channel Options: (s)ubscribe/unsubscribe (c)hannel info\n'
-                'General Options: (p)revious/(n)ext page, (f)ilters, (s)earch, (t)oggle videos/channels, (b)ack to subbox\n'
+                'General Options: (p)revious/(n)ext page, (f)ilters, (s)earch, (t)oggle videos/channels, (h)ome, (b)ack\n'
                 'Option: '
             ).strip().lower()
 
             channelOptions   = ['s', 'c']
-            generalOptions = ['p', 'n', 'f', 's', 't', 'b']
+            generalOptions = ['p', 'n', 'f', 's', 't', 'h']
             options        = channelOptions + generalOptions
 
             if(len(chosenOption)!= 1 or chosenOption not in options):
@@ -314,12 +319,16 @@ def searchPage(state: CliState, searchVideo = True, pageNum: int = 1):
 
                 if chosenOption == 'c':
                     channel = SubBoxChannel.fromUrl(searchChannel.channelUrl, set())
-                    channelInfoPage(state, channel)
+                    if channelInfoPage(state, channel):
+                        return True
                     continue
 
         # general options
+        if chosenOption == 'h':
+            return True
+
         if chosenOption == 'b':
-            return
+            return False
 
         if chosenOption == 'n':
             pageNum += 1
@@ -388,19 +397,201 @@ def searchPage(state: CliState, searchVideo = True, pageNum: int = 1):
 
 
 
-def relatedVideosPage(state: CliState, upload: Union[ytapih.Upload, ytapih.SearchVideo]):
+def relatedVideosPage(state: CliState, upload: Union[ytapih.Upload, ytapih.SearchVideo, ytapih.VideoInfo]) -> bool:
+    '''return value specifies whether or not to go back to subbox'''
+    raise NotImplementedError
+
+def commentsPage(state: CliState, commentList: ytapih.YtApiList[str]) -> bool:
+    '''return value specifies whether or not to go back to subbox'''
     raise NotImplementedError
 
 
-def videoInfoPage(state: CliState, upload: Union[ytapih.Upload, ytapih.SearchVideo]):
-    raise NotImplementedError
+def videoInfoPage(state: CliState, videoUrl: str, channel: Union[SubBoxChannel, None] = None) -> bool:
+    '''return value specifies whether or not to go back to subbox'''
+    videoPage = ytapih.YtInitalPage.fromUrl(videoUrl)
+
+    videoInfo = ytapih.getVideoInfo(videoPage)
+
+    while True:
+        likeViewRatio = "N/A" if videoInfo.viewsNum == 0 else (videoInfo.likesNum / videoInfo.viewsNum)
+
+        cfg.logger.info(
+            f"Channel Page:\n"
+            f"Title:       {videoInfo.title}\n"
+            f"Uploader:    {videoInfo.channelName}\n"
+            f"UploadDate:  {videoInfo.uploadedOn}\n"
+            f"Likes:       {videoInfo.likesNum}\n"
+            f"Views:       {videoInfo.viewsNum}\n"
+            f"Likes/Views: {likeViewRatio}\n"
+            f"Thumbnail:   {videoInfo.thumbnails[0]}\n"
+            f"Description: \n{videoInfo.description}\n"
+        )
 
 
-def channelInfoPage(state: CliState, channel: SubBoxChannel):
-    raise NotImplementedError
+        chosenOption = input(
+            'Video Options: (w)atch, (r)elated videos, (c)hannel info, comment (l)ist \n'
+            'General Options: (h)ome, (b)ack\n'
+            'Option: '
+        ).strip().lower()
+
+        options = [
+            'w', 'r', 'c', 'l',
+            'p', 'n', 'h', 'b'
+        ]
+
+        if(len(chosenOption)!= 1 or chosenOption not in options):
+            cfg.logger.error(f"{chosenOption} is not an Option")
+            continue
+
+        if chosenOption == 'h':
+            return True
+
+        if chosenOption == 'b':
+            return False
+
+        if chosenOption == 'w':
+            playVideo(videoUrl)
+            continue
+
+        if chosenOption == 'r':
+            if relatedVideosPage(state, videoInfo):
+                return True
+            continue
+
+        if chosenOption == 'c':
+            if channel is None:
+                channel = SubBoxChannel.fromUrl(videoInfo.channelUrl, set())
+            if channelInfoPage(state, channel):
+                return True
+            continue
+
+        if chosenOption == 'l':
+            commentList = ytapih.getCommentList(videoPage)
+            if commentsPage(state, commentList):
+                return True
+            continue
+
+        raise Exception(f'Reached End Of VideoInfo Switch, Option Chosen {chosenOption}, This Should Never Occur')
 
 
-def subboxPage(state: CliState, pageNum: int = 1, tags:Union[set[str], None] = None) -> Tuple[Callable, list]:
+def channelInfoPage(state: CliState, channel: SubBoxChannel) -> bool:
+    '''return value specifies whether or not to go back to subbox'''
+    while True:
+        cfg.logger.info(
+            f"Channel Page:\n"
+            f"Name:          {channel.channelName}\n"
+            f"Url:           {channel.channelUrl}\n"
+            f"Subscribers:   {channel.channelInfo.subscribers}\n"
+            f"Avatar:        {channel.channelInfo.avatar[0]}\n"
+            f"Banner:        {channel.channelInfo.banners[0]}\n"
+            f"Description: \n{channel.channelInfo.description}\n"
+        )
+        
+        chosenOption = input(
+            'Options: (u)ploads, (h)ome, (b)ack\n'
+            'Option: '
+        ).strip().lower()
+
+        options = [
+            'h', 'u', 'b'
+        ]
+
+        if(len(chosenOption)!= 1 or chosenOption not in options):
+            cfg.logger.error(f"{chosenOption} is not an Option")
+            continue
+
+        if chosenOption == 'h':
+            return True
+
+        if chosenOption == 'b':
+            return False
+
+        if chosenOption == 'u':
+            if uploadsPage(state, channel):
+                return True
+            continue
+
+
+def uploadsPage(state: CliState, channel: SubBoxChannel, pageNum: int = 1) -> bool:
+    '''return value specifies whether or not to go back to subbox'''
+    getPageSize = lambda : int((getTerminalSize()[1] - 4)/3)
+
+    uploads = channel.uploadList.getPaginated(pageNum, getPageSize())
+
+    while True:
+        cfg.logger.info(f"Uploads Page {pageNum} of {channel.channelName}")
+
+        for i,upload in enumerate(uploads):
+            cfg.logger.info(f'{i}) {upload}')
+
+        chosenOption = input(
+            'Video Options: (w)atch, (r)elated videos, (v)ideo info, (c)hannel info \n'
+            'General Options: (p)revious/(n)ext page, (h)ome, (b)ack\n'
+            'Option: '
+        ).strip().lower()
+
+        options = [
+            'w', 'r', 'v', 'c', 
+            'p', 'n', 'h', 'b'
+        ]
+
+        if(len(chosenOption)!= 1 or chosenOption not in options):
+            cfg.logger.error(f"{chosenOption} is not an Option")
+            continue
+        # general options
+        if chosenOption == 'h':
+            return True
+
+        if chosenOption == 'b':
+            return False
+
+        # general options
+        if chosenOption == 'n':
+            pageNum += 1
+            uploads = channel.uploadList.getPaginated(pageNum, getPageSize())
+            continue
+
+        if chosenOption == 'p':
+            if pageNum < 2:
+                cfg.logger.error('Already On First Page')
+                continue
+            pageNum -= 1
+            uploads = channel.uploadList.getPaginated(pageNum, getPageSize())
+            continue
+
+        # video options
+        try:
+            index = prompts.numPrompt('Choose a Video Number',uploads, cancelable = True)
+        except prompts.Cancel:
+            continue
+
+        upload = uploads[index]
+
+        if chosenOption == 'w':
+            playVideo(upload.url)
+            continue
+
+        if chosenOption == 'r':
+            if relatedVideosPage(state, upload):
+                return True
+            continue
+
+        if chosenOption == 'v':
+            if videoInfoPage(state, upload.url):
+                return True
+
+            continue
+
+        if chosenOption == 'c':
+            if channelInfoPage(state, channel):
+                return True
+            continue
+
+        raise Exception(f'Reached End Of uploadPage Switch, Option Chosen {chosenOption}, Index {index}\n This Should Never Occur')
+
+
+
+def subboxPage(state: CliState, pageNum: int = 1, tags:Union[set[str], None] = None):
     getPageSize = lambda : int((getTerminalSize()[1] - 4)/3)
 
     uploads = state.subbox.getPaginatedUploads(pageNum, getPageSize(), tags)
@@ -474,7 +665,8 @@ def subboxPage(state: CliState, pageNum: int = 1, tags:Union[set[str], None] = N
             continue
 
         if chosenOption == 's':
-            return searchPage, []
+            searchPage(state)
+            continue
 
         if chosenOption == 'e':
             subscriptionsPage(state)
@@ -498,11 +690,11 @@ def subboxPage(state: CliState, pageNum: int = 1, tags:Union[set[str], None] = N
             continue
 
         if chosenOption == 'r':
-            relatedVideosPage(state, upload)
+            relatedVideosPage(state, upload):
             continue
 
         if chosenOption == 'v':
-            videoInfoPage(state, upload)
+            videoInfoPage(state, upload.url)
             continue
 
         if chosenOption == 'c':
@@ -519,11 +711,4 @@ def cli():
 
     subbox, username = loginPage()
     state = CliState(subbox, username)
-
-    page:Callable = subboxPage
-    args = [1, None]
-
-    while True:
-        page, args = page(state, *args)
-        
-
+    subboxPage(state)

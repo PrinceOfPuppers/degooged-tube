@@ -10,7 +10,7 @@ class ChannelLoadIssue(Exception):
 class SubBoxChannel:
     channelInfo:ytapih.ChannelInfo
 
-    uploadList: ytapih.YtApiList
+    uploadList: ytapih.YtApiList[ytapih.Upload]
     channelName: str
     channelUrl:  str
     extensionIndex: int
