@@ -136,9 +136,9 @@ channelInfoScrapeFmt = \
 @dataclass
 class ChannelInfo:
     channelName:str
-    avatar:list
-    banners:list
-    mobileBanners:list
+    avatar:list[Thumbnail]
+    banners:list[Thumbnail]
+    mobileBanners:list[Thumbnail]
     subscribers:str
     channelUrl:str
     description:str
@@ -283,7 +283,7 @@ class Upload:
     videoId:str
     url:str
     unixTime:int
-    thumbnails:dict
+    thumbnails:list[Thumbnail]
     uploadedOn:str
     views:str
     duration:str
@@ -359,7 +359,53 @@ class Comment:
 
 # >RelatedVideos< #
 relatedVideosApiUrl = '/youtubei/v1/next'
-relatedVideosScrapeFmt = ScrapeNode("compactVideoRenderer", ScrapeNum.All, _uploadAndRelatedFmt("simpleText", "lengthText"), collapse = True)
+
+relatedVideosScrapeFmt = \
+    ScrapeNode("compactVideoRenderer", ScrapeNum.All, [
+        *_uploadAndRelatedFmt("simpleText", "lengthText"), 
+        ScrapeNode("longBylineText", ScrapeNum.All, [
+            ScrapeNode("text", ScrapeNum.All, [], rename = "channelName"),
+            ScrapeNode("url", ScrapeNum.All, [], rename = "channelUrlFragment")
+        ], collapse = True)
+    ], collapse = True)
+
+@dataclass
+class RelatedVideo:
+    videoId:str
+    url:str
+    unixTime:int
+    thumbnails:list[Thumbnail]
+    uploadedOn:str
+    views:str
+    duration:str
+    title:str
+
+    channelName:str
+    channelUrlFragment:str
+    channelUrl:str
+
+    @classmethod
+    def fromData(cls, data:dict) -> 'RelatedVideo':
+        videoId:str                 = data['videoId']
+        url:str                     = 'https://www.youtube.com/watch?v=' + data['videoId']
+        unixTime:int                = approxTimeToUnix(currentTime, data['uploadedOn'])
+        thumbnails:list[Thumbnail]  = [Thumbnail.fromData(datum) for datum in tryGet(data, 'thumbnails', [])]
+        uploadedOn:str              = data['uploadedOn']
+        views:str                   = data['views']
+        duration:str                = data['duration']
+        title:str                   = data['title']
+
+        channelName:str = tryGet(data, "channelName")
+        channelUrlFragment:str = tryGet(data, "channelUrlFragment")
+        channelUrl:str = 'https://www.youtube.com' + channelUrlFragment
+
+        return cls(videoId, url, unixTime, thumbnails, uploadedOn, views, duration, title, channelName, channelUrlFragment, channelUrl)
+    
+    def __repr__(self):
+        return f'{self.title}\n     > {self.channelName} | {self.duration} | {self.uploadedOn} | {self.views}\n'
+
+    def __str__(self):
+        return self.__repr__()
 
 
 

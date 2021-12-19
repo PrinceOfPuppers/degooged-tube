@@ -274,7 +274,8 @@ def searchPage(state: CliState, searchVideo = True, pageNum: int = 1) -> bool:
                     continue
 
                 if chosenOption == 'r':
-                    if relatedVideosPage(state, searchVid):
+                    videoPage = ytapih.YtInitalPage.fromUrl(searchVid.url)
+                    if relatedVideosPage(state, videoPage, searchVid.title):
                         return True
                     continue
 
@@ -397,13 +398,134 @@ def searchPage(state: CliState, searchVideo = True, pageNum: int = 1) -> bool:
 
 
 
-def relatedVideosPage(state: CliState, upload: Union[ytapih.Upload, ytapih.SearchVideo, ytapih.VideoInfo]) -> bool:
+def relatedVideosPage(state: CliState, videoPage: ytapih.YtInitalPage, videoTitle:str, pageNum:int = 1) -> bool:
     '''return value specifies whether or not to go back to subbox'''
+    getPageSize = lambda : int((getTerminalSize()[1] - 4)/3)
+
+    relatedVideoList = ytapih.getRelatedVideoList(videoPage)
+    relatedVideos = relatedVideoList.getPaginated(pageNum, getPageSize())
+
+    while True:
+        cfg.logger.info(f"Related Videos Page {pageNum} for Video: {videoTitle}")
+
+        for i,relatedVideo in enumerate(relatedVideos):
+            cfg.logger.info(f'{i}) {relatedVideo}')
+
+        chosenOption = input(
+            'Video Options: (w)atch, (r)elated videos, (v)ideo info, (c)hannel info \n'
+            'General Options: (p)revious/(n)ext page, (h)ome, (b)ack\n'
+            'Option: '
+        ).strip().lower()
+
+        options = [
+            'w', 'r', 'v', 'c', 
+            'p', 'n', 'h', 'b'
+        ]
+
+        if(len(chosenOption)!= 1 or chosenOption not in options):
+            cfg.logger.error(f"{chosenOption} is not an Option")
+            continue
+        # general options
+        if chosenOption == 'h':
+            return True
+
+        if chosenOption == 'b':
+            return False
+
+        # general options
+        if chosenOption == 'n':
+            pageNum += 1
+            relatedVideos = relatedVideoList.getPaginated(pageNum, getPageSize())
+            continue
+
+        if chosenOption == 'p':
+            if pageNum < 2:
+                cfg.logger.error('Already On First Page')
+                continue
+            pageNum -= 1
+            relatedVideos = relatedVideoList.getPaginated(pageNum, getPageSize())
+            continue
+
+        # video options
+        try:
+            index = prompts.numPrompt('Choose a Video Number',relatedVideos, cancelable = True)
+        except prompts.Cancel:
+            continue
+
+        relatedVideo = relatedVideos[index]
+
+        if chosenOption == 'w':
+            playVideo(relatedVideo.url)
+            continue
+
+        if chosenOption == 'r':
+            videoPage = ytapih.YtInitalPage.fromUrl(relatedVideo.url)
+            if relatedVideosPage(state, videoPage, relatedVideo.title):
+                return True
+            continue
+
+        if chosenOption == 'v':
+            if videoInfoPage(state, relatedVideo.url):
+                return True
+
+            continue
+
+        if chosenOption == 'c':
+            channel = SubBoxChannel.fromUrl(relatedVideo.channelUrl, set())
+            if channelInfoPage(state, channel):
+                return True
+            continue
+
+        raise Exception(f'Reached End Of uploadPage Switch, Option Chosen {chosenOption}, Index {index}\n This Should Never Occur')
     raise NotImplementedError
 
-def commentsPage(state: CliState, commentList: ytapih.YtApiList[str]) -> bool:
+def commentsPage(state: CliState, commentList: ytapih.YtApiList[str], videoTitle: str, pageNum:int = 1) -> bool:
     '''return value specifies whether or not to go back to subbox'''
-    raise NotImplementedError
+    getPageSize = lambda : int((getTerminalSize()[1] - 3)/3)
+
+    comments = commentList.getPaginated(pageNum, getPageSize())
+
+    while True:
+        cfg.logger.info(f"Comments Page {pageNum} of Video: {videoTitle}")
+
+        for i,comment in enumerate(comments):
+            cfg.logger.info(f'{i}) {comment}')
+
+        chosenOption = input(
+            'Options: (p)revious/(n)ext page, (h)ome, (b)ack\n'
+            'Option: '
+        ).strip().lower()
+
+        options = [
+            'p', 'n', 'h', 'b'
+        ]
+
+        if(len(chosenOption)!= 1 or chosenOption not in options):
+            cfg.logger.error(f"{chosenOption} is not an Option")
+            continue
+        # general options
+        if chosenOption == 'h':
+            return True
+
+        if chosenOption == 'b':
+            return False
+
+        # general options
+        if chosenOption == 'n':
+            pageNum += 1
+            comments = commentList.getPaginated(pageNum, getPageSize())
+            continue
+
+        if chosenOption == 'p':
+            if pageNum < 2:
+                cfg.logger.error('Already On First Page')
+                continue
+            pageNum -= 1
+            comments = commentList.getPaginated(pageNum, getPageSize())
+            continue
+
+        raise Exception(f'Reached End Of commentPage Switch, Option Chosen {chosenOption}, This Should Never Occur')
+
 
 
 def videoInfoPage(state: CliState, videoUrl: str, channel: Union[SubBoxChannel, None] = None) -> bool:
@@ -454,7 +576,7 @@ def videoInfoPage(state: CliState, videoUrl: str, channel: Union[SubBoxChannel, 
             continue
 
         if chosenOption == 'r':
-            if relatedVideosPage(state, videoInfo):
+            if relatedVideosPage(state, videoPage, videoInfo.title):
                 return True
             continue
 
@@ -467,7 +589,7 @@ def videoInfoPage(state: CliState, videoUrl: str, channel: Union[SubBoxChannel, 
 
         if chosenOption == 'l':
             commentList = ytapih.getCommentList(videoPage)
-            if commentsPage(state, commentList):
+            if commentsPage(state, commentList, videoInfo.title):
                 return True
             continue
 
@@ -525,8 +647,8 @@ def uploadsPage(state: CliState, channel: SubBoxChannel, pageNum: int = 1) -> bo
             cfg.logger.info(f'{i}) {upload}')
 
         chosenOption = input(
-            'Video Options: (w)atch, (r)elated videos, (v)ideo info, (c)hannel info \n'
-            'General Options: (p)revious/(n)ext page, (h)ome, (b)ack\n'
+            'Video Options: (w)atch, (r)elated videos, (v)ideo info\n'
+            'General Options: (p)revious/(n)ext page, (c)hannel info, (h)ome, (b)ack\n'
             'Option: '
         ).strip().lower()
 
@@ -559,6 +681,11 @@ def uploadsPage(state: CliState, channel: SubBoxChannel, pageNum: int = 1) -> bo
             uploads = channel.uploadList.getPaginated(pageNum, getPageSize())
             continue
 
+        if chosenOption == 'c':
+            if channelInfoPage(state, channel):
+                return True
+            continue
+
         # video options
         try:
             index = prompts.numPrompt('Choose a Video Number',uploads, cancelable = True)
@@ -572,7 +699,8 @@ def uploadsPage(state: CliState, channel: SubBoxChannel, pageNum: int = 1) -> bo
             continue
 
         if chosenOption == 'r':
-            if relatedVideosPage(state, upload):
+            videoPage = ytapih.YtInitalPage.fromUrl(upload.url)
+            if relatedVideosPage(state, videoPage, upload.title):
                 return True
             continue
 
@@ -580,11 +708,6 @@ def uploadsPage(state: CliState, channel: SubBoxChannel, pageNum: int = 1) -> bo
             if videoInfoPage(state, upload.url):
                 return True
 
-            continue
-
-        if chosenOption == 'c':
-            if channelInfoPage(state, channel):
-                return True
             continue
 
         raise Exception(f'Reached End Of uploadPage Switch, Option Chosen {chosenOption}, Index {index}\n This Should Never Occur')
@@ -690,7 +813,8 @@ def subboxPage(state: CliState, pageNum: int = 1, tags:Union[set[str], None] = N
             continue
 
         if chosenOption == 'r':
-            relatedVideosPage(state, upload):
+            videoPage = ytapih.YtInitalPage.fromUrl(upload.url)
+            relatedVideosPage(state, videoPage, upload.title)
             continue
 
         if chosenOption == 'v':

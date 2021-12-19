@@ -2,7 +2,7 @@ from .ytContIter import YtInitalPage
 from . import controlPanel as ctrlp 
 from .ytApiList import YtApiList
 #from urllib.parse import quote_plus
-from .controlPanel import Upload, SearchType, SearchVideo, SearchChannel, ChannelInfo, SearchFilter, VideoInfo
+from .controlPanel import Upload, SearchType, SearchVideo, SearchChannel, ChannelInfo, SearchFilter, VideoInfo, RelatedVideo
 from typing import Tuple
 
 
@@ -40,8 +40,11 @@ def getVideoInfo(videoPage: YtInitalPage) -> VideoInfo:
 
 
 # related videos
-def getRelatedVideoList(videoPage):
-    return YtApiList(videoPage, ctrlp.relatedVideosApiUrl, ctrlp.relatedVideosScrapeFmt)
+def relatedVideosCallback(res):
+    return [RelatedVideo.fromData(x) for x in res]
+
+def getRelatedVideoList(videoPage: YtInitalPage, onExtend = relatedVideosCallback):
+    return YtApiList(videoPage, ctrlp.relatedVideosApiUrl, ctrlp.relatedVideosScrapeFmt, onExtend = onExtend)
 
 
 
