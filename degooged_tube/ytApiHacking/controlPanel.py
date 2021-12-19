@@ -55,6 +55,27 @@ apiContinuationBodyFmt = '''{{
 continuationPageDataContainerKey = "continuationItems"
 initalPageDataContainerKey = "contents"
 
+@dataclass 
+class Thumbnail:
+    width:int
+    height:int
+    url:str
+
+    @classmethod
+    def fromData(cls, data) -> 'Thumbnail':
+        width:int  = int(tryGet(data, "width", "0"))
+        height:int = int(tryGet(data, "height", "0"))
+        url:str    = tryGet(data, "url")
+        return cls(width, height, url)
+
+    def __repr__(self):
+        return self.url
+
+    def __str__(self):
+        return self.__repr__()
+
+
+
 
 
 # some stuff shares scraper formats, such as uploads and recommended videos, so we create wrappers for them
@@ -124,13 +145,13 @@ class ChannelInfo:
 
     @classmethod
     def fromData(cls, data:dict) -> 'ChannelInfo':
-        channelName:str        = data['channelName']
-        avatar:list            = data['avatar']
-        banners:list           = data['banners']
-        mobileBanners:list     = data['mobileBanners']
-        subscribers:str        = data['subscribers']
-        channelUrl:str         = data['channelUrl']
-        description:str        = data['description']
+        channelName:str               = data['channelName']
+        avatar:list[Thumbnail]        = [Thumbnail.fromData(datum) for datum in tryGet(data, 'avatar', [])]
+        banners:list[Thumbnail]       = [Thumbnail.fromData(datum) for datum in tryGet(data, 'banners', [])]
+        mobileBanners:list[Thumbnail] = [Thumbnail.fromData(datum) for datum in tryGet(data, 'mobileBanners', [])]
+        subscribers:str               = data['subscribers']
+        channelUrl:str                = data['channelUrl']
+        description:str               = data['description']
         return cls(channelName, avatar, banners, mobileBanners, subscribers, channelUrl, description)
 
 
@@ -219,20 +240,20 @@ class VideoInfo:
 
     @classmethod
     def fromData(cls, data:dict) -> 'VideoInfo':
-        description:str         = tryGet(data, 'description')
-        title:str               = tryGet(data, 'title')
+        description:str             = tryGet(data, 'description')
+        title:str                   = tryGet(data, 'title')
 
-        views:str               = tryGetMultiKey(data, "0", "exactViews", "approxViews")
-        viewsNum:int            = getApproximateNum(views)
-        likes:str               = tryGetMultiKey(data, "0", "exactLikes", "approxLikes")
-        likesNum:int            = getApproximateNum(likes)
+        views:str                   = tryGetMultiKey(data, "0", "exactViews", "approxViews")
+        viewsNum:int                = getApproximateNum(views)
+        likes:str                   = tryGetMultiKey(data, "0", "exactLikes", "approxLikes")
+        likesNum:int                = getApproximateNum(likes)
 
-        channelName:str         = tryGet(data, 'channelName')
-        channelUrlFragment:str  = data['channelUrlFragment']
-        channelUrl:str          = data['channelUrl']
-        uploadedOn:str          = data['uploadedOn']
-        subscribers:str         = data['subscribers']
-        thumbnails:list         = data['thumbnails']
+        channelName:str             = tryGet(data, 'channelName')
+        channelUrlFragment:str      = data['channelUrlFragment']
+        channelUrl:str              = data['channelUrl']
+        uploadedOn:str              = data['uploadedOn']
+        subscribers:str             = data['subscribers']
+        thumbnails:list[Thumbnail]  = [Thumbnail.fromData(datum) for datum in tryGet(data, 'thumbnails', [])]
 
         return cls(description, title, views, viewsNum, likes, likesNum, channelName, channelUrlFragment, channelUrl, uploadedOn, subscribers, thumbnails, )
 
@@ -272,14 +293,14 @@ class Upload:
 
     @classmethod
     def fromData(cls, data:dict) -> 'Upload':
-        videoId:str            = data['videoId']
-        url:str                = 'https://www.youtube.com/watch?v=' + data['videoId']
-        unixTime:int           = approxTimeToUnix(currentTime, data['uploadedOn'])
-        thumbnails:dict        = data['thumbnails']
-        uploadedOn:str         = data['uploadedOn']
-        views:str              = data['views']
-        duration:str           = data['duration']
-        title:str              = data['title']
+        videoId:str                 = data['videoId']
+        url:str                     = 'https://www.youtube.com/watch?v=' + data['videoId']
+        unixTime:int                = approxTimeToUnix(currentTime, data['uploadedOn'])
+        thumbnails:list[Thumbnail]  = [Thumbnail.fromData(datum) for datum in tryGet(data, 'thumbnails', [])]
+        uploadedOn:str              = data['uploadedOn']
+        views:str                   = data['views']
+        duration:str                = data['duration']
+        title:str                   = data['title']
 
         # the following are added by subbox
         channelName:str = ''
@@ -298,11 +319,41 @@ class Upload:
 commentsApiUrl = '/youtubei/v1/next'
 
 commentScrapeFmt = \
-      ScrapeNode("contentText", ScrapeNum.All,[
-          ScrapeNode("runs", ScrapeNum.First,[
-              ScrapeNode("text", ScrapeNum.All,[], collapse = True)
-          ], collapse = True)
-      ], collapse=True)
+      ScrapeNode("comment", ScrapeNum.All,[
+          ScrapeNode("contentText", ScrapeNum.First,[
+
+              ScrapeNode("runs", ScrapeNum.First,[
+                  ScrapeNode("text", ScrapeNum.All,[], collapse = True)
+              ], rename = "commentRuns"),
+
+              ScrapeNode("authorText", ScrapeNum.First,[
+                  ScrapeNode("simpleText", ScrapeNum.First,[], collapse = True)
+              ], rename = "author"),
+
+              ScrapeNode("thumbnails", ScrapeNum.First,[], rename = "avatar")
+
+          ], collapse=True)
+      ], collapse = True)
+
+@dataclass
+class Comment:
+    author:str
+    comment:str
+    avatar:list[Thumbnail]
+
+    @classmethod
+    def fromData(cls, data):
+        author:str              = tryGet(data, 'author')
+        comment:str             = "".join(tryGet(data, 'commentRuns', []))
+        avatar:list[Thumbnail]  = [Thumbnail.fromData(datum) for datum in tryGet(data, 'avatar', [])]
+        return cls(author, comment, avatar)
+
+    def __repr__(self):
+        return f"> {self.author} \n{self.comment}"
+
+    def __str__(self):
+        return self.__repr__()
+
 
 
 
@@ -461,13 +512,13 @@ class SearchVideo:
         except KeyError:
             return None
 
-        channelName        = tryGet(data, "name")
-        channelUrlFragment = tryGet(data, "channelUrlFragment")
-        videoId            = tryGet(data, "videoId")
-        thumbnails         = tryGet(data, "thumbnails", [])
-        views              = tryGet(data, "views")
-        duration           = tryGet(data, "duration")
-        uploadedOn         = tryGet(data, "uploadedOn")
+        channelName                 = tryGet(data, "name")
+        channelUrlFragment          = tryGet(data, "channelUrlFragment")
+        videoId                     = tryGet(data, "videoId")
+        thumbnails:list[Thumbnail]  = [Thumbnail.fromData(datum) for datum in tryGet(data, 'thumbnails', [])]
+        views                       = tryGet(data, "views")
+        duration                    = tryGet(data, "duration")
+        uploadedOn                  = tryGet(data, "uploadedOn")
 
         return cls(title, channelName, channelUrlFragment, channelUrl, videoId, url, thumbnails, views, duration, uploadedOn)
 

@@ -423,7 +423,7 @@ def videoInfoPage(state: CliState, videoUrl: str, channel: Union[SubBoxChannel, 
             f"Likes:       {videoInfo.likesNum}\n"
             f"Views:       {videoInfo.viewsNum}\n"
             f"Likes/Views: {likeViewRatio}\n"
-            f"Thumbnail:   {videoInfo.thumbnails[0]}\n"
+            f"Thumbnail:   {videoInfo.thumbnails[-1]}\n"
             f"Description: \n{videoInfo.description}\n"
         )
 
@@ -482,8 +482,8 @@ def channelInfoPage(state: CliState, channel: SubBoxChannel) -> bool:
             f"Name:          {channel.channelName}\n"
             f"Url:           {channel.channelUrl}\n"
             f"Subscribers:   {channel.channelInfo.subscribers}\n"
-            f"Avatar:        {channel.channelInfo.avatar[0]}\n"
-            f"Banner:        {channel.channelInfo.banners[0]}\n"
+            f"Avatar:        {channel.channelInfo.avatar[-1]}\n"
+            f"Banner:        {channel.channelInfo.banners[-1]}\n"
             f"Description: \n{channel.channelInfo.description}\n"
         )
         
