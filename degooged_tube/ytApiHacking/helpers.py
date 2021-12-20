@@ -67,7 +67,7 @@ _ytNumConversion = {
 }
 
 _numDelineations = "|".join(_ytNumConversion.keys())
-_approxNumRe = re.compile(r"^(\d+)("+_numDelineations +r")", re.I)
+_approxNumRe = re.compile(r"^(\d+)("+_numDelineations +r")?", re.I)
 
 def getApproximateNum(approxNum: str)->int:
     matches = _approxNumRe.search(approxNum.strip().lower().replace(",", ""))
@@ -80,7 +80,11 @@ def getApproximateNum(approxNum: str)->int:
 
     try:
         denominationText = matches.group(2)
+        if denominationText is None:
+            return number
     except IndexError:
         return number
 
     return number *_ytNumConversion[denominationText]
+
+

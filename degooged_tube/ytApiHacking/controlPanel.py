@@ -190,7 +190,7 @@ videoInfoScrapeFmt = \
                             ScrapeNode("simpleText", ScrapeNum.First, [], rename = "approxLikes")
                         ], collapse = True)
                     ], collapse = True)
-                ])
+                ], collapse=True)
 
             #ScrapeNode("sentimentBar", ScrapeNum.First,[
             #    ScrapeNode("tooltip", ScrapeNum.First,[], collapse=True)
@@ -210,7 +210,7 @@ videoInfoScrapeFmt = \
             ScrapeNode("subscriberCountText", ScrapeNum.First,[
                 ScrapeNode("simpleText", ScrapeNum.First,[], collapse=True)
             ],rename="subscribers"),
-        ]),
+        ], collapse=True),
 
         ScrapeNode("dateText", ScrapeNum.First,[
             ScrapeNode("simpleText", ScrapeNum.First,[], collapse=True),
@@ -252,9 +252,9 @@ class VideoInfo:
 
         channelName:str             = tryGet(data, 'channelName')
         channelUrlFragment:str      = data['channelUrlFragment']
-        channelUrl:str              = data['channelUrl']
+        channelUrl:str              = 'https://www.youtube.com' + channelUrlFragment
         uploadedOn:str              = data['uploadedOn']
-        subscribers:str             = data['subscribers']
+        subscribers:str             = tryGet(data, 'subscribers', "0")
         thumbnails:list[Thumbnail]  = [Thumbnail.fromData(datum) for datum in tryGet(data, 'thumbnails', [])]
 
         return cls(description, title, views, viewsNum, likes, likesNum, channelName, channelUrlFragment, channelUrl, uploadedOn, subscribers, thumbnails, )

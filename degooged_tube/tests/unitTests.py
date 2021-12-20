@@ -3,6 +3,7 @@ import inspect
 import json
 import degooged_tube.config as cfg
 from degooged_tube.ytApiHacking.jsonScraping import scrapeJsonTree, ScrapeNode, ScrapeNum, ScrapeError
+from degooged_tube.ytApiHacking.helpers import getApproximateNum
 
 def logName(testInstance, frame):
     assert frame is not None
@@ -442,3 +443,29 @@ class test_scrapeJsonTree(TestCase):
             self.fail("Scrape Json Tree Missed Key")
 
         self.assertEqual(answer, solution)
+
+
+class test_helpers(TestCase):
+    def test_getApproxNum_1(self):
+        logName(self, inspect.currentframe())
+        x = "  100K views "
+        val = getApproximateNum(x)
+        self.assertEqual (100000, val)
+
+    def test_getApproxNum_2(self):
+        logName(self, inspect.currentframe())
+        x = "1M Likes"
+        val = getApproximateNum(x)
+        self.assertEqual (1000000, val)
+
+    def test_getApproxNum_3(self):
+        logName(self, inspect.currentframe())
+        x = "5 uploads"
+        val = getApproximateNum(x)
+        self.assertEqual (5, val)
+
+    def test_getApproxNum_4(self):
+        logName(self, inspect.currentframe())
+        x = "11 "
+        val = getApproximateNum(x)
+        self.assertEqual (11, val)
