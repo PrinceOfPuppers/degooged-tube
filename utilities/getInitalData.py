@@ -27,6 +27,6 @@ if __name__ == '__main__':
     args = parseArgs()
     page = YtInitalPage.fromUrl(args.URL)
 
-    #print(json.dumps(page.scrapeInitalData(ytapih.ctrlp.searchFilterScraper), indent = 2))
-
     print(json.dumps(page.initalData, indent = 2))
+    print(json.dumps(page.scrapeInitalData(ytapih.ctrlp.videoInfoScrapeFmt), indent = 2))
+

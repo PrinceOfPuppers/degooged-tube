@@ -64,8 +64,10 @@ class SubBox:
         else:
             assert len(urls) == len(channelTags)
 
-        channels = pool.map(loadChannel, zip(urls, channelTags))
-        #channels = [loadChannel(data) for data in zip(urls, channelTags)]
+        if cfg.testing:
+            channels = [loadChannel(data) for data in zip(urls, channelTags)]
+        else:
+            channels = pool.map(loadChannel, zip(urls, channelTags))
 
         for i,channel in enumerate(reversed(channels)):
             if isinstance(channel, str):

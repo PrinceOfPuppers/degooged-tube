@@ -3,14 +3,14 @@ import inspect
 
 import degooged_tube.config as cfg
 from degooged_tube.subbox import SubBox, listsOverlap
-from degooged_tube.ytApiHacking import sanitizeChannelUrl, getChannelInfo, getCommentList, getRelatedVideoList, getUploadList, getVideoInfo, YtInitalPage, getSearchList, Upload
+from degooged_tube.ytApiHacking import sanitizeChannelUrl, getChannelInfo, getCommentList, getRelatedVideoList, getUploadList, getVideoInfo, YtInitalPage, Upload
 #import degooged_tube.ytApiHacking.controlPanel as ctrlp
 from .unitTests import logName
 
 
 def getUploads(pageSize: int, numPages: int, subBox: SubBox, tags:set[str] = None) -> list[Upload]:
     uploads = []
-    for pageNum in range(numPages):
+    for pageNum in range(1,numPages + 1):
         page = subBox.getPaginatedUploads(pageNum, pageSize, tags)
         uploads.extend(page)
 
@@ -29,7 +29,6 @@ def checkNoOverlap(videoIds1, videoIds2):
     return True
 
 def checkNoMisses(uploads:list[Upload], subBox: SubBox, tags = list()):
-
     videoIds = [upload.videoId for upload in uploads]
 
     count = 0
@@ -52,6 +51,10 @@ def checkNoMisses(uploads:list[Upload], subBox: SubBox, tags = list()):
                 break
 
     return count == len(uploads)
+
+def checkNoDuplicates(uploads:list[Upload]):
+    videoIds = [upload.videoId for upload in uploads]
+    return len(set(videoIds)) == len(videoIds)
 
 def checkOrdering(uploads: list[Upload]):
     for i in range(0,len(uploads)-1):
@@ -95,6 +98,13 @@ class test_SubBox(TestCase):
         uploads = getUploads(pageSize, numPages, self.subBox)
         self.assertTrue(checkNoMisses(uploads, self.subBox))
 
+    def test_duplicates(self):
+        logName(self, inspect.currentframe())
+        pageSize = 10
+        numPages = 2
+        uploads = getUploads(pageSize, numPages, self.subBox)
+        self.assertTrue(checkNoDuplicates(uploads))
+
 
     def test_ordering(self):
         logName(self, inspect.currentframe())
@@ -122,6 +132,7 @@ class test_SubBox(TestCase):
             initalVideoIds = [upload.videoId for upload in initalUploads]
 
             self.subBox.addChannelFromUrl(newChannelUrl)
+            self.assertTrue(checkNoDuplicates(self.subBox.orderedUploads))
 
             uploads = getUploads(pageSize, numPages, self.subBox)
 
@@ -139,6 +150,7 @@ class test_SubBox(TestCase):
                 cfg.logger.info("videoId belonging to newly added channel not found in subbox")
                 continue
 
+            self.assertTrue(checkNoDuplicates(uploads))
             self.assertTrue(checkNoMisses(uploads, self.subBox))
             self.assertTrue(checkOrdering(uploads))
 
@@ -147,6 +159,7 @@ class test_SubBox(TestCase):
             endUploads = getUploads(pageSize, numPages, self.subBox)
             endVideoIds = [upload.videoId for upload in endUploads]
 
+            self.assertTrue(checkNoDuplicates(uploads))
             self.assertTrue(checkNoMisses(endUploads, self.subBox))
             self.assertTrue(checkOrdering(endUploads))
 
@@ -230,11 +243,6 @@ class test_getFunctionsAndFmts(TestCase):
 
         _ = getVideoInfo(page)
 
-    def test_search(self):
-        logName(self, inspect.currentframe())
-
-        searchList,_ = getSearchList("test")
-        searchList[0]
 
         #filteredSearch = getSearchList(filters['type']['channel'])
 

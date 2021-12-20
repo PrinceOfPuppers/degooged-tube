@@ -2,6 +2,8 @@ import sys
 import logging
 import degooged_tube.config as cfg
 import argparse
+from degooged_tube.ytApiHacking.jsonScraping import scrapeJsonTree, ScrapeNode, ScrapeNum
+import degooged_tube.ytApiHacking.controlPanel as ctrlp
 
 #modified version of help formatter which only prints args once in help message
 class ArgsOnce(argparse.HelpFormatter):
@@ -67,6 +69,7 @@ def handler(args, parser):
         for i,data in enumerate(d):
             print(f">>> Continuation Chain {i}/{len(d)} Iteration {i}/{num}")
             print(json.dumps(data, indent=2))
+            #print((json.dumps(scrapeJsonTree(data, ctrlp.relatedVideosScrapeFmt, percentRequiredKeys=0), indent=2)))
         print("\n=====================================================\n")
 
 if __name__ == '__main__':

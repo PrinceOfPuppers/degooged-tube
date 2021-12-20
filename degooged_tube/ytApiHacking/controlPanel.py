@@ -83,7 +83,7 @@ def _uploadAndRelatedFmt(titleTextKey: str, durationTextContainerKey: str):
     return [
          ScrapeNode("videoId", ScrapeNum.First,[]),
 
-         ScrapeNode("thumbnails", ScrapeNum.All,[]),
+         ScrapeNode("thumbnails", ScrapeNum.First,[]),
 
          ScrapeNode("publishedTimeText", ScrapeNum.First,[
              ScrapeNode("simpleText", ScrapeNum.First,[], collapse=True)
@@ -114,13 +114,13 @@ channelInfoScrapeFmt = \
         ScrapeNode("header", ScrapeNum.First,[
             ScrapeNode("title", ScrapeNum.First,[], rename='channelName'),
             ScrapeNode("avatar", ScrapeNum.First,[
-                ScrapeNode("thumbnails", ScrapeNum.All,[], collapse=True),
+                ScrapeNode("thumbnails", ScrapeNum.First,[], collapse=True),
             ]),
             ScrapeNode("banner", ScrapeNum.First,[
-                ScrapeNode("thumbnails", ScrapeNum.All,[], collapse=True),
+                ScrapeNode("thumbnails", ScrapeNum.First,[], collapse=True),
             ], rename='banners'),
             ScrapeNode("mobileBanner", ScrapeNum.First,[
-                ScrapeNode("thumbnails", ScrapeNum.All,[], collapse=True),
+                ScrapeNode("thumbnails", ScrapeNum.First,[], collapse=True),
             ], rename='mobileBanners'),
             ScrapeNode("subscriberCountText", ScrapeNum.First,[
                 ScrapeNode("simpleText", ScrapeNum.All,[], collapse=True),
@@ -167,7 +167,9 @@ videoInfoScrapeFmt = \
         ]),
 
         ScrapeNode("videoPrimaryInfoRenderer", ScrapeNum.First,[
-                ScrapeNode("title", ScrapeNum.First,[]),
+                ScrapeNode("title", ScrapeNum.First,[
+                    ScrapeNode("text", ScrapeNum.All,[], collapse=True),
+                ], rename = "titleRuns"),
 
                 ScrapeNode("videoViewCountRenderer", ScrapeNum.First,[
                     ScrapeNode("viewCount", ScrapeNum.First,[
@@ -180,21 +182,21 @@ videoInfoScrapeFmt = \
 
                 # likes
                 ScrapeNode("topLevelButtons", ScrapeNum.First,[
-                    ScrapeNode("topLevelButtons", ScrapeNum.First,[ # assumes likes is the first button in this button list
-                        ScrapeNode("DefaultText", ScrapeNum.First,[
+                    ScrapeNode("toggleButtonRenderer", ScrapeNum.First,[ # assumes likes is the first button in this button list
+                        ScrapeNode("defaultText", ScrapeNum.First,[
                             ScrapeNode("accessibilityData", ScrapeNum.First,[
                                 ScrapeNode("label",ScrapeNum.First, [], rename = "exactLikes")
                             ],collapse=True),
                             ScrapeNode("simpleText", ScrapeNum.First, [], rename = "approxLikes")
                         ], collapse = True)
                     ], collapse = True)
-                ], collapse=True)
+                ])
 
             #ScrapeNode("sentimentBar", ScrapeNum.First,[
             #    ScrapeNode("tooltip", ScrapeNum.First,[], collapse=True)
             #],rename="likeDislike"),
             
-        ]),
+        ], collapse = True),
 
         ScrapeNode("videoSecondaryInfoRenderer", ScrapeNum.First,[
             ScrapeNode("owner", ScrapeNum.First,[
@@ -318,21 +320,19 @@ class Upload:
 # >Comments< #
 commentsApiUrl = '/youtubei/v1/next'
 
-commentScrapeFmt = \
+commentScrapeFmt  = \
       ScrapeNode("comment", ScrapeNum.All,[
           ScrapeNode("contentText", ScrapeNum.First,[
-
               ScrapeNode("runs", ScrapeNum.First,[
                   ScrapeNode("text", ScrapeNum.All,[], collapse = True)
-              ], rename = "commentRuns"),
+              ], rename = "commentRuns")
+          ], collapse=True),
 
-              ScrapeNode("authorText", ScrapeNum.First,[
-                  ScrapeNode("simpleText", ScrapeNum.First,[], collapse = True)
-              ], rename = "author"),
+          ScrapeNode("authorText", ScrapeNum.First,[
+              ScrapeNode("simpleText", ScrapeNum.First,[], collapse = True)
+          ], rename = "author"),
 
-              ScrapeNode("thumbnails", ScrapeNum.First,[], rename = "avatar")
-
-          ], collapse=True)
+          ScrapeNode("thumbnails", ScrapeNum.First,[], rename = "avatar")
       ], collapse = True)
 
 @dataclass
@@ -363,10 +363,12 @@ relatedVideosApiUrl = '/youtubei/v1/next'
 relatedVideosScrapeFmt = \
     ScrapeNode("compactVideoRenderer", ScrapeNum.All, [
         *_uploadAndRelatedFmt("simpleText", "lengthText"), 
-        ScrapeNode("longBylineText", ScrapeNum.All, [
-            ScrapeNode("text", ScrapeNum.All, [], rename = "channelName"),
-            ScrapeNode("url", ScrapeNum.All, [], rename = "channelUrlFragment")
-        ], collapse = True)
+        ScrapeNode("longBylineText", ScrapeNum.First, [
+            ScrapeNode("text", ScrapeNum.First, [], collapse = True),
+        ], rename = "channelName"),
+        ScrapeNode("longBylineText", ScrapeNum.First, [
+            ScrapeNode("url", ScrapeNum.First, [], collapse = True)
+        ],rename = "channelUrlFragment")
     ], collapse = True)
 
 @dataclass

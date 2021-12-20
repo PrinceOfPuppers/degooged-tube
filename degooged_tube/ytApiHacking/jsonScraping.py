@@ -20,13 +20,13 @@ def dumpDebugData(debugDataList: Union[list[ScrapeJsonTreeDebugData], None]):
             raise Exception("ScrapeJsonTreeDebugData is None While Testing")
         return
 
-    for i,debugData in enumerate(debugDataList):
-        requiredKeys = debugData.requiredKeys
-        foundKeys = debugData.foundKeys
-        data = debugData.data
-        map = debugData.oldKeyToNewKeyMap
-        
-        with open(cfg.testDataDumpPath, 'w') as f:
+    with open(cfg.testDataDumpPath, 'w') as f:
+        for i,debugData in enumerate(debugDataList):
+            requiredKeys = debugData.requiredKeys
+            foundKeys = debugData.foundKeys
+            data = debugData.data
+            map = debugData.oldKeyToNewKeyMap
+            
             f.write(f"\nData Number {i}:\n==================================================\n")
             json.dump(data, f, indent=2)
             missingKeys = [(f"{map[k]} " + (f"(renamed: {k})" if map[k] != k else "")) for k in requiredKeys if k not in foundKeys]

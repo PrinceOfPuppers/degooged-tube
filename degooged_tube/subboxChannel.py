@@ -21,10 +21,9 @@ class SubBoxChannel:
         channelUrl = ytapih.sanitizeChannelUrl(initalPage.url) # to keep channelUrl consistant
         try:
             channelInfo = ytapih.getChannelInfoFromInitalPage(initalPage)
-            channelInfo = channelInfo
             uploadList = ytapih.getUploadList(initalPage)
         except Exception as e:
-            cfg.logger.debug(e)
+            cfg.logger.debug(e, exc_info=True)
             raise ChannelLoadIssue(channelUrl)
 
         channelName = channelInfo.channelName
@@ -45,14 +44,16 @@ class SubBoxChannel:
         return self.__repr__()
 
 
-def loadChannel(x):
-    data = x
+def loadChannel(data):
     url, channelTags = data
     try:
-        return SubBoxChannel.fromUrl(
+        subboxChannel = SubBoxChannel.fromUrl(
             url, 
             channelTags
         )
+        cfg.logger.debug(f"here: {subboxChannel.channelName}")
+        return subboxChannel
     except ChannelLoadIssue:
+        cfg.logger.debug("Channel Load Issue Triggered")
         # if theres an error, return the url so it can be printed in error message
         return url
