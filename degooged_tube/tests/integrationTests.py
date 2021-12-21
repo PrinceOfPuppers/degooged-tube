@@ -3,7 +3,8 @@ import inspect
 
 import degooged_tube.config as cfg
 from degooged_tube.subbox import SubBox, listsOverlap
-from degooged_tube.ytApiHacking import sanitizeChannelUrl, getChannelInfo, getCommentList, getRelatedVideoList, getUploadList, getVideoInfo, YtInitalPage, Upload
+from degooged_tube.ytApiHacking import sanitizeChannelUrl, getChannelInfo, getCommentList, getRelatedVideoList, getUploadList, \
+                                       getVideoInfo, getSearchVideoList, getSearchChannelList, YtInitalPage, Upload
 #import degooged_tube.ytApiHacking.controlPanel as ctrlp
 from .unitTests import logName
 
@@ -243,6 +244,14 @@ class test_getFunctionsAndFmts(TestCase):
 
         _ = getVideoInfo(page)
 
-
         #filteredSearch = getSearchList(filters['type']['channel'])
 
+    def test_getSearchVideoList(self):
+        logName(self, inspect.currentframe())
+        searchVideoList, _ = getSearchVideoList("asdf")
+        _ = searchVideoList[0]
+
+    def test_getSearchChannelList(self):
+        logName(self, inspect.currentframe())
+        searchVideoList, _ = getSearchChannelList("asdf")
+        _ = searchVideoList[0]

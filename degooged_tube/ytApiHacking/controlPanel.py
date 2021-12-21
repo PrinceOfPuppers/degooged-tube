@@ -169,7 +169,7 @@ videoInfoScrapeFmt = \
         ScrapeNode("videoPrimaryInfoRenderer", ScrapeNum.First,[
                 ScrapeNode("title", ScrapeNum.First,[
                     ScrapeNode("text", ScrapeNum.All,[], collapse=True),
-                ], rename = "titleRuns"),
+                ], rename = "title"),
 
                 ScrapeNode("videoViewCountRenderer", ScrapeNum.First,[
                     ScrapeNode("viewCount", ScrapeNum.First,[
@@ -242,8 +242,8 @@ class VideoInfo:
 
     @classmethod
     def fromData(cls, data:dict) -> 'VideoInfo':
-        description:str             = tryGet(data, 'description')
-        title:str                   = tryGet(data, 'title')
+        description:str             = "".join(tryGet(data, 'description', []))
+        title:str                   = "".join(tryGet(data, 'title', [], []))
 
         views:str                   = tryGetMultiKey(data, "0", "exactViews", "approxViews")
         viewsNum:int                = getApproximateNum(views)
@@ -588,9 +588,7 @@ searchChannelScrapeFmt = \
             ScrapeNode("canonicalBaseUrl", ScrapeNum.First, [],  collapse=True),
         ], rename = 'channelUrlFragment'),
 
-        ScrapeNode("thumbnails", ScrapeNum.First,[
-            ScrapeNode("text", ScrapeNum.First, [],  collapse=True),
-        ], rename = 'channelIcons'),
+        ScrapeNode("thumbnails", ScrapeNum.First,[], rename = 'channelIcons'),
 
         ScrapeNode("descriptionSnippet", ScrapeNum.First,[
             ScrapeNode("text", ScrapeNum.First, [],  collapse=True),
@@ -631,7 +629,7 @@ class SearchChannel:
         channelIcons       = tryGet(data, 'channelIcons', [])
         channelDescription = tryGet(data, 'channelDescription')
         subscribers        = tryGet(data, 'subscribers')
-        videoCount         = " ".join(tryGet(data, 'videoCount', [""]))
+        videoCount         = " ".join(tryGet(data, 'videoCount', []))
 
         return cls(channelName, channelUrlFragment, channelUrl, channelIcons, channelDescription, subscribers, videoCount)
 
