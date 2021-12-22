@@ -1,7 +1,7 @@
 from typing import Callable
 
 from .ytContIter import YtContIter, YtInitalPage
-from .jsonScraping import ScrapeNode, ScrapeNum
+from .jsonScraping import ScrapeElement, ScrapeLongest
 from . import controlPanel as ctrlp 
 from degooged_tube.helpers import paginationCalculator
 
@@ -17,10 +17,10 @@ class YtApiList(Generic[_T]):
 
     apiUrl: str
     atMaxLen: bool = False
-    scrapeFmt: ScrapeNode
+    scrapeFmt: ScrapeElement
     onExtend: Callable
 
-    def __init__(self, initalPage: YtInitalPage, apiUrl: str, scrapeFmt: Union[ScrapeNode, list[ScrapeNode]], getInitalData: bool= False, onExtend: Callable[[list[dict]], list[_T]] = lambda res: res):
+    def __init__(self, initalPage: YtInitalPage, apiUrl: str, scrapeFmt: Union[ScrapeElement, list[ScrapeElement]], getInitalData: bool= False, onExtend: Callable[[list[dict]], list[_T]] = lambda res: res):
         self._list = []
 
         self.apiUrl = apiUrl
@@ -29,14 +29,14 @@ class YtApiList(Generic[_T]):
 
         scrapeList = scrapeFmt if isinstance(scrapeFmt, list) else [scrapeFmt]
 
-        self._scrapeFmt = ScrapeNode(ctrlp.continuationPageDataContainerKey,ScrapeNum.Longest, scrapeList , collapse = True)
+        self._scrapeFmt = ScrapeLongest(ctrlp.continuationPageDataContainerKey, scrapeList , collapse = True)
 
         self.onExtend = onExtend
 
         if getInitalData:
             if initalPage.initalData is None:
                 raise Exception("No Inital Data To Get")
-            initScrapeFmt = ScrapeNode(ctrlp.initalPageDataContainerKey, ScrapeNum.Longest, scrapeList, collapse = True)
+            initScrapeFmt = ScrapeLongest(ctrlp.initalPageDataContainerKey, scrapeList, collapse = True)
             self._extend(initScrapeFmt)
 
     def _extend(self, fmt):

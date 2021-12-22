@@ -3,7 +3,7 @@ import json
 from typing import Union
 from dataclasses import dataclass
 
-from .jsonScraping import scrapeJsonTree, ScrapeNode, dumpDebugData, ScrapeError
+from .jsonScraping import scrapeJsonTree, dumpDebugData, ScrapeError, ScrapeElement
 from .ytInitalPage import YtInitalPage
 from . import controlPanel as ctrlp 
 
@@ -36,7 +36,7 @@ class YtContIter:
         self.apiUrl = apiUrl.strip('/')
 
 
-    def getNext(self, dataFmt: Union[ScrapeNode, list[ScrapeNode]]) -> Union[dict, list, None]:
+    def getNext(self, dataFmt: Union[ScrapeElement, list[ScrapeElement]]) -> Union[dict, list, None]:
         # gets element that was sent on page load
         if self.getInitData:
             self.getInitData = False

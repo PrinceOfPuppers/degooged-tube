@@ -2,7 +2,7 @@ from unittest import TestCase
 import inspect
 import json
 import degooged_tube.config as cfg
-from degooged_tube.ytApiHacking.jsonScraping import scrapeJsonTree, ScrapeNode, ScrapeNum, ScrapeError
+from degooged_tube.ytApiHacking.jsonScraping import scrapeJsonTree, ScrapeAll, ScrapeNth, ScrapeLongest, ScrapeError
 from degooged_tube.ytApiHacking.helpers import getApproximateNum
 
 def logName(testInstance, frame):
@@ -13,16 +13,16 @@ def logName(testInstance, frame):
 def test_scrapeJsonTreeHelper(jsonName, fmt, percentRequiredKeys = None):
     with open(f"{cfg.testJsonPath}/{jsonName}") as  f:
         j = json.load(f)
-        return scrapeJsonTree(j, fmt, percentRequiredKeys = percentRequiredKeys)
+        return scrapeJsonTree(j, fmt, truncateThreashold = percentRequiredKeys)
 
 class test_scrapeJsonTree(TestCase):
     def test_handmade_1(self):
         logName(self, inspect.currentframe())
 
         uploadScrapeFmt = \
-              ScrapeNode("greetings", ScrapeNum.All,[
-                  ScrapeNode("hi", ScrapeNum.First,[
-                      ScrapeNode("name", ScrapeNum.All,[])
+              ScrapeAll("greetings",[
+                  ScrapeNth("hi",[
+                      ScrapeAll("name",[])
                   ]),
               ])
 
@@ -31,7 +31,7 @@ class test_scrapeJsonTree(TestCase):
         except KeyError:
             self.fail("Scrape Json Tree Missed Key")
 
-        solution = {'greetings': [{'hi': {'name': ['alice', 'bob', 'carol', 'dave']}}, {'hi': {'name': []}}]}
+        solution = {'greetings': [{'hi': {'name': ['alice', 'bob', 'carol', 'dave']}}]}
 
 
         self.assertEqual ( 
@@ -43,9 +43,9 @@ class test_scrapeJsonTree(TestCase):
         logName(self, inspect.currentframe())
 
         uploadScrapeFmt = \
-              ScrapeNode("greetings", ScrapeNum.All,[
-                  ScrapeNode("hi", ScrapeNum.First,[
-                      ScrapeNode("name", ScrapeNum.All,[])
+              ScrapeAll("greetings",[
+                  ScrapeNth("hi",[
+                      ScrapeAll("name",[])
                   ]),
               ], collapse = True)
         try:
@@ -53,7 +53,7 @@ class test_scrapeJsonTree(TestCase):
         except KeyError:
             self.fail("Scrape Json Tree Missed Key")
 
-        solution = [{'hi': {'name': ['alice', 'bob', 'carol', 'dave']}}, {'hi': {'name': []}}]
+        solution = [{'hi': {'name': ['alice', 'bob', 'carol', 'dave']}}]
 
         self.assertEqual ( answer, solution )
 
@@ -62,9 +62,9 @@ class test_scrapeJsonTree(TestCase):
         logName(self, inspect.currentframe())
 
         uploadScrapeFmt = \
-              ScrapeNode("greetings", ScrapeNum.All,[
-                  ScrapeNode("hi", ScrapeNum.First,[
-                      ScrapeNode("name", ScrapeNum.All,[], collapse = True)
+              ScrapeAll("greetings",[
+                  ScrapeNth("hi",[
+                      ScrapeAll("name",[], collapse = True)
                   ]),
               ], collapse = True)
 
@@ -73,16 +73,16 @@ class test_scrapeJsonTree(TestCase):
         except KeyError:
             self.fail("Scrape Json Tree Missed Key")
 
-        solution = [{'hi': ['alice', 'bob', 'carol', 'dave']}, {'hi': []}]
+        solution = [{'hi': ['alice', 'bob', 'carol', 'dave']}]
         self.assertEqual ( answer, solution )
 
     def test_handmade_4(self):
         logName(self, inspect.currentframe())
 
         uploadScrapeFmt = \
-              ScrapeNode("greetings", ScrapeNum.All,[
-                  ScrapeNode("hi", ScrapeNum.First,[
-                      ScrapeNode("name", ScrapeNum.All,[], collapse = True)
+              ScrapeAll("greetings",[
+                  ScrapeNth("hi",[
+                      ScrapeAll("name",[], collapse = True)
                   ], collapse = True),
               ])
 
@@ -91,7 +91,7 @@ class test_scrapeJsonTree(TestCase):
         except KeyError:
             self.fail("Scrape Json Tree Missed Key")
 
-        solution = {'greetings': [['alice', 'bob', 'carol', 'dave'],[]]}
+        solution = {'greetings': [['alice', 'bob', 'carol', 'dave']]}
         self.assertEqual ( answer, solution )
 
 
@@ -99,9 +99,9 @@ class test_scrapeJsonTree(TestCase):
         logName(self, inspect.currentframe())
 
         uploadScrapeFmt = \
-              ScrapeNode("greetings", ScrapeNum.All,[
-                  ScrapeNode("hi", ScrapeNum.First,[
-                      ScrapeNode("name", ScrapeNum.All,[], collapse = True)
+              ScrapeAll("greetings",[
+                  ScrapeNth("hi",[
+                      ScrapeAll("name",[], collapse = True)
                   ], collapse = True),
               ], collapse = True)
 
@@ -110,7 +110,7 @@ class test_scrapeJsonTree(TestCase):
         except KeyError:
             self.fail("Scrape Json Tree Missed Key")
 
-        solution = [['alice', 'bob', 'carol', 'dave'],[]]
+        solution = [['alice', 'bob', 'carol', 'dave']]
         self.assertEqual ( answer, solution )
 
 
@@ -118,9 +118,9 @@ class test_scrapeJsonTree(TestCase):
         logName(self, inspect.currentframe())
 
         uploadScrapeFmt = \
-              ScrapeNode("greetings", ScrapeNum.All,[
-                  ScrapeNode("hi", ScrapeNum.First,[
-                      ScrapeNode("name", ScrapeNum.All,[], collapse = True)
+              ScrapeAll("greetings",[
+                  ScrapeNth("hi",[
+                      ScrapeAll("name",[], collapse = True)
                   ], collapse = True),
               ], collapse = True)
 
@@ -129,7 +129,7 @@ class test_scrapeJsonTree(TestCase):
         except KeyError:
             self.fail("Scrape Json Tree Missed Key")
 
-        solution = [['alice', 'bob', 'carol', 'dave'],[]]
+        solution = [['alice', 'bob', 'carol', 'dave']]
         self.assertEqual ( answer, solution )
 
 
@@ -137,9 +137,9 @@ class test_scrapeJsonTree(TestCase):
         logName(self, inspect.currentframe())
 
         uploadScrapeFmt = \
-              ScrapeNode("greetings", ScrapeNum.All,[
-                  ScrapeNode("hi", ScrapeNum.First,[
-                      ScrapeNode("coolness", ScrapeNum.All,[], collapse = True)
+              ScrapeAll("greetings",[
+                  ScrapeNth("hi",[
+                      ScrapeAll("coolness",[], collapse = True)
                   ], collapse = True),
               ], collapse = True)
 
@@ -148,7 +148,7 @@ class test_scrapeJsonTree(TestCase):
         except KeyError:
             self.fail("Scrape Json Tree Missed Key")
 
-        solution = [['megaRad', 11, ['super', 'duper', 'cool']],[]]
+        solution = [['megaRad', 11, ['super', 'duper', 'cool']]]
         self.assertEqual ( answer, solution )
 
 
@@ -156,8 +156,8 @@ class test_scrapeJsonTree(TestCase):
         logName(self, inspect.currentframe())
 
         uploadScrapeFmt = \
-              ScrapeNode("greetings", ScrapeNum.All,[
-                  ScrapeNode("hi", ScrapeNum.First,[], collapse = True),
+              ScrapeAll("greetings",[
+                  ScrapeNth("hi",[], collapse = True),
               ], collapse = True)
 
         solution = [
@@ -182,8 +182,8 @@ class test_scrapeJsonTree(TestCase):
         logName(self, inspect.currentframe())
 
         uploadScrapeFmt = \
-              ScrapeNode("greetings", ScrapeNum.Longest,[
-                  ScrapeNode("hi", ScrapeNum.First,[], collapse = True),
+              ScrapeLongest("greetings",[
+                  ScrapeNth("hi",[], collapse = True),
               ], collapse = True)
 
         solution = [
@@ -205,8 +205,8 @@ class test_scrapeJsonTree(TestCase):
         logName(self, inspect.currentframe())
 
         uploadScrapeFmt = \
-              ScrapeNode("greetings", ScrapeNum.Longest,[
-                  ScrapeNode("hi", ScrapeNum.First,[]),
+              ScrapeLongest("greetings",[
+                  ScrapeNth("hi",[]),
               ], collapse = True)
 
         solution = \
@@ -231,9 +231,9 @@ class test_scrapeJsonTree(TestCase):
         logName(self, inspect.currentframe())
 
         uploadScrapeFmt = \
-              ScrapeNode("greetings", ScrapeNum.Longest,[
-                  ScrapeNode("hi", ScrapeNum.First,[
-                      ScrapeNode("name", ScrapeNum.All,[], collapse = True)
+              ScrapeLongest("greetings",[
+                  ScrapeNth("hi",[
+                      ScrapeAll("name",[], collapse = True)
                   ]),
               ], collapse = True)
 
@@ -251,9 +251,9 @@ class test_scrapeJsonTree(TestCase):
         logName(self, inspect.currentframe())
 
         uploadScrapeFmt = \
-              ScrapeNode("greetings", ScrapeNum.Longest,[
-                  ScrapeNode("hi", ScrapeNum.Longest,[
-                      ScrapeNode("name", ScrapeNum.All,[], collapse = True)
+              ScrapeLongest("greetings",[
+                  ScrapeLongest("hi",[
+                      ScrapeAll("name",[], collapse = True)
                   ]),
               ], collapse = True)
 
@@ -270,7 +270,7 @@ class test_scrapeJsonTree(TestCase):
         logName(self, inspect.currentframe())
 
         uploadScrapeFmt = \
-                  ScrapeNode("colors", ScrapeNum.First,[])
+                  ScrapeNth("colors",[])
 
         solution = {"colors": ["purple", "green" ,"red" ]}
 
@@ -285,8 +285,8 @@ class test_scrapeJsonTree(TestCase):
         logName(self, inspect.currentframe())
 
         uploadScrapeFmt = \
-              ScrapeNode("greetings", ScrapeNum.Longest,[
-                  ScrapeNode("hi", ScrapeNum.First,[]),
+              ScrapeLongest("greetings",[
+                  ScrapeNth("hi",[]),
               ], collapse = True)
 
         solution = \
@@ -311,11 +311,11 @@ class test_scrapeJsonTree(TestCase):
 
         uploadScrapeFmt = \
               [
-                  ScrapeNode("nested", ScrapeNum.First,[
-                          ScrapeNode("name", ScrapeNum.All,[], rename="names")
+                  ScrapeNth("nested",[
+                          ScrapeAll("name",[], rename="names")
                   ], collapse = True ),
 
-                  ScrapeNode("colors", ScrapeNum.First,[]),
+                  ScrapeNth("colors",[]),
               ]
 
         solution = [ {"names" : ['partner', 'alice', 'bob', 'carol', 'dave']},  {"colors": ["purple", "green" ,"red" ]} ]
@@ -331,9 +331,9 @@ class test_scrapeJsonTree(TestCase):
         logName(self, inspect.currentframe())
 
         uploadScrapeFmt = \
-                  ScrapeNode("beverages", ScrapeNum.Longest,[
-                          ScrapeNode("coffee", ScrapeNum.First,[], rename = "Bean Juice"),
-                          ScrapeNode("kvass", ScrapeNum.First,[], rename ="Bread Blessing")
+                  ScrapeLongest("beverages",[
+                          ScrapeNth("coffee",[], rename = "Bean Juice"),
+                          ScrapeNth("kvass",[], rename ="Bread Blessing")
                   ], collapse = True )
 
         solution = {"Bean Juice": "omegaGood", "Bread Blessing": "megaGood"}
@@ -347,13 +347,13 @@ class test_scrapeJsonTree(TestCase):
 
         uploadScrapeFmt = \
               [
-                  ScrapeNode("nested", ScrapeNum.First,[
-                          ScrapeNode("name", ScrapeNum.All,[], rename="names")
+                  ScrapeNth("nested",[
+                      ScrapeAll("name",[], rename="names")
                   ], collapse = True ),
 
-                  ScrapeNode("colors", ScrapeNum.First,[]),
+                  ScrapeNth("colors",[]),
 
-                  ScrapeNode("should_be_missing", ScrapeNum.First,[])
+                  ScrapeNth("should_be_missing",[])
               ]
 
         try:
@@ -375,20 +375,25 @@ class test_scrapeJsonTree(TestCase):
     def test_example_1(self):
         logName(self, inspect.currentframe())
         channelInfoScrapeFmt = \
-            ScrapeNode("header", ScrapeNum.First,[
-                ScrapeNode("title", ScrapeNum.First,[], rename='name'),
-                ScrapeNode("canonicalBaseUrl", ScrapeNum.First,[], rename='baseUrl'),
-                ScrapeNode("avatar", ScrapeNum.First,[
-                    ScrapeNode("thumbnails", ScrapeNum.All,[], collapse=True),
+            ScrapeNth("header",[
+
+                ScrapeNth("title",[], rename='name'),
+
+                ScrapeNth("canonicalBaseUrl",[], rename='baseUrl'),
+                ScrapeNth("avatar",[
+                    ScrapeAll("thumbnails",[], collapse=True),
                 ], rename='baseUrl'),
-                ScrapeNode("banner", ScrapeNum.First,[
-                    ScrapeNode("thumbnails", ScrapeNum.All,[], collapse=True),
+
+                ScrapeNth("banner",[
+                    ScrapeAll("thumbnails",[], collapse=True),
                 ], rename='banners'),
-                ScrapeNode("mobileBanner", ScrapeNum.First,[
-                    ScrapeNode("thumbnails", ScrapeNum.All,[], collapse=True),
+
+                ScrapeNth("mobileBanner",[
+                    ScrapeAll("thumbnails",[], collapse=True),
                 ], rename='mobileBanners'),
-                ScrapeNode("subscriberCountText", ScrapeNum.First,[
-                    ScrapeNode("simpleText", ScrapeNum.All,[], collapse=True),
+
+                ScrapeNth("subscriberCountText",[
+                    ScrapeAll("simpleText",[], collapse=True),
                 ], rename='subscribers'),
             ],collapse=True)
 
@@ -429,9 +434,9 @@ class test_scrapeJsonTree(TestCase):
         logName(self, inspect.currentframe())
 
         uploadScrapeFmt = \
-              ScrapeNode("greetings", ScrapeNum.Longest,[
-                  ScrapeNode("hi", ScrapeNum.Longest,[
-                      ScrapeNode("name", ScrapeNum.All,[], collapse = True)
+              ScrapeLongest("greetings",[
+                  ScrapeLongest("hi",[
+                      ScrapeAll("name",[], collapse = True)
                   ]),
               ], collapse = True)
 

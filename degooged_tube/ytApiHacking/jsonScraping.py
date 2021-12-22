@@ -100,7 +100,7 @@ class ScrapeUnion:
                 mainRequiredLeaves = r
 
 
-        missingLeaves = missingLeaves.intersection(mainMissingLeaves)
+        missingLeaves.update(mainMissingLeaves)
         requiredLeaves.update(mainRequiredLeaves)
 
     def _strIndent(self, numIndent):
@@ -122,9 +122,7 @@ class ScrapeUnion:
 
 def _getMissingLeavesFromList(scrapeElements: list[ScrapeElement], foundLeaves:set[str], missingLeaves:set[str], requiredLeaves:set[str]):
     for child in scrapeElements:
-        childMissingLeaves = set()
-        child.getMissingLeaves(foundLeaves, childMissingLeaves, requiredLeaves)
-        missingLeaves = missingLeaves.intersection(childMissingLeaves)
+        child.getMissingLeaves(foundLeaves, missingLeaves, requiredLeaves)
     return 
 
 @dataclass
@@ -134,7 +132,7 @@ class _ScrapeNode:
     rename: str
     collapse: bool
     optional: bool
-    valContainerConstructor:Callable
+    iterOverVal:bool
     dataCondition:Union[ Callable[[Any],bool], None ]
 
     def getVal(self, _):
@@ -182,7 +180,7 @@ class _ScrapeNode:
 class ScrapeAll(_ScrapeNode):
     def __init__(self, key:str, children:list[ScrapeElement], collapse:bool = False, 
                        rename:str = "", optional:bool = False, dataCondition: Callable[[Any],bool]= None):
-        super().__init__(key, children, rename, collapse, optional, list, dataCondition)
+        super().__init__(key, children, rename, collapse, optional, True, dataCondition)
         self.key = key
         self.rename = rename
 
@@ -204,7 +202,7 @@ class ScrapeNth(_ScrapeNode):
 
     def __init__(self, key:str, children:list[ScrapeElement], collapse:bool = False, 
                        rename:str = "", optional:bool = False, dataCondition: Callable[[Any],bool]= None, n:int = 1):
-        super().__init__(key, children, rename, collapse, optional, list, dataCondition)
+        super().__init__(key, children, rename, collapse, optional, False, dataCondition)
         self.n = n
 
     def getVal(self, j):
@@ -231,7 +229,7 @@ class ScrapeLongest(_ScrapeNode):
 
     def __init__(self, key:str, children:list[ScrapeElement], collapse:bool = False, 
                        rename:str = "", optional:bool = False, dataCondition: Callable[[Any],bool]= None):
-        super().__init__(key, children, rename, collapse, optional, list, dataCondition)
+        super().__init__(key, children, rename, collapse, optional, False, dataCondition)
 
     def getVal(self, j):
         res = []
@@ -312,7 +310,6 @@ def _scrapeJsonTree(j, base: ScrapeElement, leavesFound: set[str], truncateThrea
 
 
     else:
-        res = base.valContainerConstructor()
         currentVal = base.getVal(j) 
         if currentVal is None:
             return None
@@ -321,17 +318,33 @@ def _scrapeJsonTree(j, base: ScrapeElement, leavesFound: set[str], truncateThrea
             leavesFound.add(base.key)
             return currentVal
 
+        if not base.iterOverVal:
+            currentVal = [currentVal]
 
-        for child in base.children:
-            childVal = _scrapeJsonTree(currentVal, child, leavesFoundInBranch, truncateThreashold)
-            if childVal is None:
-                continue
-            if isinstance(child, ScrapeUnion) or child.collapse:
-                _update(childVal, res)
-                continue
 
-            childKey = child.rename if child.rename else child.key
-            _put(childVal, res, childKey)
+        res = []
+
+        for val in currentVal:
+            container = {}
+            for child in base.children:
+                childVal =_scrapeJsonTree(val, child, leavesFoundInBranch, truncateThreashold)
+                if childVal is None:
+                    continue
+                if isinstance(child, ScrapeUnion) or child.collapse:
+                    if len(base.children) == 1:
+                        container = childVal
+                        continue
+                    _update(childVal, container)
+                    continue
+                childKey = child.rename if child.rename else child.key
+                _put(childVal, container, childKey)
+            if len(container) != 0:
+                res.append(container)
+        
+        if len(res) == 0:
+            return None
+        if not base.iterOverVal:
+            res = res[0]
 
     missingLeaves = set()
     requiredLeaves = set()
@@ -347,12 +360,12 @@ def scrapeJsonTree(j, fmt: Union[ScrapeElement, list[ScrapeElement]], debugDataL
     if truncateThreashold is None:
         truncateThreashold = 0.5 if debugDataList is None else 1.0
 
+    res = []
     if isinstance(fmt, list):
         bases = fmt
     else:
         bases = [fmt]
 
-    res = {}
     leavesFound = set()
     missingLeaves = set()
     requiredLeaves = set()
@@ -360,12 +373,12 @@ def scrapeJsonTree(j, fmt: Union[ScrapeElement, list[ScrapeElement]], debugDataL
     for base in bases:
         val = _scrapeJsonTree(j, base, leavesFound, truncateThreashold)
         if val is None:
-            return None
+            continue
         if isinstance(base, ScrapeUnion) or base.collapse:
-            _update(val, res)
+            res.append(val)
             continue
         key = base.rename if base.rename else base.key
-        _put(base, res, key)
+        res.append({key:val})
 
     missingLeaves = set()
     requiredLeaves = set()
@@ -375,5 +388,7 @@ def scrapeJsonTree(j, fmt: Union[ScrapeElement, list[ScrapeElement]], debugDataL
             debugDataList.append(ScrapeJsonTreeDebugData(missingLeaves, requiredLeaves, leavesFound, j))
         raise ScrapeError(f"Too Many Leaves Missing \nmissingLeaves: {missingLeaves} \nrequiredLeaves: {requiredLeaves}")
 
-    return res
+    if isinstance(fmt, list) :
+        return res
+    return res[0]
 

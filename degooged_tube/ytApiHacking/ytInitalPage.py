@@ -3,7 +3,7 @@ import json
 from dataclasses import dataclass
 from typing import Union
 
-from .jsonScraping import scrapeJsonTree, ScrapeNode, ScrapeError, dumpDebugData
+from .jsonScraping import scrapeJsonTree, ScrapeElement, ScrapeError, dumpDebugData
 from . import controlPanel as ctrlp 
 from . import customExceptions as ce 
 
@@ -46,7 +46,7 @@ class YtInitalPage:
         initalData = json.loads(y.group(1))
         clientVersion = z.group(1)
 
-        a = scrapeJsonTree(initalData, ctrlp.continuationScrapeFmt, percentRequiredKeys = 0.0)
+        a = scrapeJsonTree(initalData, ctrlp.continuationScrapeFmt, truncateThreashold = 0.0)
 
         assert type(a) is list
         continuations = {}
@@ -76,7 +76,7 @@ class YtInitalPage:
                 f"In Inital Page: {self.url}\n"
             )
 
-    def scrapeInitalData(self, dataFmt: Union[ScrapeNode, list[ScrapeNode]]):
+    def scrapeInitalData(self, dataFmt: Union[ScrapeElement, list[ScrapeElement]]):
         if cfg.testing:
             debugData = []
         else:
