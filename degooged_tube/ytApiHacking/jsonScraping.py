@@ -1,5 +1,4 @@
-from typing import List, Union
-from enum import Enum
+from typing import List, Union, Callable, Any
 from dataclasses import dataclass
 import json
 import degooged_tube.config as cfg
@@ -9,10 +8,10 @@ class ScrapeError(Exception):
 
 @dataclass
 class ScrapeJsonTreeDebugData:
-    requiredKeys: set
-    foundKeys: set
+    missingLeaves: set
+    requiredLeaves: set
+    foundLeaves: set
     data: dict
-    oldKeyToNewKeyMap: dict
 
 def dumpDebugData(debugDataList: Union[list[ScrapeJsonTreeDebugData], None]):
     if debugDataList is None:
@@ -22,21 +21,16 @@ def dumpDebugData(debugDataList: Union[list[ScrapeJsonTreeDebugData], None]):
 
     with open(cfg.testDataDumpPath, 'w') as f:
         for i,debugData in enumerate(debugDataList):
-            requiredKeys = debugData.requiredKeys
-            foundKeys = debugData.foundKeys
             data = debugData.data
-            map = debugData.oldKeyToNewKeyMap
             
             f.write(f"\nData Number {i}:\n==================================================\n")
             json.dump(data, f, indent=2)
-            missingKeys = [(f"{map[k]} " + (f"(renamed: {k})" if map[k] != k else "")) for k in requiredKeys if k not in foundKeys]
-            surplusKeys = [(f"{map[k]} " + (f"(renamed: {k})" if map[k] != k else "")) for k in foundKeys if k not in requiredKeys]
 
-            if len(missingKeys) > 0:
-                f.write('\n'+ f'Missing Keys: {missingKeys}')
+            if len(debugData.missingLeaves) > 0:
+                f.write('\n'+ f'Missing Leaves: {debugData.missingLeaves}')
 
-            if len(surplusKeys) > 0:
-                f.write('\n'+ f'Surplus Keys: {surplusKeys}')
+            f.write('\n'+ f'Required Leaves: {debugData.requiredLeaves}')
+            f.write('\n'+ f'Found Leaves: {debugData.foundLeaves}')
 
 
 
@@ -79,33 +73,46 @@ def scrapeFirstJson(j, desiredKey: str):
 
 
 
-class ScrapeNum(Enum):
-    First = 1
-    All = 2
-    Longest = 3
-    Unique = 4
 
-@dataclass()
-class ScrapeNode:
-    key: str
-    scrapeNum: ScrapeNum
-    children: list['ScrapeNode']
+ScrapeElement = Union['_ScrapeNode', 'ScrapeUnion']
 
-    collapse: bool = False
-    rename: str = ""
-    optional: bool = False
+@dataclass
+class ScrapeUnion:
+    children: list[ScrapeElement]
+
+    def __post_init__(self):
+        if len(self.children) == 0:
+            raise Exception("ScrapeUnion Cannot be Leaf Node")
+
+    def getMissingLeaves(self, foundLeaves:set[str], missingLeaves:set[str], requiredLeaves:set[str]):
+        child = self.children[0]
+        mainMissingLeaves  = set()
+        mainRequiredLeaves = set()
+        child.getMissingLeaves(foundLeaves, mainMissingLeaves, mainRequiredLeaves)
+
+        for i in range(1, len(self.children)):
+            child = self.children[i]
+            m:set[str] = set()
+            r:set[str] = set()
+            child.getMissingLeaves(foundLeaves, m, r)
+            if mainMissingLeaves is None or len(m) < len(mainMissingLeaves):
+                mainMissingLeaves = m
+                mainRequiredLeaves = r
+
+
+        missingLeaves = missingLeaves.intersection(mainMissingLeaves)
+        requiredLeaves.update(mainRequiredLeaves)
 
     def _strIndent(self, numIndent):
         indent = numIndent*'  '
         indentp1 = indent + '  '
-        return f"{indent}ScrapeNode(\n"\
-               f"{indentp1}key: {self.key}\n" \
-               f"{indentp1}ScrapeNum: {self.scrapeNum}\n" \
-               f"{indentp1}rename: {self.rename}\n" \
-               f"{indentp1}collapse: {self.collapse}\n" \
-               f"{indentp1}children:\n" + \
-                    "\n".join([child._strIndent(numIndent+2) for child in self.children]) + \
-               f"\n{indent})"
+        s = f"{indent}{self.__class__.__name__}(\n"\
+            f"{indentp1}children:\n" + \
+                 "\n".join([child._strIndent(numIndent+2) for child in self.children]) + \
+            f"\n{indent})"
+
+        return s
+
 
     def __repr__(self):
         return self._strIndent(0)
@@ -113,38 +120,148 @@ class ScrapeNode:
     def __str__(self):
         return self.__repr__()
 
-    def getRequiredKeys(self, result:set[str]):
-        for child in self.children:
-            child.getRequiredKeys(result)
+def _getMissingLeavesFromList(scrapeElements: list[ScrapeElement], foundLeaves:set[str], missingLeaves:set[str], requiredLeaves:set[str]):
+    for child in scrapeElements:
+        childMissingLeaves = set()
+        child.getMissingLeaves(foundLeaves, childMissingLeaves, requiredLeaves)
+        missingLeaves = missingLeaves.intersection(childMissingLeaves)
+    return 
 
-        if self.collapse:
-            return
+@dataclass
+class _ScrapeNode:
+    key: str
+    children: list[ScrapeElement]
+    rename: str
+    collapse: bool
+    optional: bool
+    valContainerConstructor:Callable
+    dataCondition:Union[ Callable[[Any],bool], None ]
 
+    def getVal(self, _):
+        raise NotImplementedError("Virtual Method, Must Be Overrided")
+
+    def getMissingLeaves(self, foundLeaves:set[str], missingLeaves:set[str], requiredLeaves:set[str]):
         if self.optional:
             return
 
-        if self.rename:
-            result.add(self.rename)
+        if len(self.children) == 0:
+            requiredLeaves.add(self.key)
+            if self.key not in foundLeaves:
+                missingLeaves.add(self.key)
             return
 
-        result.add(self.key)
+        _getMissingLeavesFromList(self.children, foundLeaves, missingLeaves, requiredLeaves)
+        return 
 
-    def getOldKeyToNewKeyMap(self, result:dict):
-        for child in self.children:
-            child.getOldKeyToNewKeyMap(result)
+    def _strIndent(self, numIndent):
+        indent = numIndent*'  '
+        indentp1 = indent + '  '
+        s = f"{indent}{self.__class__.__name__}(\n"\
+            f"{indentp1}key: {self.key}\n" \
+            f"{indentp1}rename: {self.rename}\n" if self.rename else ""\
+            f"{indentp1}collapse: {self.collapse}\n" if self.collapse else ""\
 
-        if self.collapse:
+        if len(self.children) > 0:
+            s += \
+                f"{indentp1}children:\n" + \
+                     "\n".join([child._strIndent(numIndent+2) for child in self.children]) + \
+                f"\n{indent})"
+
+        return s
+
+
+    def __repr__(self):
+        return self._strIndent(0)
+
+    def __str__(self):
+        return self.__repr__()
+
+
+
+@dataclass
+class ScrapeAll(_ScrapeNode):
+    def __init__(self, key:str, children:list[ScrapeElement], collapse:bool = False, 
+                       rename:str = "", optional:bool = False, dataCondition: Callable[[Any],bool]= None):
+        super().__init__(key, children, rename, collapse, optional, list, dataCondition)
+        self.key = key
+        self.rename = rename
+
+    def getVal(self, j):
+        res = []
+        scrapeJson(j, self.key, res)
+        if len(res) == 0:
+            return None
+
+        if self.dataCondition is None:
+            return res
+        if self.dataCondition(res):
+            return res
+        return None
+
+@dataclass
+class ScrapeNth(_ScrapeNode):
+    n:int
+
+    def __init__(self, key:str, children:list[ScrapeElement], collapse:bool = False, 
+                       rename:str = "", optional:bool = False, dataCondition: Callable[[Any],bool]= None, n:int = 1):
+        super().__init__(key, children, rename, collapse, optional, list, dataCondition)
+        self.n = n
+
+    def getVal(self, j):
+        if self.n == 1:
+            return scrapeFirstJson(j, self.key)
+
+        res = []
+        scrapeJson(j, self.key, res)
+        if len(res) == 0:
+            return None
+        try:
+            data = res[self.n]
+        except IndexError:
+            return None
+
+        if self.dataCondition is None:
+            return data
+        if self.dataCondition(data):
+            return data
+        return None
+
+@dataclass
+class ScrapeLongest(_ScrapeNode):
+
+    def __init__(self, key:str, children:list[ScrapeElement], collapse:bool = False, 
+                       rename:str = "", optional:bool = False, dataCondition: Callable[[Any],bool]= None):
+        super().__init__(key, children, rename, collapse, optional, list, dataCondition)
+
+    def getVal(self, j):
+        res = []
+        scrapeJson(j, self.key, res)
+        if len(res) == 0:
+            return None
+        data = max(res, key=len)
+        if self.dataCondition is None:
+            return data
+        if self.dataCondition(data):
+            return data
+        return None
+
+
+def _update(src, dest: Union[dict, list]):
+    if isinstance(dest, dict):
+        if isinstance(src, dict):
+            dest.update(src)
             return
+        raise ValueError(
+            f"Unable to Update Dictionary with Type: {type(src)}\n"
+            f"src: \n{src}\n"
+            f"dest:\n{dest}\n"
+        )
 
-        if self.rename:
-            result[self.rename] = self.key
-            return
+    dest.append(src)
+    return
 
-        result[self.key] = self.key
-
-
-def _put(src, dest: Union[list, dict], keys: set[str], key: Union[str,None] = None):
-    if type(dest) is list:
+def _put(src, dest: Union[list, dict], key: Union[str,None] = None):
+    if isinstance(dest,list):
         dest.append(src)
         return
 
@@ -152,123 +269,111 @@ def _put(src, dest: Union[list, dict], keys: set[str], key: Union[str,None] = No
         if key == None:
             raise KeyError("Key Required")
 
-        if key in dest and type(src) is dict:
-            for srcKey in src.keys():
-                dest[key][srcKey] = src[srcKey]
-            return
+        if key in dest and isinstance(src, dict):
+            if isinstance(dest[key], dict):
+                dest[key].update(src)
+                return
+            if isinstance(dest[key], list):
+                dest[key].append(src)
+
+            raise KeyError("Key Already Exists, Unable to Insert Value")
 
         dest[key] = src
-        keys.add(key)
 
+def _scrapeJsonTree(j, base: ScrapeElement, leavesFound: set[str], truncateThreashold:float) -> Union[dict, list, None]:
+    isLeaf = len(base.children) == 0
 
-def _scrapeJsonTree(j, base: ScrapeNode, result: Union[dict, list], keys: set[str], parentKey: str = None):
-    # if parent key is provided, put data under parents key
-    if parentKey == None:
-        if base.rename:
-            putKey = base.rename
+    leavesFoundInBranch = set()
+
+    if isinstance(base,ScrapeUnion):
+        if isLeaf:
+            raise ScrapeError("ScrapeUnion Cannot be Leaf Node")
+
+        chosenChild = None
+        childVal = None
+        for child in base.children:
+            l = set()
+            c = _scrapeJsonTree(j, child, l, truncateThreashold)
+            if childVal is not None:
+                if len(l) > len(leavesFoundInBranch):
+                    leavesFoundInBranch  = l
+                    childVal = c
+                    chosenChild = child
+
+        if childVal is None:
+            return None
+
+        if isinstance(chosenChild, ScrapeUnion) or chosenChild.collapse:
+            res = childVal
+
         else:
-            putKey = base.key
+            childKey = chosenChild.rename if chosenChild.rename else chosenChild.key
+            res = {childKey: childVal}
+
+
     else:
-        putKey = parentKey
+        res = base.valContainerConstructor()
+        currentVal = base.getVal(j) 
+        if currentVal is None:
+            return None
 
-    if base.scrapeNum == ScrapeNum.First: 
-        data = scrapeFirstJson(j, base.key)
+        if isLeaf:
+            leavesFound.add(base.key)
+            return currentVal
 
-        if data is None:
-            logMsg = f"Missing Field in JSON: {base.key}"
-            cfg.logger.debug(logMsg)
-            return
-
-        if len(base.children) == 0:
-            _put(data, result, keys, putKey)
-            return
 
         for child in base.children:
-            if child.collapse:
-                _scrapeJsonTree(data, child, result, keys, putKey)
-            else:
-                x = {}
-                _scrapeJsonTree(data, child, x, keys)
-                _put(x, result, keys, putKey)
+            childVal = _scrapeJsonTree(currentVal, child, leavesFoundInBranch, truncateThreashold)
+            if childVal is None:
+                continue
+            if isinstance(child, ScrapeUnion) or child.collapse:
+                _update(childVal, res)
+                continue
 
-    else: # all, unique and longest
-        data = []
-        scrapeJson(j, base.key, data)
+            childKey = child.rename if child.rename else child.key
+            _put(childVal, res, childKey)
 
-        if len(base.children) == 0:
-            _put(data, result, keys, putKey)
-            return
+    missingLeaves = set()
+    requiredLeaves = set()
+    base.getMissingLeaves(leavesFoundInBranch, missingLeaves, requiredLeaves)
+    if 1 - len(missingLeaves) / len(requiredLeaves) < truncateThreashold:
+        return None
 
-        x = []
-
-        for datum in data:
-            y = {}
-
-            for child in base.children:
-                if child.collapse:
-                    _scrapeJsonTree(datum, child, x, keys, putKey)
-                else:
-                    _scrapeJsonTree(datum, child, y, keys)
-
-            if len(y) != 0: 
-                x.append(y)
-
-        if base.scrapeNum == ScrapeNum.Longest and len(x)!=0:
-            _put(max(x, key=len), result, keys, putKey)
-
-        elif base.scrapeNum == ScrapeNum.Unique:
-            if result not in x:
-                _put(x, result, keys, putKey)
-        else:
-            _put(x, result, keys, putKey)
+    leavesFound.update(leavesFoundInBranch)
+    return res
 
 
-def scrapeJsonTree(j, fmt: Union[ScrapeNode, list[ScrapeNode]], debugDataList:list[ScrapeJsonTreeDebugData] = None, percentRequiredKeys:float = None) -> Union[list,dict]:
-    # default value of percentRequiredKeys depends on if we are in debug mode, if so then we dont allow any missing keys so we can check the formatting
-    if percentRequiredKeys is None:
-        percentRequiredKeys = 0.5 if debugDataList is None else 1.0
+def scrapeJsonTree(j, fmt: Union[ScrapeElement, list[ScrapeElement]], debugDataList: list[ScrapeJsonTreeDebugData] = None, truncateThreashold:float = None):
+    if truncateThreashold is None:
+        truncateThreashold = 0.5 if debugDataList is None else 1.0
 
-    if isinstance(fmt,list):
-        baseNodes = fmt
+    if isinstance(fmt, list):
+        bases = fmt
     else:
-        baseNodes = [fmt]
+        bases = [fmt]
 
-    result = []
-    keys = set()
-    requiredKeys = set()
-    map = {}
-    for base in baseNodes:
-        r = {}
-        _scrapeJsonTree(j, base, r, keys)
-        base.getRequiredKeys(requiredKeys)
-        base.getOldKeyToNewKeyMap(map)
+    res = {}
+    leavesFound = set()
+    missingLeaves = set()
+    requiredLeaves = set()
+    
+    for base in bases:
+        val = _scrapeJsonTree(j, base, leavesFound, truncateThreashold)
+        if val is None:
+            return None
+        if isinstance(base, ScrapeUnion) or base.collapse:
+            _update(val, res)
+            continue
+        key = base.rename if base.rename else base.key
+        _put(base, res, key)
 
-        if len(r) > 0:
-            if base.collapse:
-                result.append(r[base.key])
-                try:
-                    keys.remove(base.key)
-                except:
-                    pass
-            else:
-                result.append(r)
+    missingLeaves = set()
+    requiredLeaves = set()
+    _getMissingLeavesFromList(bases, leavesFound, missingLeaves, requiredLeaves)
+    if 1 - len(missingLeaves) / len(requiredLeaves) < truncateThreashold:
+        if debugDataList is not None:
+            debugDataList.append(ScrapeJsonTreeDebugData(missingLeaves, requiredLeaves, leavesFound, j))
+        raise ScrapeError(f"Too Many Leaves Missing \nmissingLeaves: {missingLeaves} \nrequiredLeaves: {requiredLeaves}")
 
-
-    if percentRequiredKeys != 0.0:
-        ratio = 1.0 if len(requiredKeys) == 0 else len(keys)/len(requiredKeys)
-
-        if ratio < percentRequiredKeys:
-            cfg.logger.debug(f"Too Many Required Keys Missing \nScrapedKeys: {keys} \nRequired Keys: {requiredKeys}")
-            
-            if debugDataList is not None:
-                cfg.logger.debug(f"Adding ScrapeJsonTreeDebugData to debugDataList")
-                debugDataList.append(ScrapeJsonTreeDebugData(requiredKeys, keys, j, map))
-
-            raise ScrapeError(f"Too Many Required Keys Missing \nScrapedKeys: {keys} \nRequired Keys: {requiredKeys}")
-
-
-    if not isinstance(fmt, list):
-        return result[0]
-
-    return result
+    return res
 
