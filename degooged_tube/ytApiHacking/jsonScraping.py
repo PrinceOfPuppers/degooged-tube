@@ -292,7 +292,7 @@ def _scrapeJsonTree(j, base: ScrapeElement, leavesFound: set[str], truncateThrea
         for child in base.children:
             l = set()
             c = _scrapeJsonTree(j, child, l, truncateThreashold)
-            if childVal is not None:
+            if c is not None:
                 if len(l) > len(leavesFoundInBranch):
                     leavesFoundInBranch  = l
                     childVal = c
@@ -390,5 +390,9 @@ def scrapeJsonTree(j, fmt: Union[ScrapeElement, list[ScrapeElement]], debugDataL
 
     if isinstance(fmt, list) :
         return res
+
+    if len(res)==0:
+        return None
+
     return res[0]
 

@@ -2,7 +2,7 @@ from unittest import TestCase
 import inspect
 import json
 import degooged_tube.config as cfg
-from degooged_tube.ytApiHacking.jsonScraping import scrapeJsonTree, ScrapeAll, ScrapeNth, ScrapeLongest, ScrapeError
+from degooged_tube.ytApiHacking.jsonScraping import scrapeJsonTree, ScrapeAll, ScrapeNth, ScrapeLongest, ScrapeUnion, ScrapeError
 from degooged_tube.ytApiHacking.helpers import getApproximateNum
 
 def logName(testInstance, frame):
@@ -342,6 +342,27 @@ class test_scrapeJsonTree(TestCase):
 
         self.assertEqual(answer, solution)
 
+    def test_handmade_17(self):
+        logName(self, inspect.currentframe())
+
+        uploadScrapeFmt = \
+              ScrapeNth("greetings",[
+                  ScrapeNth("hi",[
+                      ScrapeAll("name",[], rename="names"),
+                      ScrapeAll("favColor",[], rename="favColors")
+                  ], collapse=True),
+              ], collapse = True)
+
+        solution = \
+            { 
+                "names": ["alice", "bob", "carol", "dave"], 
+                "favColors": ["blue", "green", "purple", "purple" ]
+            }
+
+        answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt)
+
+        self.assertEqual(answer, solution)
+
     def test_someMissing_1(self):
         logName(self, inspect.currentframe())
 
@@ -446,6 +467,39 @@ class test_scrapeJsonTree(TestCase):
             answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt)
         except KeyError:
             self.fail("Scrape Json Tree Missed Key")
+
+        self.assertEqual(answer, solution)
+
+    def test_handmade_ScrapeUnion_1(self):
+        logName(self, inspect.currentframe())
+
+        uploadScrapeFmt = \
+            ScrapeUnion([
+              ScrapeAll("hello",[]),
+              ScrapeAll("howdy",[]),
+            ])
+
+        solution = \
+            { 
+                "hello": ["there", "boio"], 
+            }
+
+        answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt, 1.0)
+
+        self.assertEqual(answer, solution)
+
+    def test_handmade_ScrapeUnion_2(self):
+        logName(self, inspect.currentframe())
+
+        uploadScrapeFmt = \
+            ScrapeUnion([
+              ScrapeAll("hello",[], collapse = True),
+              ScrapeAll("howdy",[]),
+            ])
+
+        solution = ["there", "boio"]
+
+        answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt, 1.0)
 
         self.assertEqual(answer, solution)
 
