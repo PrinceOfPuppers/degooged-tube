@@ -71,6 +71,20 @@ def scrapeFirstJson(j, desiredKey: str):
 
     return None
 
+def scrapeJsonMultiKey(j, results:list, *args: str):
+    if isinstance(j,List):
+        for value in j:
+            if isinstance(value,List) or isinstance(value,dict):
+                scrapeJsonMultiKey(value, results, *args)
+        return
+
+    if isinstance(j, dict):
+        for key,value in j.items():
+            if key in args:
+                results.append(value)
+            elif isinstance(value, dict) or isinstance(value, List):
+                scrapeJsonMultiKey(value, results, *args)
+        return
 
 
 
@@ -242,6 +256,7 @@ class ScrapeLongest(_ScrapeNode):
         if self.dataCondition(data):
             return data
         return None
+
 
 
 def _update(src, dest: Union[dict, list]):

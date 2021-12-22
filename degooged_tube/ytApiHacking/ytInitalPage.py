@@ -17,7 +17,7 @@ class YtInitalPage:
     key: str
     clientVersion: str
 
-    continuations: dict
+    continuations: Union[dict, None]
 
     initalData: dict
 
@@ -46,7 +46,15 @@ class YtInitalPage:
         initalData = json.loads(y.group(1))
         clientVersion = z.group(1)
 
-        a = scrapeJsonTree(initalData, ctrlp.continuationScrapeFmt, truncateThreashold = 0.0)
+        try:
+            a = scrapeJsonTree(initalData, ctrlp.continuationScrapeFmt, truncateThreashold = 1.0)
+        except ScrapeError as e:
+            cfg.logger.debug(
+                f"Continuations Not Found For Url: {url}\n"
+                f"Explicit ScrapeError: {e}"
+            )
+            continuations = None
+            return cls(url, key, clientVersion, continuations, initalData)
 
         assert type(a) is list
         continuations = {}
@@ -67,6 +75,9 @@ class YtInitalPage:
         return cls(url, key, clientVersion, continuations, initalData )
 
     def getContinuationTokens(self, apiUrl: str):
+        if self.continuations is None:
+            raise Exception(f"The Url {self.url} Does Not Contain Continuations")
+
         try:
             return self.continuations[apiUrl].copy()
         except KeyError:

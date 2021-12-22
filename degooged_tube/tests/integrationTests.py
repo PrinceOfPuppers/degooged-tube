@@ -6,7 +6,7 @@ from degooged_tube.subbox import SubBox, listsOverlap
 from degooged_tube.ytApiHacking import sanitizeChannelUrl, getChannelInfo, getCommentList, getRelatedVideoList, getUploadList, \
                                        getVideoInfo, getSearchVideoList, getSearchChannelList, YtInitalPage, Upload
 #import degooged_tube.ytApiHacking.controlPanel as ctrlp
-from .unitTests import logName
+from degooged_tube.tests.unitTests import logName
 
 
 def getUploads(pageSize: int, numPages: int, subBox: SubBox, tags:set[str] = None) -> list[Upload]:

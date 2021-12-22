@@ -205,8 +205,8 @@ class SubBox:
 
             cfg.logger.debug(
                 f"Filtering Subbox by Tags:{tags}\n"
-                f"SubBox Len Before Filtering: {len(self.orderedUploads)}"
-                f"SubBox Len After Filtering: {len(uploads)}"
+                f"SubBox Len Before Filtering: {len(self.orderedUploads)}\n"
+                f"SubBox Len After Filtering: {len(uploads)}\n"
                 f"Desired Length: {limit + offset - 1}"
             )
 
