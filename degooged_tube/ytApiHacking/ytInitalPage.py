@@ -96,6 +96,6 @@ class YtInitalPage:
         try:
             return scrapeJsonTree(self.initalData, dataFmt, debugDataList= debugData)
         except ScrapeError:
-            dumpDebugData(debugData)
+            dumpDebugData(debugData, cfg.testDataDumpPath)
             raise
 
