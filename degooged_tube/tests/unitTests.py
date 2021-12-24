@@ -360,6 +360,25 @@ class test_scrapeJsonTree(TestCase):
             }
 
         answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt)
+        self.assertEqual(answer, solution)
+
+    def test_handmade_18(self):
+        logName(self, inspect.currentframe())
+
+        uploadScrapeFmt = \
+              ScrapeNth("greetings",[
+                  ScrapeNth("hi",[
+                      ScrapeAll("name",[], rename="names", dataCondition = lambda l: "blue" in l),
+                      ScrapeAll("favColor",[], rename="favColors", dataCondition = lambda l: "blue" in l)
+                  ], collapse=True),
+              ], collapse = True)
+
+        solution = \
+            { 
+                "favColors": ["blue", "green", "purple", "purple" ]
+            }
+
+        answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt)
 
         self.assertEqual(answer, solution)
 
@@ -520,6 +539,73 @@ class test_scrapeJsonTree(TestCase):
 
         self.assertEqual(answer, solution)
 
+    def test_handmade_ScrapeAllUnion_2(self):
+        logName(self, inspect.currentframe())
+
+        uploadScrapeFmt = \
+            ScrapeAllUnion("", [
+              ScrapeAllUnionNode("hello",[]),
+              ScrapeAllUnionNode("howdy",[
+                  ScrapeNth("name", [], collapse = True)
+              ], collapse = True),
+            ], collapse = True)
+
+        solution = [{"hello":"there"}, "partner", {"hello":"boio"}]
+
+        answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt, 1.0)
+
+        self.assertEqual(answer, solution)
+
+    def test_handmade_ScrapeAllUnion_3(self):
+        logName(self, inspect.currentframe())
+
+        uploadScrapeFmt = \
+            ScrapeAllUnion("", [
+              ScrapeAllUnionNode("hello",[], rename = "test"),
+              ScrapeAllUnionNode("howdy",[
+                  ScrapeNth("name", [], collapse = True)
+              ], collapse = True),
+            ], collapse = True)
+
+        solution = [{"test":"there"}, "partner", {"test":"boio"}]
+
+        answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt, 1.0)
+
+        self.assertEqual(answer, solution)
+
+    def test_handmade_ScrapeAllUnion_4(self):
+        logName(self, inspect.currentframe())
+
+        uploadScrapeFmt = \
+            ScrapeAllUnion("testing", [
+                ScrapeAllUnionNode("coolness",[], rename = "test", dataCondition = lambda val: isinstance(val,int), collapse = True),
+              ScrapeAllUnionNode("beverages",[
+                  ScrapeNth("coffee", [], collapse = True)
+              ], collapse = True),
+            ])
+
+        solution = {"testing": [11, "omegaGood"]}
+
+        answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt, 1.0)
+
+        self.assertEqual(answer, solution)
+
+    def test_handmade_ScrapeAllUnion_5(self):
+        logName(self, inspect.currentframe())
+
+        uploadScrapeFmt = \
+            ScrapeAllUnion("testing", [
+                ScrapeAllUnionNode("coolness",[], rename = "test", dataCondition = lambda val: isinstance(val,int), collapse = True),
+              ScrapeAllUnionNode("beverages",[
+                  ScrapeNth("coffee", [], collapse = True)
+              ], collapse = True),
+            ])
+
+        solution = {"testing": [11, "omegaGood"]}
+
+        answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt, 1.0)
+
+        self.assertEqual(answer, solution)
 
 
 class test_helpers(TestCase):

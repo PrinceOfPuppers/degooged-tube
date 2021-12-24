@@ -424,24 +424,27 @@ def _AllUnionHelper(j:list, children: list[ScrapeAllUnionNode], leavesFoundInBra
     res = []
     for x in j:
         key, val = next(iter(x.items()))
+        elementLeaves = set()
 
         chosenChild = None
-        childVal = None
-        elementLeaves = set()
+
         for child in children:
             if child.key == key:
                 chosenChild = child
-
-                if child.isLeaf:
-                    elementLeaves.add(child.key)
-                    childVal = val
-                else:
-                    childVal = _ScrapeNodeHelper(val, child.children, elementLeaves, truncateThreashold, False)
-
                 break
 
         if chosenChild is None:
             raise Exception("This Should Never Occur")
+
+        if chosenChild.dataCondition is not None:
+            if not chosenChild.dataCondition(val):
+                continue
+
+        if chosenChild.isLeaf:
+            elementLeaves.add(chosenChild.key)
+            childVal = val
+        else:
+            childVal = _ScrapeNodeHelper(val, chosenChild.children, elementLeaves, truncateThreashold, False)
 
         if childVal is None:
             continue
@@ -459,7 +462,6 @@ def _AllUnionHelper(j:list, children: list[ScrapeAllUnionNode], leavesFoundInBra
         return None
 
     return res
-
 
 
 
