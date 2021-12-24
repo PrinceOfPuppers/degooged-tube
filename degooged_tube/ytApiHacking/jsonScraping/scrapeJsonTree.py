@@ -112,7 +112,7 @@ class ScrapeAllUnionNode:
     key: str
     children: list[ScrapeElement]
     dataCondition:Union[ Callable[[Any],bool], None ] = None
-    collapse = False
+    collapse:bool = False
     rename:str = ""
 
     def __post_init__(self):
@@ -126,12 +126,26 @@ class ScrapeAllUnionNode:
     def __str__(self):
         return self.__repr__()
 
+    def getMissingLeaves(self, foundLeaves:set[str], missingLeaves:set[str], requiredLeaves:set[str]):
+        #if self.optional:
+        #    return
+
+        if len(self.children) == 0:
+            requiredLeaves.add(self.key)
+            if self.key not in foundLeaves:
+                missingLeaves.add(self.key)
+            return
+
+        _getMissingLeavesFromList(self.children, foundLeaves, missingLeaves, requiredLeaves)
+        return 
+
 
 @dataclass
 class ScrapeAllUnion:
     collapse:bool
     keys: list[str] # each one corrisponds to a childrenGroup
     children: list[ScrapeAllUnionNode]
+    childrenKeys: list[str]
 
     key:str         # only serves as the name of the data (irrelevent if collapsed)
     dataCondition:Union[ Callable[[Any],bool], None ]
@@ -143,6 +157,7 @@ class ScrapeAllUnion:
         self.collapse = collapse
         self.dataCondition = dataCondition
         self.children = children
+        self.childrenKeys = [child.key for child in self.children]
 
         if len(self.children) == 0:
             raise Exception("ScrapeAllUnion Cannot be Leaf Node")
@@ -159,7 +174,7 @@ class ScrapeAllUnion:
 
     def getVal(self, j):
         res = []
-        scrapeJsonMultiKey(j,res, *self.keys)
+        scrapeJsonMultiKey(j,res, *self.childrenKeys)
 
         if len(res) == 0:
             return None
@@ -174,13 +189,14 @@ class ScrapeAllUnion:
         child = self.children[0]
         mainMissingLeaves  = set()
         mainRequiredLeaves = set()
+        child.getMissingLeaves(foundLeaves, mainMissingLeaves, mainRequiredLeaves)
         _getMissingLeavesFromList(child.children, foundLeaves, mainMissingLeaves, mainRequiredLeaves)
 
         for i in range(1, len(self.children)):
             child = self.children[i]
             m:set[str] = set()
             r:set[str] = set()
-            _getMissingLeavesFromList(child.children, foundLeaves, m, r)
+            child.getMissingLeaves(foundLeaves, m, r)
             if mainMissingLeaves is None or len(m) < len(mainMissingLeaves):
                 mainMissingLeaves = m
                 mainRequiredLeaves = r
@@ -406,22 +422,30 @@ def _UnionHelper(j, children: list[ScrapeElement], leavesFoundInBranch: set[str]
 
 def _AllUnionHelper(j:list, children: list[ScrapeAllUnionNode], leavesFoundInBranch: set[str], truncateThreashold:float):
     res = []
+    for x in j:
+        key, val = next(iter(x.items()))
 
-    for val in j:
         chosenChild = None
         childVal = None
         elementLeaves = set()
         for child in children:
-            l = set()
-            c = _ScrapeNodeHelper(val, child.children, l, truncateThreashold, False)
-            if c is not None:
-                if len(l) > len(elementLeaves):
-                    elementLeaves  = l
-                    childVal = c
-                    chosenChild = child
+            if child.key == key:
+                chosenChild = child
 
-            if childVal is None:
-                continue
+                if child.isLeaf:
+                    elementLeaves.add(child.key)
+                    childVal = val
+                else:
+                    childVal = _ScrapeNodeHelper(val, child.children, elementLeaves, truncateThreashold, False)
+
+                break
+
+        if chosenChild is None:
+            raise Exception("This Should Never Occur")
+
+        if childVal is None:
+            continue
+
         leavesFoundInBranch.update(elementLeaves)
 
         if isinstance(chosenChild, ScrapeUnion) or chosenChild.collapse:

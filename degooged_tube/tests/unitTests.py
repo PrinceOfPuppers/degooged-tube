@@ -2,7 +2,7 @@ from unittest import TestCase
 import inspect
 import json
 import degooged_tube.config as cfg
-from degooged_tube.ytApiHacking.jsonScraping import scrapeJsonTree, ScrapeAll, ScrapeNth, ScrapeLongest, ScrapeUnion, ScrapeError
+from degooged_tube.ytApiHacking.jsonScraping import scrapeJsonTree, ScrapeAll, ScrapeNth, ScrapeLongest, ScrapeUnion, ScrapeAllUnion, ScrapeAllUnionNode, ScrapeError
 from degooged_tube.ytApiHacking.helpers import getApproximateNum
 
 def logName(testInstance, frame):
@@ -502,6 +502,24 @@ class test_scrapeJsonTree(TestCase):
         answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt, 1.0)
 
         self.assertEqual(answer, solution)
+
+    def test_handmade_ScrapeAllUnion_1(self):
+        logName(self, inspect.currentframe())
+
+        uploadScrapeFmt = \
+            ScrapeAllUnion("", [
+              ScrapeAllUnionNode("hello",[], collapse = True),
+              ScrapeAllUnionNode("howdy",[
+                  ScrapeNth("name", [], collapse = True)
+              ], collapse = True),
+            ], collapse = True)
+
+        solution = ["there", "partner", "boio"]
+
+        answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt, 1.0)
+
+        self.assertEqual(answer, solution)
+
 
 
 class test_helpers(TestCase):

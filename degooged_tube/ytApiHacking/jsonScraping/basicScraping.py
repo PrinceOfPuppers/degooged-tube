@@ -46,7 +46,7 @@ def scrapeJsonMultiKey(j, results:list, *args: str):
     if isinstance(j, dict):
         for key,value in j.items():
             if key in args:
-                results.append(value)
+                results.append({key: value})
             elif isinstance(value, dict) or isinstance(value, List):
                 scrapeJsonMultiKey(value, results, *args)
         return
