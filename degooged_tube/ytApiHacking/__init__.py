@@ -2,8 +2,8 @@ from .ytContIter import YtInitalPage
 from . import controlPanel as ctrlp 
 from .ytApiList import YtApiList
 #from urllib.parse import quote_plus
-from .controlPanel import Upload, SearchType, SearchVideo, SearchChannel, ChannelInfo, SearchFilter, VideoInfo, RelatedVideo
-from typing import Tuple
+from .controlPanel import Upload, SearchType, SearchVideo, SearchChannel, ChannelInfo, VideoInfo, RelatedVideo, SearchElementFromData
+from typing import Tuple, Union
 
 
 # uploads
@@ -78,37 +78,21 @@ def getChannelInfo(channelUrl) -> ChannelInfo:
 def processFilterData(res):
     return [SearchType.fromData(r) for r in res]
 
-
-# Search results
-def searchVideoCallback(res):
+# Search Results
+def searchCallback(res):
     l = []
     for r in res:
-        x = SearchVideo.fromData(r)
+        x = SearchElementFromData(r)
         if x is not None:
             l.append(x)
     return l
 
-def searchChannelCallback(res) -> list[SearchChannel]:
-    l = []
-    for r in res:
-        x = SearchChannel.fromData(r)
-        if x is not None:
-            l.append(x)
-    return l
 
-def getSearchVideoList(term:str) -> Tuple[YtApiList[SearchVideo], list[SearchType]]:
+def getSearchList(term:str, onExtend = searchCallback) -> Tuple[YtApiList[Union[SearchVideo, SearchChannel]], list[SearchType]]:
     url = ctrlp.searchUrl + term
 
     searchInitalPage = YtInitalPage.fromUrl(url)
-    searchList = YtApiList(searchInitalPage, ctrlp.searchApiUrl, ctrlp.searchVideoScrapeFmt, getInitalData = True, onExtend = searchVideoCallback)
-    filterData = processFilterData( searchInitalPage.scrapeInitalData(ctrlp.searchFilterScrapeFmt) )
-    return searchList, filterData
-
-def getSearchChannelList(term:str) -> Tuple[YtApiList[SearchChannel], list[SearchType]]:
-    url = ctrlp.searchUrl + term
-
-    searchInitalPage = YtInitalPage.fromUrl(url)
-    searchList = YtApiList(searchInitalPage, ctrlp.searchApiUrl, ctrlp.searchChannelScrapeFmt, getInitalData = True, onExtend = searchChannelCallback)
+    searchList = YtApiList(searchInitalPage, ctrlp.searchApiUrl, ctrlp.searchScrapeFmt, getInitalData = True, onExtend = onExtend)
     filterData = processFilterData( searchInitalPage.scrapeInitalData(ctrlp.searchFilterScrapeFmt) )
     return searchList, filterData
 

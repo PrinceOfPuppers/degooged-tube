@@ -1,4 +1,4 @@
-from .jsonScraping import ScrapeNth, ScrapeAll, ScrapeElement
+from .jsonScraping import ScrapeNth, ScrapeAll, ScrapeElement, ScrapeAllUnion, ScrapeAllUnionNode
 from typing import Union
 from .helpers import tryGet, approxTimeToUnix, tryGetMultiKey, getApproximateNum
 import re
@@ -192,6 +192,7 @@ videoInfoScrapeFmt = \
                     ], collapse = True)
                 ], collapse=True)
 
+            # RIP dislikes :c
             #ScrapeNth("sentimentBar",[
             #    ScrapeNth("tooltip",[], collapse=True)
             #],rename="likeDislike"),
@@ -500,40 +501,81 @@ class SearchType:
 
 
 
-searchVideoScrapeFmt = \
+searchScrapeFmt = \
     ScrapeNth("twoColumnSearchResultsRenderer",[
         ScrapeNth("itemSectionRenderer",[
-            ScrapeAll("videoRenderer",[
-                ScrapeNth("title",[
-                    ScrapeNth("text",[],collapse=True)
-                ]),
+            ScrapeAllUnion("", [
 
-                ScrapeNth("longBylineText",[
-                    ScrapeNth("text", [],  collapse=True),
-                ], rename= "channelName"),
+                ScrapeAllUnionNode("channelRenderer", [
 
-                ScrapeNth("longBylineText",[
-                    ScrapeNth("canonicalBaseUrl", [], collapse=True)
-                ],rename="channelUrlFragment"),
+                    ScrapeNth("title",[
+                        ScrapeNth("text",[],collapse=True)
+                    ], rename = 'channelName'),
 
-                ScrapeNth("videoId",[]),
+                    ScrapeNth("browseEndpoint",[
+                        ScrapeNth("canonicalBaseUrl", [],  collapse=True),
+                    ], rename = 'channelUrlFragment'),
 
-                ScrapeNth("thumbnails",[]),
+                    ScrapeNth("thumbnails",[], rename = 'channelIcons'),
 
-                ScrapeNth("viewCountText",[
-                    ScrapeNth("simpleText",[],collapse=True)
-                ], rename="views"),
+                    ScrapeNth("descriptionSnippet",[
+                        ScrapeNth("text", [],  collapse=True),
+                    ], rename = 'channelDescription'),
 
-                ScrapeNth("lengthText",[
-                    ScrapeNth("simpleText",[],collapse=True)
-                ], rename="duration"),
+                    ScrapeNth("subscriberCountText",[
+                        ScrapeNth("simpleText",[],collapse=True)
+                    ], rename = "subscribers"),
 
-                ScrapeNth("publishedTimeText",[
-                    ScrapeNth("simpleText",[],collapse=True)
-                ], rename="uploadedOn"),
-            ], collapse = True)
+                    ScrapeNth("videoCountText",[
+                        ScrapeNth("runs",[
+                            ScrapeAll("text",[], collapse=True)
+                        ],collapse=True)
+                    ], rename = "videoCount"),
+
+                ], rename="channel"),
+
+
+                ScrapeAllUnionNode("videoRenderer",[
+                    ScrapeNth("title",[
+                        ScrapeNth("text",[],collapse=True)
+                    ]),
+
+                    ScrapeNth("longBylineText",[
+                        ScrapeNth("text", [],  collapse=True),
+                    ], rename= "channelName"),
+
+                    ScrapeNth("longBylineText",[
+                        ScrapeNth("canonicalBaseUrl", [], collapse=True)
+                    ],rename="channelUrlFragment"),
+
+                    ScrapeNth("videoId",[]),
+
+                    ScrapeNth("thumbnails",[]),
+
+                    ScrapeNth("viewCountText",[
+                        ScrapeNth("simpleText",[],collapse=True)
+                    ], rename="views"),
+
+                    ScrapeNth("lengthText",[
+                        ScrapeNth("simpleText",[],collapse=True)
+                    ], rename="duration"),
+
+                    ScrapeNth("publishedTimeText",[
+                        ScrapeNth("simpleText",[],collapse=True)
+                    ], rename="uploadedOn"),
+
+                ], rename = "video")
+
         ], collapse = True)
     ], collapse= True)
+], collapse= True)
+
+def SearchElementFromData(data:dict):
+    if "video" in data:
+        return SearchVideo.fromData(data["video"])
+    if "channel" in data:
+        return SearchChannel.fromData(data["channel"])
+    raise Exception("Should Never Occur")
 
 @dataclass
 class SearchVideo:
@@ -575,37 +617,6 @@ class SearchVideo:
 
     def __str__(self):
         return self.__repr__()
-
-
-searchChannelScrapeFmt = \
-    ScrapeNth("contents",[
-
-        ScrapeNth("title",[
-            ScrapeNth("text",[],collapse=True)
-        ], rename = 'channelName'),
-
-        ScrapeNth("browseEndpoint",[
-            ScrapeNth("canonicalBaseUrl", [],  collapse=True),
-        ], rename = 'channelUrlFragment'),
-
-        ScrapeNth("thumbnails",[], rename = 'channelIcons'),
-
-        ScrapeNth("descriptionSnippet",[
-            ScrapeNth("text", [],  collapse=True),
-        ], rename = 'channelDescription'),
-
-        ScrapeNth("subscriberCountText",[
-            ScrapeNth("simpleText",[],collapse=True)
-        ], rename = "subscribers"),
-
-        ScrapeNth("videoCountText",[
-            ScrapeNth("runs",[
-                ScrapeAll("text",[], collapse=True)
-            ],collapse=True)
-        ], rename = "videoCount"),
-
-    ], collapse= True)
-
 
 @dataclass
 class SearchChannel:

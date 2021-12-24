@@ -215,184 +215,180 @@ def subscriptionsPage(state: CliState):
             continue
 
 
-def searchPage(state: CliState, searchVideo = True, pageNum: int = 1) -> bool:
+def _searchVideoHelper(state: CliState, searchVid: ytapih.SearchVideo) -> bool:
+    while True:
+        cfg.logger.info(f"Video Selected: \n{searchVid}")
+        chosenOption = input(
+            'Video Options: (w)atch, (r)elated videos, (v)ideo info, (c)hannel info (b)ack\n'
+            'Option: '
+        ).strip().lower()
+
+        options        = ['w', 'r', 'v', 'c', 'b']
+
+        if(len(chosenOption)!= 1 or chosenOption not in options):
+            cfg.logger.error(f"{chosenOption} is not an Option")
+            continue
+        break
+        
+
+    if chosenOption == 'b':
+        return False
+
+    if chosenOption == 'w':
+        playVideo(searchVid.url)
+        return False
+
+    if chosenOption == 'r':
+        videoPage = ytapih.YtInitalPage.fromUrl(searchVid.url)
+        if relatedVideosPage(state, videoPage, searchVid.title):
+            return True
+        return False
+
+    if chosenOption == 'v':
+        if videoInfoPage(state, searchVid.url):
+            return True
+        return False
+
+    if chosenOption == 'c':
+        channel = SubBoxChannel.fromUrl(searchVid.channelUrl, set())
+        if channelInfoPage(state, channel):
+            return True
+        return False
+
+    raise Exception(f'Reached End Of SearchVideoHelper Switch, Option Chosen {chosenOption}')
+
+
+def _searchChannelHelper(state: CliState, searchChannel) -> bool:
+    while True:
+        chosenOption = input(
+            'Options: (s)ubscribe/unsubscribe (c)hannel info, (b)ack\n'
+            'Option: '
+        ).strip().lower()
+
+        options   = ['s', 'c', 'b']
+
+        if(len(chosenOption)!= 1 or chosenOption not in options):
+            cfg.logger.error(f"{chosenOption} is not an Option")
+            continue
+        break
+
+    if chosenOption == 's':
+        cmds.subscribeUnsubscribe(state.username, state.subbox, searchChannel.channelUrl, searchChannel.channelName)
+        return False
+
+    if chosenOption == 'c':
+        channel = SubBoxChannel.fromUrl(searchChannel.channelUrl, set())
+        if channelInfoPage(state, channel):
+            return True
+        return False
+    raise Exception(f'Reached End Of SearchChannelHelper Switch, Option Chosen {chosenOption}')
+
+
+def searchPage(state: CliState, pageNum: int = 1) -> bool:
     '''return value specifies whether or not to go back to subbox'''
     getPageSize = lambda : int((getTerminalSize()[1] - 5)/2)
 
     searchTerm = input("Search Term: ")
     sanitizedSearchTerm = quote_plus(searchTerm)
-
-    if searchVideo:
-        searchList, filters = ytapih.getSearchVideoList(sanitizedSearchTerm)
-    else:
-        searchList, filters = ytapih.getSearchChannelList(sanitizedSearchTerm)
-        # TODO: filter channel
+    searchList, filters = ytapih.getSearchList(sanitizedSearchTerm)
 
     searchRes = searchList.getPaginated(pageNum, getPageSize())
 
     while True:
-        searchTitle = f'Search: {searchTerm}, Page: {pageNum}, ' 
-
-        if searchVideo:
-            searchTitle += 'Showing Videos:'
-        else:
-            searchTitle += 'Showing Channels:'
-
+        searchTitle = f'Search: {searchTerm}, Page: {pageNum}' 
 
         cfg.logger.info(searchTitle)
 
         for i,searchItem in enumerate(searchRes):
             cfg.logger.info(f'{i}) {searchItem}')
 
-        # TODO: add subbox tag filtering
-        if searchVideo:
             chosenOption = input(
-                'Video Options: (w)atch, (r)elated videos, (v)ideo info, (c)hannel info \n'
-                'General Options: (p)revious/(n)ext page, (f)ilters, (s)earch, (t)oggle videos/channels, (h)ome, (b)ack\n'
+                'List Options: (c)hoose item\n'
+                'General Options: (p)revious/(n)ext page, (f)ilters, (s)earch, (h)ome, (b)ack\n'
                 'Option: '
             ).strip().lower()
 
-            videoOptions   = ['w', 'r', 'v', 'c']
-            generalOptions = ['p', 'n', 'f', 's', 't', 'h', 'b']
-            options        = videoOptions + generalOptions
+            listOptions   = ['c']
+            generalOptions = ['p', 'n', 'f', 's', 'h', 'b']
+            options        = listOptions + generalOptions
 
             if(len(chosenOption)!= 1 or chosenOption not in options):
                 cfg.logger.error(f"{chosenOption} is not an Option")
                 continue
 
-            if chosenOption in videoOptions:
+            if chosenOption in listOptions:
                 try:
-                    index = prompts.numPrompt('Choose a Video Number', searchRes, cancelable = True)
+                    index = prompts.numPrompt('Choose an Item Number', searchRes, cancelable = True)
                 except prompts.Cancel:
                     continue
 
-                searchVid = searchRes[index]
-                assert isinstance(searchVid, ytapih.SearchVideo)
+                searchItem = searchRes[index]
 
-                if chosenOption == 'w':
-                    playVideo(searchVid.url)
-                    continue
-
-                if chosenOption == 'r':
-                    videoPage = ytapih.YtInitalPage.fromUrl(searchVid.url)
-                    if relatedVideosPage(state, videoPage, searchVid.title):
+                if isinstance(searchItem, ytapih.SearchVideo):
+                    if _searchVideoHelper(state, searchItem):
                         return True
                     continue
-
-                if chosenOption == 'v':
-                    if videoInfoPage(state, searchVid.url):
+                elif isinstance(searchItem, ytapih.SearchChannel):
+                    if _searchChannelHelper(state, searchItem):
                         return True
                     continue
+                else:
+                    raise Exception("This Should Never Occur")
 
-                if chosenOption == 'c':
-                    channel = SubBoxChannel.fromUrl(searchVid.channelUrl, set())
-                    if channelInfoPage(state, channel):
-                        return True
+            elif chosenOption in generalOptions:
+                # general options
+                if chosenOption == 'h':
+                    return True
+
+                if chosenOption == 'b':
+                    return False
+
+                if chosenOption == 'n':
+                    pageNum += 1
+                    searchRes = searchList.getPaginated(pageNum, getPageSize())
                     continue
 
-        else:
-            chosenOption = input(
-                'Channel Options: (s)ubscribe/unsubscribe (c)hannel info\n'
-                'General Options: (p)revious/(n)ext page, (f)ilters, (s)earch, (t)oggle videos/channels, (h)ome, (b)ack\n'
-                'Option: '
-            ).strip().lower()
-
-            channelOptions   = ['s', 'c']
-            generalOptions = ['p', 'n', 'f', 's', 't', 'h']
-            options        = channelOptions + generalOptions
-
-            if(len(chosenOption)!= 1 or chosenOption not in options):
-                cfg.logger.error(f"{chosenOption} is not an Option")
-                continue
-
-            if chosenOption in channelOptions:
-                try:
-                    index = prompts.numPrompt('Choose a Channel Number', searchRes, cancelable = True)
-                except prompts.Cancel:
+                if chosenOption == 'p':
+                    if pageNum < 2:
+                        cfg.logger.error('Already On First Page')
+                        continue
+                    pageNum -= 1
+                    searchRes = searchList.getPaginated(pageNum, getPageSize())
                     continue
 
-                searchChannel = searchRes[index]
-                assert isinstance(searchChannel, ytapih.SearchChannel)
+                if chosenOption == 'f':
+                    try:
+                        num = prompts.numPrompt("Select a Filter Catigory", filters, cancelable = True)
+                    except prompts.Cancel:
+                        continue
+
+                    filterCatigory = filters[num]
+
+                    try:
+                        num = prompts.numPrompt("Select a Filter", filterCatigory.filters, cancelable = True)
+                    except prompts.Cancel:
+                        continue
+
+                    filter = filterCatigory.filters[num]
+
+                    searchList, filters = ytapih.getSearchList(filter.searchUrlFragment)
+
+                    pageNum = 0
+                    searchRes = searchList.getPaginated(pageNum, getPageSize())
+                    continue
+
 
                 if chosenOption == 's':
-                    cmds.subscribeUnsubscribe(state.username, state.subbox, searchChannel.channelUrl, searchChannel.channelName)
+                    searchTerm = input("Search Term: ")
+                    sanitizedSearchTerm = quote_plus(searchTerm)
+
+                    searchList, filters = ytapih.getSearchList(sanitizedSearchTerm)
+
+                    pageNum = 0
+                    searchRes = searchList.getPaginated(pageNum, getPageSize())
                     continue
 
-                if chosenOption == 'c':
-                    channel = SubBoxChannel.fromUrl(searchChannel.channelUrl, set())
-                    if channelInfoPage(state, channel):
-                        return True
-                    continue
-
-        # general options
-        if chosenOption == 'h':
-            return True
-
-        if chosenOption == 'b':
-            return False
-
-        if chosenOption == 'n':
-            pageNum += 1
-            searchRes = searchList.getPaginated(pageNum, getPageSize())
-            continue
-
-        if chosenOption == 'p':
-            if pageNum < 2:
-                cfg.logger.error('Already On First Page')
-                continue
-            pageNum -= 1
-            searchRes = searchList.getPaginated(pageNum, getPageSize())
-            continue
-
-        if chosenOption == 'f':
-            try:
-                num = prompts.numPrompt("Select a Filter Catigory", filters, cancelable = True)
-            except prompts.Cancel:
-                continue
-
-            filterCatigory = filters[num]
-
-            try:
-                num = prompts.numPrompt("Select a Filter", filterCatigory.filters, cancelable = True)
-            except prompts.Cancel:
-                continue
-
-            filter = filterCatigory.filters[num]
-
-            if searchVideo:
-                searchList, filters = ytapih.getSearchVideoList(filter.searchUrlFragment)
-            else:
-                searchList, filters = ytapih.getSearchChannelList(filter.searchUrlFragment)
-
-            pageNum = 0
-            searchRes = searchList.getPaginated(pageNum, getPageSize())
-            continue
-
-
-        if chosenOption == 's':
-            searchTerm = input("Search Term: ")
-            sanitizedSearchTerm = quote_plus(searchTerm)
-
-            if searchVideo:
-                searchList, filters = ytapih.getSearchVideoList(sanitizedSearchTerm)
-            else:
-                searchList, filters = ytapih.getSearchChannelList(sanitizedSearchTerm)
-
-            pageNum = 0
-            searchRes = searchList.getPaginated(pageNum, getPageSize())
-            continue
-
-        if chosenOption == 't':
-            searchVideo = not searchVideo
-
-            if searchVideo:
-                searchList, filters = ytapih.getSearchVideoList(sanitizedSearchTerm)
-            else:
-                searchList, filters = ytapih.getSearchChannelList(sanitizedSearchTerm)
-
-            pageNum = 0
-            searchRes = searchList.getPaginated(pageNum, getPageSize())
-            continue
+                raise Exception(f'Reached End Of SearchPage Switch, Option Chosen {chosenOption}')
 
 
 
@@ -477,7 +473,7 @@ def relatedVideosPage(state: CliState, videoPage: ytapih.YtInitalPage, videoTitl
             continue
 
         raise Exception(f'Reached End Of uploadPage Switch, Option Chosen {chosenOption}, Index {index}\n This Should Never Occur')
-    raise NotImplementedError
+
 
 def commentsPage(state: CliState, commentList: ytapih.YtApiList[str], videoTitle: str, pageNum:int = 1) -> bool:
     '''return value specifies whether or not to go back to subbox'''
