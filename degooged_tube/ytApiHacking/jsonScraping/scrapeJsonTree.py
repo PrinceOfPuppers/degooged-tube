@@ -34,7 +34,15 @@ def dumpDebugData(debugDataList: Union[list[ScrapeJsonTreeDebugData], None], tes
 
 
 
+
+
 ScrapeElement = Union['_ScrapeNode', 'ScrapeUnion', 'ScrapeAllUnion']
+def _updateBranchPath(basePath:str, child:Union[ScrapeElement, 'ScrapeAllUnionNode']) -> str:
+    if isinstance(child, ScrapeUnion):
+        return str(basePath)
+    return f"{basePath} -> {child.key}"
+
+
 
 def _scrapeElementStrIndent(className: str, numIndent:int, **kwargs):
     indent = numIndent*'  '
@@ -64,9 +72,10 @@ def _scrapeElementStrIndent(className: str, numIndent:int, **kwargs):
     return s
     
 
-def _getMissingLeavesFromList(scrapeElements: list[ScrapeElement], foundLeaves:set[str], missingLeaves:set[str], requiredLeaves:set[str]):
+def _getMissingLeavesFromList(scrapeElements: list[ScrapeElement], jsonBranchPath:str, foundLeaves:set[str], missingLeaves:set[str], requiredLeaves:set[str]):
     for child in scrapeElements:
-        child.getMissingLeaves(foundLeaves, missingLeaves, requiredLeaves)
+        childBranchPath = _updateBranchPath(jsonBranchPath, child)
+        child.getMissingLeaves(childBranchPath, foundLeaves, missingLeaves, requiredLeaves)
     return 
 
 
@@ -85,17 +94,19 @@ class ScrapeUnion:
     def __str__(self):
         return self.__repr__()
 
-    def getMissingLeaves(self, foundLeaves:set[str], missingLeaves:set[str], requiredLeaves:set[str]):
+    def getMissingLeaves(self, jsonBranchPath:str, foundLeaves:set[str], missingLeaves:set[str], requiredLeaves:set[str]):
         child = self.children[0]
         mainMissingLeaves  = set()
         mainRequiredLeaves = set()
-        child.getMissingLeaves(foundLeaves, mainMissingLeaves, mainRequiredLeaves)
+        childBranchPath = _updateBranchPath(jsonBranchPath, child)
+        child.getMissingLeaves(childBranchPath, foundLeaves, mainMissingLeaves, mainRequiredLeaves)
 
         for i in range(1, len(self.children)):
             child = self.children[i]
             m:set[str] = set()
             r:set[str] = set()
-            child.getMissingLeaves(foundLeaves, m, r)
+            childBranchPath = _updateBranchPath(jsonBranchPath, child)
+            child.getMissingLeaves(childBranchPath, foundLeaves, m, r)
             if mainMissingLeaves is None or len(m) < len(mainMissingLeaves):
                 mainMissingLeaves = m
                 mainRequiredLeaves = r
@@ -126,17 +137,17 @@ class ScrapeAllUnionNode:
     def __str__(self):
         return self.__repr__()
 
-    def getMissingLeaves(self, foundLeaves:set[str], missingLeaves:set[str], requiredLeaves:set[str]):
+    def getMissingLeaves(self, jsonBranchPath: str, foundLeaves:set[str], missingLeaves:set[str], requiredLeaves:set[str]):
         #if self.optional:
         #    return
 
         if len(self.children) == 0:
-            requiredLeaves.add(self.key)
-            if self.key not in foundLeaves:
-                missingLeaves.add(self.key)
+            requiredLeaves.add(jsonBranchPath)
+            if jsonBranchPath not in foundLeaves:
+                missingLeaves.add(jsonBranchPath)
             return
 
-        _getMissingLeavesFromList(self.children, foundLeaves, missingLeaves, requiredLeaves)
+        _getMissingLeavesFromList(self.children, jsonBranchPath, foundLeaves, missingLeaves, requiredLeaves)
         return 
 
 
@@ -185,18 +196,20 @@ class ScrapeAllUnion:
             return res
         return None
 
-    def getMissingLeaves(self, foundLeaves:set[str], missingLeaves:set[str], requiredLeaves:set[str]):
+    def getMissingLeaves(self, jsonBranchPath:str, foundLeaves:set[str], missingLeaves:set[str], requiredLeaves:set[str]):
         child = self.children[0]
         mainMissingLeaves  = set()
         mainRequiredLeaves = set()
-        child.getMissingLeaves(foundLeaves, mainMissingLeaves, mainRequiredLeaves)
-        _getMissingLeavesFromList(child.children, foundLeaves, mainMissingLeaves, mainRequiredLeaves)
+        childBranchPath = _updateBranchPath(jsonBranchPath, child)
+        child.getMissingLeaves(childBranchPath, foundLeaves, mainMissingLeaves, mainRequiredLeaves)
+        _getMissingLeavesFromList(child.children, childBranchPath, foundLeaves, mainMissingLeaves, mainRequiredLeaves)
 
         for i in range(1, len(self.children)):
             child = self.children[i]
             m:set[str] = set()
             r:set[str] = set()
-            child.getMissingLeaves(foundLeaves, m, r)
+            childBranchPath = _updateBranchPath(jsonBranchPath, child)
+            child.getMissingLeaves(childBranchPath, foundLeaves, m, r)
             if mainMissingLeaves is None or len(m) < len(mainMissingLeaves):
                 mainMissingLeaves = m
                 mainRequiredLeaves = r
@@ -232,17 +245,17 @@ class _ScrapeNode:
     def getVal(self, _):
         raise NotImplementedError("Virtual Method, Must Be Overrided")
 
-    def getMissingLeaves(self, foundLeaves:set[str], missingLeaves:set[str], requiredLeaves:set[str]):
+    def getMissingLeaves(self, jsonBranchPath:str, foundLeaves:set[str], missingLeaves:set[str], requiredLeaves:set[str]):
         if self.optional:
             return
 
         if len(self.children) == 0:
-            requiredLeaves.add(self.key)
-            if self.key not in foundLeaves:
-                missingLeaves.add(self.key)
+            requiredLeaves.add(jsonBranchPath)
+            if jsonBranchPath not in foundLeaves:
+                missingLeaves.add(jsonBranchPath)
             return
 
-        _getMissingLeavesFromList(self.children, foundLeaves, missingLeaves, requiredLeaves)
+        _getMissingLeavesFromList(self.children, jsonBranchPath, foundLeaves, missingLeaves, requiredLeaves)
         return 
 
 
@@ -362,7 +375,8 @@ def _put(src, dest: Union[list, dict], key: Union[str,None] = None):
 
 
 
-def _ScrapeNodeHelper(currentVal, children: list[ScrapeElement], leavesFoundInBranch: set[str], truncateThreashold:float, iterOverVal:bool):
+
+def _ScrapeNodeHelper(currentVal, jsonBranchPath:str, children: list[ScrapeElement], leavesFoundInBranch: set[str], truncateThreashold:float, iterOverVal:bool):
     res = []
 
     if not iterOverVal:
@@ -371,7 +385,8 @@ def _ScrapeNodeHelper(currentVal, children: list[ScrapeElement], leavesFoundInBr
     for val in currentVal:
         container = {}
         for child in children:
-            childVal =_scrapeJsonTree(val, child, leavesFoundInBranch, truncateThreashold)
+            childBranchPath = _updateBranchPath(jsonBranchPath, child)
+            childVal =_scrapeJsonTree(val, childBranchPath, child, leavesFoundInBranch, truncateThreashold)
             if childVal is None:
                 continue
             if isinstance(child, ScrapeUnion) or child.collapse:
@@ -394,12 +409,13 @@ def _ScrapeNodeHelper(currentVal, children: list[ScrapeElement], leavesFoundInBr
     return res
 
 
-def _UnionHelper(j, children: list[ScrapeElement], leavesFoundInBranch: set[str], truncateThreashold:float):
+def _UnionHelper(j, jsonBranchPath:str, children: list[ScrapeElement], leavesFoundInBranch: set[str], truncateThreashold:float):
     chosenChild = None
     childVal = None
     for child in children:
         l = set()
-        c = _scrapeJsonTree(j, child, l, truncateThreashold)
+        childBranchPath = _updateBranchPath(jsonBranchPath, child)
+        c = _scrapeJsonTree(j, childBranchPath, child, l, truncateThreashold)
         if c is not None:
             if len(l) > len(leavesFoundInBranch):
                 leavesFoundInBranch.clear()
@@ -420,7 +436,7 @@ def _UnionHelper(j, children: list[ScrapeElement], leavesFoundInBranch: set[str]
 
     return res
 
-def _AllUnionHelper(j:list, children: list[ScrapeAllUnionNode], leavesFoundInBranch: set[str], truncateThreashold:float):
+def _AllUnionHelper(j:list, jsonBranchPath:str, children: list[ScrapeAllUnionNode], leavesFoundInBranch: set[str], truncateThreashold:float):
     res = []
     for x in j:
         key, val = next(iter(x.items()))
@@ -440,11 +456,12 @@ def _AllUnionHelper(j:list, children: list[ScrapeAllUnionNode], leavesFoundInBra
             if not chosenChild.dataCondition(val):
                 continue
 
+        childBranchPath = _updateBranchPath(jsonBranchPath, chosenChild)
         if chosenChild.isLeaf:
-            elementLeaves.add(chosenChild.key)
+            elementLeaves.add(childBranchPath)
             childVal = val
         else:
-            childVal = _ScrapeNodeHelper(val, chosenChild.children, elementLeaves, truncateThreashold, False)
+            childVal = _ScrapeNodeHelper(val, childBranchPath, chosenChild.children, elementLeaves, truncateThreashold, False)
 
         if childVal is None:
             continue
@@ -465,7 +482,7 @@ def _AllUnionHelper(j:list, children: list[ScrapeAllUnionNode], leavesFoundInBra
 
 
 
-def _scrapeJsonTree(j, base: ScrapeElement, leavesFound: set[str], truncateThreashold:float) -> Union[dict, list, None]:
+def _scrapeJsonTree(j, jsonBranchPath: str, base: ScrapeElement, leavesFound: set[str], truncateThreashold:float) -> Union[dict, list, None]:
     leavesFoundInBranch = set()
 
     if isinstance(base, ScrapeAllUnion):
@@ -476,12 +493,12 @@ def _scrapeJsonTree(j, base: ScrapeElement, leavesFound: set[str], truncateThrea
         if currentVal is None:
             return None
 
-        res = _AllUnionHelper(currentVal, base.children, leavesFoundInBranch, truncateThreashold)
+        res = _AllUnionHelper(currentVal, jsonBranchPath, base.children, leavesFoundInBranch, truncateThreashold)
 
     elif isinstance(base,ScrapeUnion):
         if base.isLeaf:
             raise ScrapeError("ScrapeUnion Cannot be Leaf Node")
-        res = _UnionHelper(j, base.children, leavesFoundInBranch, truncateThreashold)
+        res = _UnionHelper(j, jsonBranchPath, base.children, leavesFoundInBranch, truncateThreashold)
 
 
     else:
@@ -490,10 +507,10 @@ def _scrapeJsonTree(j, base: ScrapeElement, leavesFound: set[str], truncateThrea
             return None
 
         if base.isLeaf:
-            leavesFound.add(base.key)
+            leavesFound.add(jsonBranchPath)
             return currentVal
 
-        res = _ScrapeNodeHelper(currentVal, base.children, leavesFoundInBranch, truncateThreashold, base.iterOverVal)
+        res = _ScrapeNodeHelper(currentVal, jsonBranchPath, base.children, leavesFoundInBranch, truncateThreashold, base.iterOverVal)
 
 
     if res is None:
@@ -501,7 +518,7 @@ def _scrapeJsonTree(j, base: ScrapeElement, leavesFound: set[str], truncateThrea
 
     missingLeaves = set()
     requiredLeaves = set()
-    base.getMissingLeaves(leavesFoundInBranch, missingLeaves, requiredLeaves)
+    base.getMissingLeaves(jsonBranchPath, leavesFoundInBranch, missingLeaves, requiredLeaves)
     if 1 - len(missingLeaves) / len(requiredLeaves) < truncateThreashold:
         return None
 
@@ -510,7 +527,7 @@ def _scrapeJsonTree(j, base: ScrapeElement, leavesFound: set[str], truncateThrea
 
 
 def scrapeJsonTree(j, fmt: Union[ScrapeElement, list[ScrapeElement]], debugDataList: list[ScrapeJsonTreeDebugData] = None, truncateThreashold:float = None):
-    import degooged_tube.config as cfg
+    #import degooged_tube.config as cfg
     if truncateThreashold is None:
         truncateThreashold = 0.5 if debugDataList is None else 1.0
         #print(truncateThreashold, cfg.testing)
@@ -526,7 +543,8 @@ def scrapeJsonTree(j, fmt: Union[ScrapeElement, list[ScrapeElement]], debugDataL
     requiredLeaves = set()
     
     for base in bases:
-        val = _scrapeJsonTree(j, base, leavesFound, truncateThreashold)
+        jsonBranchPath = _updateBranchPath("", base)
+        val = _scrapeJsonTree(j, jsonBranchPath, base, leavesFound, truncateThreashold)
         if val is None:
             continue
         if isinstance(base, ScrapeUnion) or base.collapse:
@@ -537,14 +555,13 @@ def scrapeJsonTree(j, fmt: Union[ScrapeElement, list[ScrapeElement]], debugDataL
 
     missingLeaves = set()
     requiredLeaves = set()
-    _getMissingLeavesFromList(bases, leavesFound, missingLeaves, requiredLeaves)
+    _getMissingLeavesFromList(bases, "", leavesFound, missingLeaves, requiredLeaves)
     if 1 - len(missingLeaves) / len(requiredLeaves) < truncateThreashold:
         if debugDataList is not None:
             debugDataList.append(ScrapeJsonTreeDebugData(missingLeaves, requiredLeaves, leavesFound, j))
         raise ScrapeError(f"Too Many Leaves Missing \nmissingLeaves: {missingLeaves} \nrequiredLeaves: {requiredLeaves}")
-    #print(missingLeaves, requiredLeaves, leavesFound)
 
-    if isinstance(fmt, list) :
+    if isinstance(fmt, list):
         return res
 
     if len(res)==0:

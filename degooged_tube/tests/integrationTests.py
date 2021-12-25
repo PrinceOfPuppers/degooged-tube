@@ -76,11 +76,10 @@ def checkOrdering(uploads: list[Upload]):
 class test_SubBox(TestCase):
     subscribed = ['https://www.youtube.com/c/MattMcMuscles', 'https://www.youtube.com/channel/UC3ltptWa0xfrDweghW94Acg']
     tags = [{'gaming'}, {'speedrunning'}]
+    subBox = SubBox.fromUrls(subscribed, tags)
 
     exception = None
     # Cleans up exception Message
-    def __post_init__(self):
-        self.subBox = SubBox.fromUrls(self.subscribed, self.tags)
 
     def test_noOverlap(self):
         logName(self, inspect.currentframe())

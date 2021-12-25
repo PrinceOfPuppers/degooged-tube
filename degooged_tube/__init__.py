@@ -11,8 +11,6 @@ __version__ = "0.0.1"
 pool:Union[Pool, None] = None
 
 
-
-
 class _NoInterrupt:
     inNoInterrupt = False
     signalReceived=False
@@ -55,7 +53,6 @@ signal(SIGINT,noInterrupt.handler)
 
 def setupPool():
     signal(SIGINT, SIG_IGN)
-    print("Setting up Pool")
     # pool will ignore signal and let parent process close
     global pool 
     pool = multiprocessing.Pool(processes=multiprocessing.cpu_count())
