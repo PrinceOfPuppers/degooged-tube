@@ -1,10 +1,14 @@
 from degooged_tube import config as cfg
-from signal import signal,SIGINT,SIGABRT,SIGTERM,Signals
+from signal import signal,SIGINT,SIGABRT,SIGTERM,Signals, SIG_IGN
 import multiprocessing
 import sys
 
 
 __version__ = "0.0.1"
+
+# pool will ignore signal and let parent process handle cleanup
+signal(SIGINT, SIG_IGN)
+pool = multiprocessing.Pool(processes=multiprocessing.cpu_count())
 
 class _NoInterrupt:
     inNoInterrupt = False
@@ -22,10 +26,14 @@ class _NoInterrupt:
         self.inNoInterrupt=False
         if self.signalReceived:
             self.signalReceived = False
+            print("terminating")
+            pool.close()
             sys.exit()
 
     def handler(self,sig,frame):
         if not self.inNoInterrupt:
+            print("terminating")
+            pool.close()
             sys.exit()
 
         self.signalReceived = True
@@ -36,10 +44,10 @@ class _NoInterrupt:
         self.signalReceived = True
 
 
+
 noInterrupt = _NoInterrupt()
 signal(SIGINT,noInterrupt.handler)
 
-pool = multiprocessing.Pool(processes=multiprocessing.cpu_count())
 
 def main():
     from degooged_tube.cli import cli
