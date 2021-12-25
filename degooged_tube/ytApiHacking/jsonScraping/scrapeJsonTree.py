@@ -510,8 +510,10 @@ def _scrapeJsonTree(j, base: ScrapeElement, leavesFound: set[str], truncateThrea
 
 
 def scrapeJsonTree(j, fmt: Union[ScrapeElement, list[ScrapeElement]], debugDataList: list[ScrapeJsonTreeDebugData] = None, truncateThreashold:float = None):
+    import degooged_tube.config as cfg
     if truncateThreashold is None:
         truncateThreashold = 0.5 if debugDataList is None else 1.0
+        #print(truncateThreashold, cfg.testing)
 
     res = []
     if isinstance(fmt, list):
@@ -540,6 +542,7 @@ def scrapeJsonTree(j, fmt: Union[ScrapeElement, list[ScrapeElement]], debugDataL
         if debugDataList is not None:
             debugDataList.append(ScrapeJsonTreeDebugData(missingLeaves, requiredLeaves, leavesFound, j))
         raise ScrapeError(f"Too Many Leaves Missing \nmissingLeaves: {missingLeaves} \nrequiredLeaves: {requiredLeaves}")
+    #print(missingLeaves, requiredLeaves, leavesFound)
 
     if isinstance(fmt, list) :
         return res

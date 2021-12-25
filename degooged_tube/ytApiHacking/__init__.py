@@ -4,11 +4,13 @@ from .ytApiList import YtApiList
 #from urllib.parse import quote_plus
 from .controlPanel import Upload, SearchType, SearchVideo, SearchChannel, ChannelInfo, VideoInfo, RelatedVideo, SearchElementFromData
 from typing import Tuple, Union
-
+from .helpers import addResultIfNotNone
 
 # uploads
 def uploadsCallback(res) -> list[Upload]:
-    return [Upload.fromData(x) for x in res]
+    l = []
+    addResultIfNotNone(res, Upload.fromData, l)
+    return l
 
 def getUploadList(uploadsPage:YtInitalPage, onExtend = uploadsCallback) -> YtApiList[Upload]:
     return YtApiList(uploadsPage, ctrlp.uploadsApiUrl, ctrlp.uploadScrapeFmt, getInitalData=True, onExtend = onExtend)
@@ -33,7 +35,7 @@ def processVideoInfo(info):
     # Todo join description
     return VideoInfo.fromData(info)
 
-def getVideoInfo(videoPage: YtInitalPage) -> VideoInfo:
+def getVideoInfo(videoPage: YtInitalPage) -> Union[VideoInfo, None]:
     info = videoPage.scrapeInitalData(ctrlp.videoInfoScrapeFmt)
     return processVideoInfo(info)
 
@@ -41,7 +43,9 @@ def getVideoInfo(videoPage: YtInitalPage) -> VideoInfo:
 
 # related videos
 def relatedVideosCallback(res):
-    return [RelatedVideo.fromData(x) for x in res]
+    l = []
+    addResultIfNotNone(res, RelatedVideo.fromData, l)
+    return l
 
 def getRelatedVideoList(videoPage: YtInitalPage, onExtend = relatedVideosCallback):
     return YtApiList(videoPage, ctrlp.relatedVideosApiUrl, ctrlp.relatedVideosScrapeFmt, onExtend = onExtend)
@@ -52,19 +56,7 @@ def getRelatedVideoList(videoPage: YtInitalPage, onExtend = relatedVideosCallbac
 # Channel Info
 def getChannelInfoFromInitalPage(channelPage) -> ChannelInfo:
     data = channelPage.scrapeInitalData(ctrlp.channelInfoScrapeFmt)
-
-    if len(data) != 2:
-        raise Exception("Update GetChannelInfoFromInitalPage")
-
-    resultIndex = 0 if list(data[0].keys())[0] != 'metadata' else 1
-
-    result = data[resultIndex]
-    metadata = data[(resultIndex+1)%2]['metadata']
-
-    result['channelUrl'] = sanitizeChannelUrl(metadata['channelUrl'])
-    result['description'] = metadata['description']
-
-    return ChannelInfo.fromData(result)
+    return ChannelInfo.fromData(data)
 
 def getChannelInfo(channelUrl) -> ChannelInfo:
     channelUrl = sanitizeChannelUrl(channelUrl)
@@ -76,15 +68,14 @@ def getChannelInfo(channelUrl) -> ChannelInfo:
 
 # Search Filters
 def processFilterData(res):
-    return [SearchType.fromData(r) for r in res]
+    l = []
+    addResultIfNotNone(res, SearchType.fromData, l)
+    return l
 
 # Search Results
 def searchCallback(res):
     l = []
-    for r in res:
-        x = SearchElementFromData(r)
-        if x is not None:
-            l.append(x)
+    addResultIfNotNone(res, SearchElementFromData, l)
     return l
 
 

@@ -1,11 +1,16 @@
 import re
 from .customExceptions import UnableToGetUploadTime, UnableToGetApproximateNum
+import degooged_tube.config as cfg
+from typing import Callable
 
 
 def tryGet(data:dict, key: str, backupVal = ""):
     try:
         return data[key]
     except KeyError:
+        if cfg.testing:
+            raise Exception(f"tryGet Missing Key {key}\nData:\n{data}")
+        cfg.logger.debug(f"Missing Key {key} From Data, Returning BackupVal {backupVal}")
         return backupVal
 
 def tryGetMultiKey(data:dict, backupVal, *args:str ):
@@ -14,8 +19,20 @@ def tryGetMultiKey(data:dict, backupVal, *args:str ):
         try:
             return data[key]
         except KeyError:
+            if cfg.testing:
+                raise Exception(f"tryGetMultiKey Missing Key {key}\nData:\n{data}")
+            cfg.logger.debug(f"Missing Key {key} From Data, Trying Next Key")
             continue
+
+    cfg.logger.debug(f"Returning BackupVal {backupVal} in tryGetMultiKey")
     return backupVal
+
+
+def addResultIfNotNone(inputs:list, func:Callable, output:list):
+    for input in inputs:
+        d = func(input)
+        if d is not None:
+            output.append(d)
 
 # Time Conversion
 

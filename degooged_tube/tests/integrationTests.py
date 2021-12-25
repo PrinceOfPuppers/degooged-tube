@@ -7,6 +7,7 @@ from degooged_tube.ytApiHacking import sanitizeChannelUrl, getChannelInfo, getCo
                                        getVideoInfo, getSearchList, YtInitalPage, Upload
 #import degooged_tube.ytApiHacking.controlPanel as ctrlp
 from degooged_tube.tests.unitTests import logName
+from degooged_tube import setupPool
 
 
 def getUploads(pageSize: int, numPages: int, subBox: SubBox, tags:set[str] = None) -> list[Upload]:
@@ -78,7 +79,8 @@ class test_SubBox(TestCase):
 
     exception = None
     # Cleans up exception Message
-    subBox = SubBox.fromUrls(subscribed, tags)
+    def __post_init__(self):
+        self.subBox = SubBox.fromUrls(self.subscribed, self.tags)
 
     def test_noOverlap(self):
         logName(self, inspect.currentframe())
@@ -265,3 +267,7 @@ class test_getFunctionsAndFmts(TestCase):
         searchVideoList, _ = getSearchList("asdf")
         _ = searchVideoList[0]
 
+if __name__ == "__main__":
+    cfg.testing = True
+    t = test_getFunctionsAndFmts()
+    t.test_getSearchList()

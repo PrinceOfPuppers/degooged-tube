@@ -3,7 +3,7 @@ import logging
 from dataclasses import dataclass
 from urllib.parse import quote_plus
 from typing import Callable, Tuple, Union
-from degooged_tube import pool
+from degooged_tube import pool, setupPool
 
 import degooged_tube.ytApiHacking as ytapih
 import degooged_tube.config as cfg
@@ -531,6 +531,9 @@ def videoInfoPage(state: CliState, videoUrl: str, channel: Union[SubBoxChannel, 
     videoPage = ytapih.YtInitalPage.fromUrl(videoUrl)
 
     videoInfo = ytapih.getVideoInfo(videoPage)
+    if videoInfo is None:
+        cfg.logger.info("Error getting Video Info")
+        return False
 
     while True:
         likeViewRatio = "N/A" if videoInfo.viewsNum == 0 else (videoInfo.likesNum / videoInfo.viewsNum)
@@ -835,6 +838,7 @@ def subboxPage(state: CliState, pageNum: int = 1, tags:Union[set[str], None] = N
 
 def cli():
     setupLogger()
+    setupPool()
 
     subbox, username = loginPage()
     state = CliState(subbox, username)

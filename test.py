@@ -2,6 +2,7 @@ import sys
 import logging
 import argparse
 import degooged_tube.config as cfg
+from degooged_tube import setupPool
 
 
 def parseArgs():
@@ -36,6 +37,7 @@ if __name__ == "__main__":
     args = parseArgs()
     setLogging(args)
     cfg.testing = True
+    setupPool()
 
     runall = not (args.unit or args.integration)
     import unittest

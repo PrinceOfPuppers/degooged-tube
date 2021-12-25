@@ -4,6 +4,8 @@ from .helpers import tryGet, approxTimeToUnix, tryGetMultiKey, getApproximateNum
 import re
 from dataclasses import dataclass
 
+import degooged_tube.config as cfg
+
 import time
 currentTime = int(time.time())
 
@@ -130,7 +132,7 @@ channelInfoScrapeFmt = \
         ScrapeNth("metadata", [
             ScrapeNth("vanityChannelUrl",[], rename='channelUrl'),
             ScrapeNth("description",[]),
-        ]),
+        ], collapse = True),
     ]
 
 @dataclass
@@ -145,13 +147,16 @@ class ChannelInfo:
 
     @classmethod
     def fromData(cls, data:dict) -> 'ChannelInfo':
-        channelName:str               = data['channelName']
+        data = {**data[0], **data[1]}
+
+        channelName:str               = tryGet(data, 'channelName')
         avatar:list[Thumbnail]        = [Thumbnail.fromData(datum) for datum in tryGet(data, 'avatar', [])]
         banners:list[Thumbnail]       = [Thumbnail.fromData(datum) for datum in tryGet(data, 'banners', [])]
         mobileBanners:list[Thumbnail] = [Thumbnail.fromData(datum) for datum in tryGet(data, 'mobileBanners', [])]
         subscribers:str               = "".join(tryGet(data, 'subscribers', []))
-        channelUrl:str                = data['channelUrl']
-        description:str               = data['description']
+        channelUrl:str                = tryGet(data, 'channelUrl')
+        description:str               = tryGet(data, 'description')
+
         return cls(channelName, avatar, banners, mobileBanners, subscribers, channelUrl, description)
 
 
@@ -242,9 +247,19 @@ class VideoInfo:
     thumbnails:list
 
     @classmethod
-    def fromData(cls, data:dict) -> 'VideoInfo':
+    def fromData(cls, data:dict) -> Union['VideoInfo', None]:
+        try:
+            channelUrlFragment:str      = data['channelUrlFragment']
+            uploadedOn:str              = data['uploadedOn']
+        except KeyError as e:
+            if cfg.testing:
+                raise Exception(f'Missing Required Key "{e.args[0]}"\nFrom Data: {data}')
+            cfg.logger.debug(f'In {cls.__name__}.fromData(), Data is Missing Required Key "{e.args[0]}"')
+            return None
+
         description:str             = "".join(tryGet(data, 'description', []))
         title:str                   = "".join(tryGet(data, 'title', []))
+        channelUrl:str              = 'https://www.youtube.com' + channelUrlFragment
 
         views:str                   = tryGetMultiKey(data, "0", "exactViews", "approxViews")
         viewsNum:int                = getApproximateNum(views)
@@ -252,9 +267,6 @@ class VideoInfo:
         likesNum:int                = getApproximateNum(likes)
 
         channelName:str             = tryGet(data, 'channelName')
-        channelUrlFragment:str      = data['channelUrlFragment']
-        channelUrl:str              = 'https://www.youtube.com' + channelUrlFragment
-        uploadedOn:str              = data['uploadedOn']
         subscribers:str             = tryGet(data, 'subscribers', "0")
         thumbnails:list[Thumbnail]  = [Thumbnail.fromData(datum) for datum in tryGet(data, 'thumbnails', [])]
 
@@ -295,16 +307,22 @@ class Upload:
     channelUrl:str
 
     @classmethod
-    def fromData(cls, data:dict) -> 'Upload':
-        videoId:str                 = data['videoId']
-        uploadedOn:str              = data['uploadedOn']
+    def fromData(cls, data:dict) -> Union['Upload', None]:
+        try:
+            videoId:str                 = data['videoId']
+            uploadedOn:str              = data['uploadedOn']
+        except KeyError as e:
+            if cfg.testing:
+                raise Exception(f'Missing Required Key "{e.args[0]}"\nFrom Data: {data}')
+            cfg.logger.debug(f'In {cls.__name__}.fromData(), Data is Missing Required Key "{e.args[0]}"')
+            return None
 
         url:str                     = 'https://www.youtube.com/watch?v=' + videoId
         unixTime:int                = approxTimeToUnix(currentTime, uploadedOn)
         thumbnails:list[Thumbnail]  = [Thumbnail.fromData(datum) for datum in tryGet(data, 'thumbnails', [])]
-        views:str                   = data['views']
-        duration:str                = data['duration']
-        title:str                   = data['title']
+        views:str                   = tryGet(data, 'views')
+        duration:str                = tryGet(data, 'duration')
+        title:str                   = tryGet(data, 'title')
 
         # the following are added by subbox
         channelName:str = ''
@@ -344,7 +362,7 @@ class Comment:
     avatar:list[Thumbnail]
 
     @classmethod
-    def fromData(cls, data):
+    def fromData(cls, data) -> 'Comment':
         author:str              = tryGet(data, 'author')
         comment:str             = "".join(tryGet(data, 'commentRuns', []))
         avatar:list[Thumbnail]  = [Thumbnail.fromData(datum) for datum in tryGet(data, 'avatar', [])]
@@ -389,18 +407,26 @@ class RelatedVideo:
     channelUrl:str
 
     @classmethod
-    def fromData(cls, data:dict) -> 'RelatedVideo':
-        videoId:str                 = data['videoId']
-        url:str                     = 'https://www.youtube.com/watch?v=' + data['videoId']
-        unixTime:int                = approxTimeToUnix(currentTime, data['uploadedOn'])
+    def fromData(cls, data:dict) -> Union['RelatedVideo', None]:
+        try:
+            videoId:str                 = data['videoId']
+            uploadedOn:str              = data['uploadedOn']
+            channelUrlFragment:str      = data["channelUrlFragment"]
+            uploadedOn:str              = data['uploadedOn']
+        except KeyError as e:
+            if cfg.testing:
+                raise Exception(f'Missing Required Key "{e.args[0]}"\nFrom Data: {data}')
+            cfg.logger.debug(f'In {cls.__name__}.fromData(), Data is Missing Required Key "{e.args[0]}"')
+            return None
+
+        url:str                     = 'https://www.youtube.com/watch?v=' + videoId
+        unixTime:int                = approxTimeToUnix(currentTime, uploadedOn)
         thumbnails:list[Thumbnail]  = [Thumbnail.fromData(datum) for datum in tryGet(data, 'thumbnails', [])]
-        uploadedOn:str              = data['uploadedOn']
-        views:str                   = data['views']
-        duration:str                = data['duration']
-        title:str                   = data['title']
+        views:str                   = tryGet(data, 'views')
+        duration:str                = tryGet(data, 'duration')
+        title:str                   = tryGet(data, 'title')
 
         channelName:str = tryGet(data, "channelName")
-        channelUrlFragment:str = tryGet(data, "channelUrlFragment")
         channelUrl:str = 'https://www.youtube.com' + channelUrlFragment
 
         return cls(videoId, url, unixTime, thumbnails, uploadedOn, views, duration, title, channelName, channelUrlFragment, channelUrl)
@@ -472,7 +498,10 @@ class SearchType:
             try:
                 label = f['label']
                 searchUrlFragment = f['searchUrlFragment']
-            except KeyError:
+            except KeyError as e:
+                if cfg.testing:
+                    raise Exception(f'Missing Required Key "{e.args[0]}"\nFrom Data: {data}')
+                cfg.logger.debug(f'In {cls.__name__}.fromData(), Data is Missing Required Key "{e.args[0]}"')
                 continue
 
             try:
@@ -589,15 +618,17 @@ class SearchVideo:
         try:
             videoId = data['videoId']
             title   = data["title"]
-            url = 'https://www.youtube.com/watch?v=' + videoId
             channelUrlFragment = data["channelUrlFragment"]
-            channelUrl = 'https://www.youtube.com' + channelUrlFragment
-            
-        except KeyError:
+        except KeyError as e:
+            if cfg.testing:
+                raise Exception(f'Missing Required Key "{e.args[0]}"\nFrom Data: {data}')
+            cfg.logger.debug(f'In {cls.__name__}.fromData(), Data is Missing Required Key "{e.args[0]}"')
             return None
 
-        channelName                 = tryGet(data, "name")
-        channelUrlFragment          = tryGet(data, "channelUrlFragment")
+        url = 'https://www.youtube.com/watch?v=' + videoId
+        channelUrl = 'https://www.youtube.com' + channelUrlFragment
+
+        channelName                 = tryGet(data, "channelName")
         videoId                     = tryGet(data, "videoId")
         thumbnails:list[Thumbnail]  = [Thumbnail.fromData(datum) for datum in tryGet(data, 'thumbnails', [])]
         views                       = tryGet(data, "views")
@@ -627,10 +658,13 @@ class SearchChannel:
         try:
             channelName        = data['channelName']
             channelUrlFragment = data['channelUrlFragment ']
-            channelUrl         = 'https://www.youtube.com' + channelUrlFragment
-        except KeyError:
+        except KeyError as e:
+            if cfg.testing:
+                raise Exception(f'Missing Required Key "{e.args[0]}"\nFrom Data: {data}')
+            cfg.logger.debug(f'In {cls.__name__}.fromData(), Data is Missing Required Key "{e.args[0]}"')
             return None
 
+        channelUrl         = 'https://www.youtube.com' + channelUrlFragment
         channelIcons       = tryGet(data, 'channelIcons', [])
         channelDescription = tryGet(data, 'channelDescription')
         subscribers        = tryGet(data, 'subscribers')

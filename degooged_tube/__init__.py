@@ -1,14 +1,17 @@
 from degooged_tube import config as cfg
 from signal import signal,SIGINT,SIGABRT,SIGTERM,Signals, SIG_IGN
 import multiprocessing
+from multiprocessing.pool import Pool
 import sys
+from typing import Union
 
 
 __version__ = "0.0.1"
 
-# pool will ignore signal and let parent process handle cleanup
-signal(SIGINT, SIG_IGN)
-pool = multiprocessing.Pool(processes=multiprocessing.cpu_count())
+pool:Union[Pool, None] = None
+
+
+
 
 class _NoInterrupt:
     inNoInterrupt = False
@@ -27,13 +30,15 @@ class _NoInterrupt:
         if self.signalReceived:
             self.signalReceived = False
             print("terminating")
-            pool.close()
+            if pool is not None:
+                pool.close()
             sys.exit()
 
     def handler(self,sig,frame):
         if not self.inNoInterrupt:
             print("terminating")
-            pool.close()
+            if pool is not None:
+                pool.close()
             sys.exit()
 
         self.signalReceived = True
@@ -47,6 +52,14 @@ class _NoInterrupt:
 
 noInterrupt = _NoInterrupt()
 signal(SIGINT,noInterrupt.handler)
+
+def setupPool():
+    signal(SIGINT, SIG_IGN)
+    print("Setting up Pool")
+    # pool will ignore signal and let parent process close
+    global pool 
+    pool = multiprocessing.Pool(processes=multiprocessing.cpu_count())
+    signal(SIGINT,noInterrupt.handler)
 
 
 def main():
