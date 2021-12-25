@@ -74,10 +74,11 @@ def checkOrdering(uploads: list[Upload]):
 
 class test_SubBox(TestCase):
     subscribed = ['https://www.youtube.com/c/MattMcMuscles', 'https://www.youtube.com/channel/UC3ltptWa0xfrDweghW94Acg']
+    tags = [{'gaming'}, {'speedrunning'}]
 
     exception = None
     # Cleans up exception Message
-    subBox = SubBox.fromUrls(subscribed, [{'gaming'}, {'speedrunning'}])
+    subBox = SubBox.fromUrls(subscribed, tags)
 
     def test_noOverlap(self):
         logName(self, inspect.currentframe())
@@ -198,6 +199,19 @@ class test_SubBox(TestCase):
         uploads = getUploads(pageSize, numPages, self.subBox, {'gaming'})
 
         self.assertTrue(checkOrdering(uploads))
+
+    def test_filter_tags(self):
+        logName(self, inspect.currentframe())
+        pageSize = 10
+        numPages = 2
+
+        t = self.tags[0]
+        channelUrl = self.subscribed[0]
+
+        uploads = getUploads(pageSize, numPages, self.subBox, t)
+
+        for upload in uploads:
+            self.assertEqual(upload.channelUrl, channelUrl)
 
 
 

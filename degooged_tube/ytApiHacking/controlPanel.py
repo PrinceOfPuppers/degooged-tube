@@ -149,7 +149,7 @@ class ChannelInfo:
         avatar:list[Thumbnail]        = [Thumbnail.fromData(datum) for datum in tryGet(data, 'avatar', [])]
         banners:list[Thumbnail]       = [Thumbnail.fromData(datum) for datum in tryGet(data, 'banners', [])]
         mobileBanners:list[Thumbnail] = [Thumbnail.fromData(datum) for datum in tryGet(data, 'mobileBanners', [])]
-        subscribers:str               = data['subscribers']
+        subscribers:str               = "".join(tryGet(data, 'subscribers', []))
         channelUrl:str                = data['channelUrl']
         description:str               = data['description']
         return cls(channelName, avatar, banners, mobileBanners, subscribers, channelUrl, description)
@@ -297,10 +297,11 @@ class Upload:
     @classmethod
     def fromData(cls, data:dict) -> 'Upload':
         videoId:str                 = data['videoId']
-        url:str                     = 'https://www.youtube.com/watch?v=' + data['videoId']
-        unixTime:int                = approxTimeToUnix(currentTime, data['uploadedOn'])
-        thumbnails:list[Thumbnail]  = [Thumbnail.fromData(datum) for datum in tryGet(data, 'thumbnails', [])]
         uploadedOn:str              = data['uploadedOn']
+
+        url:str                     = 'https://www.youtube.com/watch?v=' + videoId
+        unixTime:int                = approxTimeToUnix(currentTime, uploadedOn)
+        thumbnails:list[Thumbnail]  = [Thumbnail.fromData(datum) for datum in tryGet(data, 'thumbnails', [])]
         views:str                   = data['views']
         duration:str                = data['duration']
         title:str                   = data['title']
@@ -463,15 +464,8 @@ class SearchType:
 
     @classmethod
     def fromData(cls, data:dict):
-        try:
-            searchType = data['searchType']
-        except KeyError:
-            searchType = ''
-
-        try:
-            filterData = data['filters']
-        except KeyError:
-            filterData = []
+        searchType = tryGet(data, 'searchType')
+        filterData = tryGet(data, 'filterData', [])
 
         filters = []
         for f in filterData:

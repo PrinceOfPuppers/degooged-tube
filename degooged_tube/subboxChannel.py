@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 import degooged_tube.ytApiHacking as ytapih
 import degooged_tube.config as cfg
+from typing import Union
 
 
 class ChannelLoadIssue(Exception):
@@ -44,7 +45,7 @@ class SubBoxChannel:
         return self.__repr__()
 
 
-def loadChannel(data):
+def loadChannel(data) -> Union[SubBoxChannel, str]:
     url, channelTags = data
     try:
         subboxChannel = SubBoxChannel.fromUrl(

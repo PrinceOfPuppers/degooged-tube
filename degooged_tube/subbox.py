@@ -148,7 +148,10 @@ class SubBox:
         num = 0
         for upload in self.orderedUploads:
             channelTags = self.channelDict[upload.channelUrl].tags
-            if channelTags.issubset(tags):
+            if len(tags) == 0:
+                num+=1
+                continue
+            if channelTags.issubset(tags) and len(channelTags) != 0:
                 num+=1
 
         return num
@@ -194,11 +197,11 @@ class SubBox:
 
         if tags is None or len(tags) == 0:
             uploads = self.orderedUploads
-
         else:
             uploads = list(
                 filter(
-                    lambda upload: self.channelDict[upload.channelUrl].tags.issubset(tags), 
+                    lambda upload: (self.channelDict[upload.channelUrl].tags.issubset(tags) \
+                                    and len(self.channelDict[upload.channelUrl].tags) != 0),
                     self.orderedUploads
                 )
             )

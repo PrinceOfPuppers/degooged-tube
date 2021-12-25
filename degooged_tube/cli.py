@@ -216,6 +216,7 @@ def subscriptionsPage(state: CliState):
 
 
 def _searchVideoHelper(state: CliState, searchVid: ytapih.SearchVideo) -> bool:
+    '''return value specifies whether or not to go back to subbox'''
     while True:
         cfg.logger.info(f"Video Selected: \n{searchVid}")
         chosenOption = input(
@@ -259,6 +260,7 @@ def _searchVideoHelper(state: CliState, searchVid: ytapih.SearchVideo) -> bool:
 
 
 def _searchChannelHelper(state: CliState, searchChannel) -> bool:
+    '''return value specifies whether or not to go back to subbox'''
     while True:
         chosenOption = input(
             'Options: (s)ubscribe/unsubscribe (c)hannel info, (b)ack\n'
@@ -713,6 +715,9 @@ def uploadsPage(state: CliState, channel: SubBoxChannel, pageNum: int = 1) -> bo
 def subboxPage(state: CliState, pageNum: int = 1, tags:Union[set[str], None] = None):
     getPageSize = lambda : int((getTerminalSize()[1] - 4)/3)
 
+    if tags is None:
+        tags = set()
+
     uploads = state.subbox.getPaginatedUploads(pageNum, getPageSize(), tags)
 
     while True:
@@ -780,7 +785,9 @@ def subboxPage(state: CliState, pageNum: int = 1, tags:Union[set[str], None] = N
                 onError= onError
             )
 
-            tags = t
+            tags.clear()
+            tags.update(t)
+            uploads = state.subbox.getPaginatedUploads(pageNum, getPageSize(), tags)
             continue
 
         if chosenOption == 's':
