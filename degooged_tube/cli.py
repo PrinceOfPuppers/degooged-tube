@@ -135,12 +135,12 @@ def subscriptionsPage(state: CliState):
     while True:
         cfg.logger.info('\nEdit Subscriptions:')
         chosenOption = input(
-            'Options: (l)ist subs, (n)ew sub, (u)nsubscribe, (a)dd tags, (r)emove tags, (h)ome\n'
+            'Options: (l)ist subs, (s)ubscribe, (u)nsubscribe, (a)dd tags, (r)emove tags, (h)ome\n'
             'Option: '
         ).strip().lower()
 
         options = [
-            'l', 'n', 'u', 'a', 'r', 'h'
+            'l', 's', 'u', 'a', 'r', 'h'
         ]
 
         if(len(chosenOption)!= 1 or chosenOption not in options):
@@ -156,7 +156,7 @@ def subscriptionsPage(state: CliState):
             prompts.listChannels(state.subbox.channels)
             continue
 
-        if chosenOption == 'n':
+        if chosenOption == 's':
             prompts.qPrompt(
                 'Enter the URLs of Channels You Want to Subscribe to', 
                 'Channel Url', 
@@ -614,12 +614,12 @@ def channelInfoPage(state: CliState, channel: SubBoxChannel) -> bool:
         )
         
         chosenOption = input(
-            'Options: (u)ploads, (h)ome, (b)ack\n'
+            'Options: (u)ploads, (s)ubscribe/unsubscribe, (h)ome, (b)ack\n'
             'Option: '
         ).strip().lower()
 
         options = [
-            'h', 'u', 'b'
+            'h', 'u', 's', 'b'
         ]
 
         if(len(chosenOption)!= 1 or chosenOption not in options):
@@ -635,6 +635,10 @@ def channelInfoPage(state: CliState, channel: SubBoxChannel) -> bool:
         if chosenOption == 'u':
             if uploadsPage(state, channel):
                 return True
+            continue
+
+        if chosenOption == 's':
+            cmds.subscribeUnsubscribe(state.username, state.subbox, channel.channelUrl, channel.channelName)
             continue
 
 

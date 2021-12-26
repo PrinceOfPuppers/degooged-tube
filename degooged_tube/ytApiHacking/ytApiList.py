@@ -110,9 +110,7 @@ class YtApiList(Generic[_T]):
             self.index = 0
             raise StopIteration
 
-    def getPaginated(self, pageNum:int, pageSize:int) -> list[_T]:
-        limit, offset = paginationCalculator(pageNum, pageSize)
-
+    def getLimitOffset(self, limit:int, offset:int) -> list[_T]:
         res:list[_T] = []
         while offset + limit > len(self._list):
             if self.atMaxLen:
@@ -124,4 +122,9 @@ class YtApiList(Generic[_T]):
             res.append(self._list[i])
 
         return res
+
+    def getPaginated(self, pageNum:int, pageSize:int) -> list[_T]:
+        limit, offset = paginationCalculator(pageNum, pageSize)
+        return self.getLimitOffset(limit, offset)
+
 

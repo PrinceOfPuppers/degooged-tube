@@ -273,6 +273,14 @@ class test_getFunctionsAndFmts(TestCase):
         for i in range(0,20):
             _ = searchVideoList[i]
 
+class test_SpecialCases(TestCase):
+    subscribed = ['https://www.youtube.com/user/Northernlion', 'https://www.youtube.com/c/SummoningSalt']
+    tags = [{}, {'speedrunning'}]
+    subBox = SubBox.fromUrls(subscribed, tags)
+
+    def test_bigFilter(self):
+        _ = self.subBox.getPaginatedUploads(1, 40, self.tags[1])
+
 if __name__ == "__main__":
     cfg.testing = True
     t = test_getFunctionsAndFmts()

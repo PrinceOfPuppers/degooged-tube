@@ -177,7 +177,6 @@ class SubBox:
 
 
     def getUploads(self, limit: int, offset: int, tags: Union[set[str], None]) -> list[ytapih.Upload]:
-        desiredLen = limit + offset
         if tags is None or len(tags) == 0:
             channelUrlWhitelist = None
         else:
@@ -185,7 +184,11 @@ class SubBox:
             if len(channelUrlWhitelist) == 0:
                 cfg.logger.debug(f"Provided Tags: {tags} Exclude All Channels")
                 return []
+            # special case for tag filtering that involves one channel
+            if len(channelUrlWhitelist) == 1:
+                return self.channelDict[channelUrlWhitelist[0]].uploadList.getLimitOffset(limit, offset)
 
+        desiredLen = limit + offset
         try:
             self._extendOrderedUploads(desiredLen, channelUrlWhitelist)
         except EndOfSubBox:
