@@ -532,7 +532,7 @@ def _scrapeJsonTree(j, jsonBranchPath: str, base: ScrapeElement, leavesFound: se
     missingLeaves = set()
     requiredLeaves = set()
     base.getMissingLeaves(jsonBranchPath, leavesFoundInBranch, missingLeaves, requiredLeaves)
-    if len(requiredLeaves)==0 or 1 - len(missingLeaves) / len(requiredLeaves) < truncateThreashold:
+    if len(requiredLeaves) !=0 and 1 - len(missingLeaves) / len(requiredLeaves) < truncateThreashold:
         return None
 
     leavesFound.update(leavesFoundInBranch)
@@ -571,7 +571,7 @@ def scrapeJsonTree(j, fmt: Union[ScrapeElement, list[ScrapeElement]], debugDataL
     missingLeaves = set()
     requiredLeaves = set()
     _getMissingLeavesFromList(bases, "", leavesFound, missingLeaves, requiredLeaves)
-    if len(requiredLeaves)==0 or 1 - len(missingLeaves) / len(requiredLeaves) < errorThreashold:
+    if len(requiredLeaves) != 0 and 1 - len(missingLeaves) / len(requiredLeaves) < errorThreashold:
         if debugDataList is not None:
             debugDataList.append(ScrapeJsonTreeDebugData(missingLeaves, requiredLeaves, leavesFound, j))
         raise ScrapeError(f"Too Many Leaves Missing \nmissingLeaves: {missingLeaves} \nrequiredLeaves: {requiredLeaves}")

@@ -342,6 +342,21 @@ class test_scrapeJsonTree(TestCase):
 
         self.assertEqual(answer, solution)
 
+    def test_handmade_16_optional(self):
+        logName(self, inspect.currentframe())
+
+        uploadScrapeFmt = \
+                  ScrapeLongest("beverages",[
+                          ScrapeNth("coffee",[], rename = "Bean Juice"),
+                          ScrapeNth("kvass",[], rename ="Bread Blessing", optional=True)
+                  ], collapse = True , optional= True)
+
+        solution = {"Bean Juice": "omegaGood", "Bread Blessing": "megaGood"}
+
+        answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt)
+
+        self.assertEqual(answer, solution)
+
     def test_handmade_17(self):
         logName(self, inspect.currentframe())
 
