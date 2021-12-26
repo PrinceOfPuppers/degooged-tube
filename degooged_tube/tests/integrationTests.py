@@ -237,6 +237,8 @@ class test_getFunctionsAndFmts(TestCase):
 
         commentList = getCommentList(page, onExtend = nothingCallback)
         _ = commentList[0]
+        for i in range(0,20):
+            _ = commentList[i]
 
     def test_getRelatedVideoList(self):
         logName(self, inspect.currentframe())
@@ -244,6 +246,8 @@ class test_getFunctionsAndFmts(TestCase):
 
         videoList = getRelatedVideoList(page)
         _ = videoList[0]
+        for i in range(0,20):
+            _ = videoList[i]
 
 
     def test_getUploadList(self):
@@ -252,6 +256,8 @@ class test_getFunctionsAndFmts(TestCase):
 
         uploadList = getUploadList(page, onExtend = nothingCallback)
         _ = uploadList[0]
+        for i in range(0,40):
+            _ = uploadList[i]
 
     def test_getVideoInfo(self):
         logName(self, inspect.currentframe())
@@ -264,7 +270,8 @@ class test_getFunctionsAndFmts(TestCase):
     def test_getSearchList(self):
         logName(self, inspect.currentframe())
         searchVideoList, _ = getSearchList("asdf")
-        _ = searchVideoList[0]
+        for i in range(0,20):
+            _ = searchVideoList[i]
 
 if __name__ == "__main__":
     cfg.testing = True

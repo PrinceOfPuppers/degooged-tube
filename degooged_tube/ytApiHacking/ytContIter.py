@@ -67,7 +67,7 @@ class YtContIter:
                     f"{dataFmt}"
                 )
 
-                dumpDebugData(debugData)
+                dumpDebugData(debugData, cfg.testDataDumpPath)
                 raise ScrapeError
 
             continuationToken = self.continuationTokens[0]

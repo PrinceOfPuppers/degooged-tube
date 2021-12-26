@@ -58,18 +58,16 @@ def _scrapeElementStrIndent(className: str, numIndent:int, **kwargs):
             continue
         s += f"{indentp1}{key}: {value}\n"
 
-    if children is None:
-        return s
-    if len(children) == 0:
-        return s
+    noChildren = children is None or len(children) == 0
+    if not noChildren:
+        s += \
+            f"{indentp1}children: [\n" + \
+                 "\n".join([child.__repr__(numIndent = numIndent+2) for child in children]) + \
+            f"\n{indentp1}]\n"
 
-    s += \
-        f"{indentp1}children: [\n" + \
-             "\n".join([child.__repr__(numIndent = numIndent+2) for child in children]) + \
-        f"\n{indentp1}]\n"
-    f"{indent})"
-
+    s += f"{indent})"
     return s
+
     
 
 def _getMissingLeavesFromList(scrapeElements: list[ScrapeElement], jsonBranchPath:str, foundLeaves:set[str], missingLeaves:set[str], requiredLeaves:set[str]):
@@ -211,12 +209,12 @@ class ScrapeAllUnion:
             childBranchPath = _updateBranchPath(jsonBranchPath, child)
             child.getMissingLeaves(childBranchPath, foundLeaves, m, r)
             # missing all or missing none
-            if len(m) != 0 and len(r) != len(m):
-                mainMissingLeaves.update(m)
-                mainRequiredLeaves.update(r)
-            #if mainMissingLeaves is None or len(m) < len(mainMissingLeaves):
-                #mainMissingLeaves = m
-                #mainRequiredLeaves = r
+            #if len(m) != 0 and len(r) != len(m):
+                #mainMissingLeaves.update(m)
+                #mainRequiredLeaves.update(r)
+            if mainMissingLeaves is None or len(m) < len(mainMissingLeaves):
+                mainMissingLeaves = m
+                mainRequiredLeaves = r
 
         missingLeaves.update(mainMissingLeaves)
         requiredLeaves.update(mainRequiredLeaves)
@@ -264,13 +262,18 @@ class _ScrapeNode:
 
 
 
-@dataclass
 class ScrapeAll(_ScrapeNode):
     def __init__(self, key:str, children:list[ScrapeElement], collapse:bool = False, 
                        rename:str = "", optional:bool = False, dataCondition: Callable[[Any],bool]= None):
         super().__init__(key, children, rename, collapse, optional, True, dataCondition)
         self.key = key
         self.rename = rename
+
+    def __repr__(self, numIndent = 0):
+        return super().__repr__(numIndent)
+
+    def __str__(self):
+        return super().__repr__(0)
 
     def getVal(self, j):
         res = []
@@ -293,11 +296,11 @@ class ScrapeNth(_ScrapeNode):
         super().__init__(key, children, rename, collapse, optional, False, dataCondition)
         self.n = n
 
-    def __repr__(self):
-        return super().__repr__(0, n = self.n)
+    def __repr__(self, numIndent = 0):
+        return super().__repr__(numIndent, n = self.n)
 
     def __str__(self):
-        return super().__str__(n = self.n)
+        return super().__repr__(0, n = self.n)
 
     def getVal(self, j):
         if self.n == 0:
@@ -326,6 +329,12 @@ class ScrapeLongest(_ScrapeNode):
     def __init__(self, key:str, children:list[ScrapeElement], collapse:bool = False, 
                        rename:str = "", optional:bool = False, dataCondition: Callable[[Any],bool]= None):
         super().__init__(key, children, rename, collapse, optional, False, dataCondition)
+
+    def __repr__(self, numIndent = 0):
+        return super().__repr__(numIndent)
+
+    def __str__(self):
+        return super().__repr__(0)
 
     def getVal(self, j):
         res = []
@@ -523,7 +532,7 @@ def _scrapeJsonTree(j, jsonBranchPath: str, base: ScrapeElement, leavesFound: se
     missingLeaves = set()
     requiredLeaves = set()
     base.getMissingLeaves(jsonBranchPath, leavesFoundInBranch, missingLeaves, requiredLeaves)
-    if 1 - len(missingLeaves) / len(requiredLeaves) < truncateThreashold:
+    if len(requiredLeaves)==0 or 1 - len(missingLeaves) / len(requiredLeaves) < truncateThreashold:
         return None
 
     leavesFound.update(leavesFoundInBranch)
@@ -562,7 +571,7 @@ def scrapeJsonTree(j, fmt: Union[ScrapeElement, list[ScrapeElement]], debugDataL
     missingLeaves = set()
     requiredLeaves = set()
     _getMissingLeavesFromList(bases, "", leavesFound, missingLeaves, requiredLeaves)
-    if 1 - len(missingLeaves) / len(requiredLeaves) < errorThreashold:
+    if len(requiredLeaves)==0 or 1 - len(missingLeaves) / len(requiredLeaves) < errorThreashold:
         if debugDataList is not None:
             debugDataList.append(ScrapeJsonTreeDebugData(missingLeaves, requiredLeaves, leavesFound, j))
         raise ScrapeError(f"Too Many Leaves Missing \nmissingLeaves: {missingLeaves} \nrequiredLeaves: {requiredLeaves}")

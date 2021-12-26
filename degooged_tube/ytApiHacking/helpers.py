@@ -8,9 +8,8 @@ def tryGet(data:dict, key: str, backupVal = ""):
     try:
         return data[key]
     except KeyError:
-        print("testing? ", cfg.testing)
-        if cfg.testing:
-            raise Exception(f"tryGet Missing Key {key}\nData:\n{data}")
+        #if cfg.testing:
+        #    raise Exception(f"tryGet Missing Key {key}\nData:\n{data}")
         cfg.logger.debug(f"Missing Key {key} From Data, Returning BackupVal {backupVal}")
         return backupVal
 
@@ -20,8 +19,8 @@ def tryGetMultiKey(data:dict, backupVal, *args:str ):
         try:
             return data[key]
         except KeyError:
-            if cfg.testing:
-                raise Exception(f"tryGetMultiKey Missing Key {key}\nData:\n{data}")
+            #if cfg.testing:
+            #    raise Exception(f"tryGetMultiKey Missing Key {key}\nData:\n{data}")
             cfg.logger.debug(f"Missing Key {key} From Data, Trying Next Key")
             continue
 
@@ -88,7 +87,10 @@ _numDelineations = "|".join(_ytNumConversion.keys())
 _approxNumRe = re.compile(r"^(\d+)("+_numDelineations +r")?", re.I)
 
 def getApproximateNum(approxNum: str)->int:
-    matches = _approxNumRe.search(approxNum.strip().lower().replace(",", ""))
+    sanitized = approxNum.strip().lower().replace(",", "")
+    if sanitized[0] == 'n' and sanitized[1] == 'o':
+        return 0
+    matches = _approxNumRe.search(sanitized)
     if matches is None:
         raise UnableToGetApproximateNum(f"Unrecognized Number String: {approxNum}")
     try:

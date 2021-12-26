@@ -119,19 +119,19 @@ channelInfoScrapeFmt = \
                 ScrapeNth("thumbnails",[], collapse=True),
             ]),
             ScrapeNth("banner",[
-                ScrapeNth("thumbnails",[], collapse=True),
+                ScrapeNth("thumbnails",[], collapse=True, optional = True),
             ], rename='banners'),
             ScrapeNth("mobileBanner",[
-                ScrapeNth("thumbnails",[], collapse=True),
+                ScrapeNth("thumbnails",[], collapse=True, optional = True),
             ], rename='mobileBanners'),
             ScrapeNth("subscriberCountText",[
-                ScrapeAll("simpleText",[], collapse=True),
+                ScrapeAll("simpleText",[], collapse=True, optional = True),
             ], rename='subscribers'),
         ], collapse= True),
 
         ScrapeNth("metadata", [
             ScrapeNth("vanityChannelUrl",[], rename='channelUrl'),
-            ScrapeNth("description",[]),
+            ScrapeNth("description",[], optional = True),
         ], collapse = True),
     ]
 
@@ -207,9 +207,10 @@ videoInfoScrapeFmt = \
         ScrapeNth("videoSecondaryInfoRenderer",[
             ScrapeNth("owner",[
                 ScrapeNth("title",[
-                    ScrapeNth("text",[],collapse=True)
-                    ], rename = "channelName"),
-                ScrapeNth("url",[],rename = 'channelUrlFragment'),
+                    ScrapeNth("text",[], rename="channelName"),
+                    ScrapeNth("url",[], rename = 'channelUrlFragment'),
+                ], collapse = True),
+
                 ScrapeNth("thumbnails",[]),
             ],collapse=True),
 
@@ -409,7 +410,6 @@ class RelatedVideo:
     def fromData(cls, data:dict) -> Union['RelatedVideo', None]:
         try:
             videoId:str                 = data['videoId']
-            uploadedOn:str              = data['uploadedOn']
             channelUrlFragment:str      = data["channelUrlFragment"]
         except KeyError as e:
             if cfg.testing:
@@ -523,7 +523,6 @@ class SearchType:
 
 
 searchScrapeFmt = \
-    ScrapeNth("twoColumnSearchResultsRenderer",[
         ScrapeNth("itemSectionRenderer",[
             ScrapeAllUnion("", [
 
@@ -589,7 +588,6 @@ searchScrapeFmt = \
 
         ], collapse = True)
     ], collapse= True)
-], collapse= True)
 
 def SearchElementFromData(data:dict):
     if "video" in data:
@@ -636,7 +634,7 @@ class SearchVideo:
         return cls(title, channelName, channelUrlFragment, channelUrl, videoId, url, thumbnails, views, duration, uploadedOn)
 
     def __repr__(self):
-        return f'{self.title}\n     > {self.channelName} | {self.duration} | {self.uploadedOn} | {self.views}\n'
+        return f'Video: {self.title}\n     > {self.channelName} | {self.duration} | {self.uploadedOn} | {self.views}\n'
 
     def __str__(self):
         return self.__repr__()
@@ -671,7 +669,7 @@ class SearchChannel:
         return cls(channelName, channelUrlFragment, channelUrl, channelIcons, channelDescription, subscribers, videoCount)
 
     def __repr__(self):
-        return f'{self.channelName}\n     > {self.subscribers} | {self.videoCount}'
+        return f'Channel: {self.channelName}\n     > {self.subscribers} | {self.videoCount}'
 
     def __str__(self):
         return self.__repr__()

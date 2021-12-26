@@ -288,7 +288,7 @@ def _searchChannelHelper(state: CliState, searchChannel) -> bool:
 
 def searchPage(state: CliState, pageNum: int = 1) -> bool:
     '''return value specifies whether or not to go back to subbox'''
-    getPageSize = lambda : int((getTerminalSize()[1] - 5)/2)
+    getPageSize = lambda : int((getTerminalSize()[1] - 5)/3)
 
     searchTerm = input("Search Term: ")
     sanitizedSearchTerm = quote_plus(searchTerm)
@@ -304,93 +304,93 @@ def searchPage(state: CliState, pageNum: int = 1) -> bool:
         for i,searchItem in enumerate(searchRes):
             cfg.logger.info(f'{i}) {searchItem}')
 
-            chosenOption = input(
-                'List Options: (c)hoose item\n'
-                'General Options: (p)revious/(n)ext page, (f)ilters, (s)earch, (h)ome, (b)ack\n'
-                'Option: '
-            ).strip().lower()
+        chosenOption = input(
+            'List Options: (c)hoose item\n'
+            'General Options: (p)revious/(n)ext page, (f)ilters, (s)earch, (h)ome, (b)ack\n'
+            'Option: '
+        ).strip().lower()
 
-            listOptions   = ['c']
-            generalOptions = ['p', 'n', 'f', 's', 'h', 'b']
-            options        = listOptions + generalOptions
+        listOptions   = ['c']
+        generalOptions = ['p', 'n', 'f', 's', 'h', 'b']
+        options        = listOptions + generalOptions
 
-            if(len(chosenOption)!= 1 or chosenOption not in options):
-                cfg.logger.error(f"{chosenOption} is not an Option")
+        if(len(chosenOption)!= 1 or chosenOption not in options):
+            cfg.logger.error(f"{chosenOption} is not an Option")
+            continue
+
+        if chosenOption in listOptions:
+            try:
+                index = prompts.numPrompt('Choose an Item Number', searchRes, cancelable = True)
+            except prompts.Cancel:
                 continue
 
-            if chosenOption in listOptions:
+            searchItem = searchRes[index]
+
+            if isinstance(searchItem, ytapih.SearchVideo):
+                if _searchVideoHelper(state, searchItem):
+                    return True
+                continue
+            elif isinstance(searchItem, ytapih.SearchChannel):
+                if _searchChannelHelper(state, searchItem):
+                    return True
+                continue
+            else:
+                raise Exception("This Should Never Occur")
+
+        elif chosenOption in generalOptions:
+            # general options
+            if chosenOption == 'h':
+                return True
+
+            if chosenOption == 'b':
+                return False
+
+            if chosenOption == 'n':
+                pageNum += 1
+                searchRes = searchList.getPaginated(pageNum, getPageSize())
+                continue
+
+            if chosenOption == 'p':
+                if pageNum < 2:
+                    cfg.logger.error('Already On First Page')
+                    continue
+                pageNum -= 1
+                searchRes = searchList.getPaginated(pageNum, getPageSize())
+                continue
+
+            if chosenOption == 'f':
                 try:
-                    index = prompts.numPrompt('Choose an Item Number', searchRes, cancelable = True)
+                    num = prompts.numPrompt("Select a Filter Catigory", filters, cancelable = True)
                 except prompts.Cancel:
                     continue
 
-                searchItem = searchRes[index]
+                filterCatigory = filters[num]
 
-                if isinstance(searchItem, ytapih.SearchVideo):
-                    if _searchVideoHelper(state, searchItem):
-                        return True
-                    continue
-                elif isinstance(searchItem, ytapih.SearchChannel):
-                    if _searchChannelHelper(state, searchItem):
-                        return True
-                    continue
-                else:
-                    raise Exception("This Should Never Occur")
-
-            elif chosenOption in generalOptions:
-                # general options
-                if chosenOption == 'h':
-                    return True
-
-                if chosenOption == 'b':
-                    return False
-
-                if chosenOption == 'n':
-                    pageNum += 1
-                    searchRes = searchList.getPaginated(pageNum, getPageSize())
+                try:
+                    num = prompts.numPrompt("Select a Filter", filterCatigory.filters, cancelable = True)
+                except prompts.Cancel:
                     continue
 
-                if chosenOption == 'p':
-                    if pageNum < 2:
-                        cfg.logger.error('Already On First Page')
-                        continue
-                    pageNum -= 1
-                    searchRes = searchList.getPaginated(pageNum, getPageSize())
-                    continue
+                filter = filterCatigory.filters[num]
 
-                if chosenOption == 'f':
-                    try:
-                        num = prompts.numPrompt("Select a Filter Catigory", filters, cancelable = True)
-                    except prompts.Cancel:
-                        continue
+                searchList, filters = ytapih.getSearchList(filter.searchUrlFragment)
 
-                    filterCatigory = filters[num]
-
-                    try:
-                        num = prompts.numPrompt("Select a Filter", filterCatigory.filters, cancelable = True)
-                    except prompts.Cancel:
-                        continue
-
-                    filter = filterCatigory.filters[num]
-
-                    searchList, filters = ytapih.getSearchList(filter.searchUrlFragment)
-
-                    pageNum = 0
-                    searchRes = searchList.getPaginated(pageNum, getPageSize())
-                    continue
+                pageNum = 0
+                searchRes = searchList.getPaginated(pageNum, getPageSize())
+                continue
 
 
-                if chosenOption == 's':
-                    searchTerm = input("Search Term: ")
-                    sanitizedSearchTerm = quote_plus(searchTerm)
+            if chosenOption == 's':
+                searchTerm = input("Search Term: ")
+                sanitizedSearchTerm = quote_plus(searchTerm)
 
-                    searchList, filters = ytapih.getSearchList(sanitizedSearchTerm)
+                searchList, filters = ytapih.getSearchList(sanitizedSearchTerm)
 
-                    pageNum = 0
-                    searchRes = searchList.getPaginated(pageNum, getPageSize())
-                    continue
+                pageNum = 0
+                searchRes = searchList.getPaginated(pageNum, getPageSize())
+                continue
 
-                raise Exception(f'Reached End Of SearchPage Switch, Option Chosen {chosenOption}')
+            raise Exception(f'Reached End Of SearchPage Switch, Option Chosen {chosenOption}')
 
 
 
@@ -538,15 +538,16 @@ def videoInfoPage(state: CliState, videoUrl: str, channel: Union[SubBoxChannel, 
     while True:
         likeViewRatio = "N/A" if videoInfo.viewsNum == 0 else (videoInfo.likesNum / videoInfo.viewsNum)
 
+        thumbnail = "" if len(videoInfo.thumbnails)==0 else videoInfo.thumbnails[-1]
         cfg.logger.info(
-            f"Channel Page:\n"
+            f"Video Info:\n"
             f"Title:       {videoInfo.title}\n"
             f"Uploader:    {videoInfo.channelName}\n"
             f"UploadDate:  {videoInfo.uploadedOn}\n"
             f"Likes:       {videoInfo.likesNum}\n"
             f"Views:       {videoInfo.viewsNum}\n"
             f"Likes/Views: {likeViewRatio}\n"
-            f"Thumbnail:   {videoInfo.thumbnails[-1]}\n"
+            f"Thumbnail:   {thumbnail}\n"
             f"Description: \n{videoInfo.description}\n"
         )
 
@@ -600,13 +601,15 @@ def videoInfoPage(state: CliState, videoUrl: str, channel: Union[SubBoxChannel, 
 def channelInfoPage(state: CliState, channel: SubBoxChannel) -> bool:
     '''return value specifies whether or not to go back to subbox'''
     while True:
+        avatar = "" if len(channel.channelInfo.avatar) == 0 else channel.channelInfo.avatar[-1]
+        banner = "" if len(channel.channelInfo.banners) == 0 else channel.channelInfo.banners[-1]
         cfg.logger.info(
             f"Channel Page:\n"
             f"Name:          {channel.channelName}\n"
             f"Url:           {channel.channelUrl}\n"
             f"Subscribers:   {channel.channelInfo.subscribers}\n"
-            f"Avatar:        {channel.channelInfo.avatar[-1]}\n"
-            f"Banner:        {channel.channelInfo.banners[-1]}\n"
+            f"Avatar:        {avatar}\n"
+            f"Banner:        {banner}\n"
             f"Description: \n{channel.channelInfo.description}\n"
         )
         
