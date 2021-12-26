@@ -131,20 +131,20 @@ class SubBox:
 
         self.orderedUploads.append(mostRecentChannel.popNextUploadInQueue())
             
+    def _getChannelUrlsUnderTags(self, tags: set[str]):
+        return [channel.channelUrl for channel in self.channels if tags.issubset(channel.tags)]
 
-    def _numUploadsWithTags(self, tags: set[str]):
+    def _numUploads(self, channelUrlWhitelist: list[str]):
+        if len(channelUrlWhitelist) == 0:
+            return len(self.orderedUploads)
         num = 0
         for upload in self.orderedUploads:
-            channelTags = self.channelDict[upload.channelUrl].tags
-            if len(tags) == 0:
-                num+=1
-                continue
-            if channelTags.issubset(tags) and len(channelTags) != 0:
+            if upload.channelUrl in channelUrlWhitelist:
                 num+=1
 
         return num
 
-    def _extendOrderedUploads(self, desiredLen: int, tags: Union[set[str], None]):
+    def _extendOrderedUploads(self, desiredLen: int, channelUrlWhitelist: Union[list[str], None]):
         initalLength = len(self.orderedUploads) 
 
         debugMessage = \
@@ -153,48 +153,56 @@ class SubBox:
             f"Desired Length: {desiredLen}\n" \
             f"Length After Extenion: {len(self.orderedUploads)}"
 
-        if tags is None or len(tags) == 0:
+        if channelUrlWhitelist is None or len(channelUrlWhitelist) == 0:
             numExtend = desiredLen - initalLength
             for _ in range(numExtend):
                 self._appendNextUpload()
 
         else:
-            currentLen = self._numUploadsWithTags(tags)
+            currentLen = self._numUploads(channelUrlWhitelist)
             initalLen = currentLen
             numExtend = desiredLen - currentLen
 
             while numExtend > 0:
                 for _ in range(numExtend):
                     self._appendNextUpload()
-                currentLen = self._numUploadsWithTags(tags)
+                currentLen = self._numUploads(channelUrlWhitelist)
                 numExtend = desiredLen - currentLen
 
-            debugMessage += f"\nSpecified Tags: {tags}"
-            debugMessage += f"\nLength of Tagged Uploads Before Extension: {initalLen}"
-            debugMessage += f"\nLength of Tagged Uploads After Extension: {currentLen}"
+            debugMessage += f"\nSpecified Channels: {channelUrlWhitelist}"\
+                            f"\nLength of Tagged Uploads Before Extension: {initalLen}"\
+                            f"\nLength of Tagged Uploads After Extension: {currentLen}"\
 
         cfg.logger.debug(debugMessage)
 
 
     def getUploads(self, limit: int, offset: int, tags: Union[set[str], None]) -> list[ytapih.Upload]:
         desiredLen = limit + offset
+        if tags is None or len(tags) == 0:
+            channelUrlWhitelist = None
+        else:
+            channelUrlWhitelist = self._getChannelUrlsUnderTags(tags)
+            if len(channelUrlWhitelist) == 0:
+                cfg.logger.debug(f"Provided Tags: {tags} Exclude All Channels")
+                return []
+
         try:
-            self._extendOrderedUploads(desiredLen, tags)
+            self._extendOrderedUploads(desiredLen, channelUrlWhitelist)
         except EndOfSubBox:
             pass
 
-        if tags is None or len(tags) == 0:
+        if channelUrlWhitelist is None:
             uploads = self.orderedUploads
         else:
             uploads = list(
                 filter(
-                    lambda upload: (self.channelDict[upload.channelUrl].tags.issubset(tags) \
-                                    and len(self.channelDict[upload.channelUrl].tags) != 0),
+                    lambda upload: upload.channelUrl in channelUrlWhitelist,
                     self.orderedUploads
                 )
             )
 
-            cfg.logger.debug(
+
+            cfg.logger.info(
                 f"Filtering Subbox by Tags:{tags}\n"
                 f"SubBox Len Before Filtering: {len(self.orderedUploads)}\n"
                 f"SubBox Len After Filtering: {len(uploads)}\n"
