@@ -7,13 +7,27 @@ from typing import Tuple, Union
 from .helpers import addResultIfNotNone
 
 # uploads
-def uploadsCallback(res) -> list[Upload]:
+def uploadsCallback(res, **kwargs) -> list[Upload]:
     l = []
-    addResultIfNotNone(res, Upload.fromData, l)
+    for r in res:
+        upload = Upload.fromData(r)
+        if upload is not None:
+            for key,item in kwargs.items():
+                setattr(upload, key, item)
+            l.append(upload)
     return l
 
-def getUploadList(uploadsPage:YtInitalPage, onExtend = uploadsCallback) -> YtApiList[Upload]:
-    return YtApiList(uploadsPage, ctrlp.uploadsApiUrl, ctrlp.uploadScrapeFmt, getInitalData=True, onExtend = onExtend)
+def getUploadList(uploadsPage:YtInitalPage, onExtend = None, **kwargs) -> YtApiList[Upload]:
+    '''kwargs are constant values to add to scraped data (ie channel name and url)'''
+    if onExtend is None:
+        callback = uploadsCallback
+    else:
+        callback = onExtend
+
+    if len(kwargs) > 0:
+        callback = lambda res: uploadsCallback(res, **kwargs)
+
+    return YtApiList(uploadsPage, ctrlp.uploadsApiUrl, ctrlp.uploadScrapeFmt, getInitalData=True, onExtend = callback)
 
 
 

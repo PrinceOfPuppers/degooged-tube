@@ -395,7 +395,6 @@ relatedVideosScrapeFmt = \
 class RelatedVideo:
     videoId:str
     url:str
-    unixTime:int
     thumbnails:list[Thumbnail]
     uploadedOn:str
     views:str
@@ -412,15 +411,14 @@ class RelatedVideo:
             videoId:str                 = data['videoId']
             uploadedOn:str              = data['uploadedOn']
             channelUrlFragment:str      = data["channelUrlFragment"]
-            uploadedOn:str              = data['uploadedOn']
         except KeyError as e:
             if cfg.testing:
                 raise Exception(f'Missing Required Key "{e.args[0]}"\nFrom Data: {data}')
             cfg.logger.debug(f'In {cls.__name__}.fromData(), Data is Missing Required Key "{e.args[0]}"')
             return None
 
+        uploadedOn:str              = tryGet(data, 'uploadedOn')
         url:str                     = 'https://www.youtube.com/watch?v=' + videoId
-        unixTime:int                = approxTimeToUnix(currentTime, uploadedOn)
         thumbnails:list[Thumbnail]  = [Thumbnail.fromData(datum) for datum in tryGet(data, 'thumbnails', [])]
         views:str                   = tryGet(data, 'views')
         duration:str                = tryGet(data, 'duration')
@@ -429,7 +427,7 @@ class RelatedVideo:
         channelName:str = tryGet(data, "channelName")
         channelUrl:str = 'https://www.youtube.com' + channelUrlFragment
 
-        return cls(videoId, url, unixTime, thumbnails, uploadedOn, views, duration, title, channelName, channelUrlFragment, channelUrl)
+        return cls(videoId, url, thumbnails, uploadedOn, views, duration, title, channelName, channelUrlFragment, channelUrl)
     
     def __repr__(self):
         return f'{self.title}\n     > {self.channelName} | {self.duration} | {self.uploadedOn} | {self.views}\n'

@@ -14,7 +14,7 @@ class SubBoxChannel:
     uploadList: ytapih.YtApiList[ytapih.Upload]
     channelName: str
     channelUrl:  str
-    extensionIndex: int
+    _extensionIndex: int
     tags: set[str]
 
     @classmethod
@@ -22,12 +22,12 @@ class SubBoxChannel:
         channelUrl = ytapih.sanitizeChannelUrl(initalPage.url) # to keep channelUrl consistant
         try:
             channelInfo = ytapih.getChannelInfoFromInitalPage(initalPage)
-            uploadList = ytapih.getUploadList(initalPage)
+            channelName = channelInfo.channelName
+            uploadList = ytapih.getUploadList(initalPage, channelName = channelName, channelUrl= channelUrl)
         except Exception as e:
             cfg.logger.debug(e, exc_info=True)
             raise ChannelLoadIssue(channelUrl)
 
-        channelName = channelInfo.channelName
 
         return cls(channelInfo, uploadList, channelName, channelUrl, 0, channelTags)
 
@@ -43,6 +43,16 @@ class SubBoxChannel:
 
     def __str__(self):
         return self.__repr__()
+
+    def popNextUploadInQueue(self):
+        upload = self.uploadList[self._extensionIndex]
+        self._extensionIndex += 1
+        return upload
+
+    def peekNextUploadInQueue(self):
+        upload = self.uploadList[self._extensionIndex]
+        return upload
+
 
 
 def loadChannel(data) -> Union[SubBoxChannel, str]:

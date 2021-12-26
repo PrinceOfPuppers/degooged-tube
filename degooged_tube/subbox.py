@@ -1,6 +1,5 @@
 import degooged_tube.ytApiHacking as ytapih
 import degooged_tube.config as cfg
-from dataclasses import dataclass
 from typing import Union, Tuple
 from degooged_tube.subboxChannel import SubBoxChannel, ChannelLoadIssue, loadChannel
 from degooged_tube import pool
@@ -99,21 +98,11 @@ class SubBox:
         while channelIndex < len(self.channels):
             channel = self.channels[channelIndex]
             try:
-                return channelIndex, channel, channel.uploadList[channel.extensionIndex] 
+                return channelIndex, channel, channel.peekNextUploadInQueue()
             except IndexError:
                 channelIndex+=1
 
         raise NoVideo
-
-    def _insertUpload(self, index, upload:ytapih.Upload, channelUrl:str, channelName:str):
-        setattr(upload, 'channelUrl', channelUrl)
-        setattr(upload, 'channelName', channelName)
-        self.orderedUploads.insert(index,upload)
-
-    def _appendUpload(self, upload, channelUrl:str, channelName:str):
-        setattr(upload, 'channelUrl', channelUrl)
-        setattr(upload, 'channelName', channelName)
-        self.orderedUploads.append(upload)
 
     def _appendNextUpload(self):
         if self.atMaxLen:
@@ -140,8 +129,7 @@ class SubBox:
                 mostRecentChannel = contenderChannel
                 mostRecentVideo = contenderVideo
 
-        self._appendUpload(mostRecentVideo, mostRecentChannel.channelUrl, mostRecentChannel.channelName)
-        mostRecentChannel.extensionIndex += 1
+        self.orderedUploads.append(mostRecentChannel.popNextUploadInQueue())
             
 
     def _numUploadsWithTags(self, tags: set[str]):
@@ -248,7 +236,7 @@ class SubBox:
                     f"New Insert Id : {c1Upload.videoId} Unix Time: {c1Upload.unixTime} Title: {c1Upload.title}\n"
                     f"Pushed Back Id: {orderedUpload.videoId} Unix Time: {orderedUpload.unixTime} Title: {orderedUpload.title}"
                 )
-                self._insertUpload(orderedUploadIndex, c1Upload, channel.channelUrl, channel.channelName)
+                self.orderedUploads.insert(orderedUploadIndex, c1Upload)
                 channelUploadIndex+=1
 
             orderedUploadIndex+=1

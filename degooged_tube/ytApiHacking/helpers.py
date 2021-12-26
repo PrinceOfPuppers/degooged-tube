@@ -8,6 +8,7 @@ def tryGet(data:dict, key: str, backupVal = ""):
     try:
         return data[key]
     except KeyError:
+        print("testing? ", cfg.testing)
         if cfg.testing:
             raise Exception(f"tryGet Missing Key {key}\nData:\n{data}")
         cfg.logger.debug(f"Missing Key {key} From Data, Returning BackupVal {backupVal}")
