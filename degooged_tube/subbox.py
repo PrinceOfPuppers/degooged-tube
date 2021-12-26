@@ -65,7 +65,6 @@ class SubBox:
             assert len(urls) == len(channelTags)
 
         if cfg.testing or pool is None:
-            print("here", cfg.testing)
             channels = [loadChannel(data) for data in zip(urls, channelTags)]
         else:
             channels = pool.map(loadChannel, zip(urls, channelTags))

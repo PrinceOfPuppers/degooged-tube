@@ -24,7 +24,5 @@ def playVideo(url:str):
 
 if __name__ == '__main__':
     playVideo('https://www.youtube.com/watch?v=j-FHbHoiwNk&ab_channel=AppliedScience')
-    print("hello")
     playVideo('https://www.youtube.com/watch?v=j-FHbHoiwNk&ab_channel=AppliedScience')
-    print("hello")
 

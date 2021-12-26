@@ -491,7 +491,7 @@ class SearchType:
     @classmethod
     def fromData(cls, data:dict):
         searchType = tryGet(data, 'searchType')
-        filterData = tryGet(data, 'filterData', [])
+        filterData = tryGet(data, 'filters', [])
 
         filters = []
         for f in filterData:
@@ -532,7 +532,7 @@ searchScrapeFmt = \
                 ScrapeAllUnionNode("channelRenderer", [
 
                     ScrapeNth("title",[
-                        ScrapeNth("text",[],collapse=True)
+                        ScrapeNth("simpleText",[],collapse=True)
                     ], rename = 'channelName'),
 
                     ScrapeNth("browseEndpoint",[
@@ -568,7 +568,7 @@ searchScrapeFmt = \
                     ], rename= "channelName"),
 
                     ScrapeNth("longBylineText",[
-                        ScrapeNth("canonicalBaseUrl", [], collapse=True)
+                        ScrapeNth("url", [], collapse=True)
                     ],rename="channelUrlFragment"),
 
                     ScrapeNth("videoId",[]),
@@ -657,7 +657,7 @@ class SearchChannel:
     def fromData(cls, data:dict) -> Union['SearchChannel', None]:
         try:
             channelName        = data['channelName']
-            channelUrlFragment = data['channelUrlFragment ']
+            channelUrlFragment = data['channelUrlFragment']
         except KeyError as e:
             if cfg.testing:
                 raise Exception(f'Missing Required Key "{e.args[0]}"\nFrom Data: {data}')

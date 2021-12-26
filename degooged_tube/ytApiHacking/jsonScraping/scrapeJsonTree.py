@@ -210,9 +210,13 @@ class ScrapeAllUnion:
             r:set[str] = set()
             childBranchPath = _updateBranchPath(jsonBranchPath, child)
             child.getMissingLeaves(childBranchPath, foundLeaves, m, r)
-            if mainMissingLeaves is None or len(m) < len(mainMissingLeaves):
-                mainMissingLeaves = m
-                mainRequiredLeaves = r
+            # missing all or missing none
+            if len(m) != 0 and len(r) != len(m):
+                mainMissingLeaves.update(m)
+                mainRequiredLeaves.update(r)
+            #if mainMissingLeaves is None or len(m) < len(mainMissingLeaves):
+                #mainMissingLeaves = m
+                #mainRequiredLeaves = r
 
         missingLeaves.update(mainMissingLeaves)
         requiredLeaves.update(mainRequiredLeaves)
@@ -526,11 +530,13 @@ def _scrapeJsonTree(j, jsonBranchPath: str, base: ScrapeElement, leavesFound: se
     return res
 
 
-def scrapeJsonTree(j, fmt: Union[ScrapeElement, list[ScrapeElement]], debugDataList: list[ScrapeJsonTreeDebugData] = None, truncateThreashold:float = None):
-    #import degooged_tube.config as cfg
+def scrapeJsonTree(j, fmt: Union[ScrapeElement, list[ScrapeElement]], debugDataList: list[ScrapeJsonTreeDebugData] = None, truncateThreashold:float = None, errorThreashold:float = None):
+    # if debugDataList is passed, go into debug mode, in this mode never truncate, but always throw error if any keys are missing 
     if truncateThreashold is None:
-        truncateThreashold = 0.5 if debugDataList is None else 1.0
-        #print(truncateThreashold, cfg.testing)
+        truncateThreashold = 0.5 if debugDataList is None else 0.0
+
+    if errorThreashold is None:
+        errorThreashold = truncateThreashold if debugDataList is None else 1.0
 
     res = []
     if isinstance(fmt, list):
@@ -556,7 +562,7 @@ def scrapeJsonTree(j, fmt: Union[ScrapeElement, list[ScrapeElement]], debugDataL
     missingLeaves = set()
     requiredLeaves = set()
     _getMissingLeavesFromList(bases, "", leavesFound, missingLeaves, requiredLeaves)
-    if 1 - len(missingLeaves) / len(requiredLeaves) < truncateThreashold:
+    if 1 - len(missingLeaves) / len(requiredLeaves) < errorThreashold:
         if debugDataList is not None:
             debugDataList.append(ScrapeJsonTreeDebugData(missingLeaves, requiredLeaves, leavesFound, j))
         raise ScrapeError(f"Too Many Leaves Missing \nmissingLeaves: {missingLeaves} \nrequiredLeaves: {requiredLeaves}")

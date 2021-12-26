@@ -27,14 +27,12 @@ class _NoInterrupt:
         self.inNoInterrupt=False
         if self.signalReceived:
             self.signalReceived = False
-            print("terminating")
             if pool is not None:
                 pool.close()
             sys.exit()
 
     def handler(self,sig,frame):
         if not self.inNoInterrupt:
-            print("terminating")
             if pool is not None:
                 pool.close()
             sys.exit()
