@@ -479,7 +479,7 @@ def relatedVideosPage(state: CliState, videoPage: ytapih.YtInitalPage, videoTitl
 
 def commentsPage(state: CliState, commentList: ytapih.YtApiList[str], videoTitle: str, pageNum:int = 1) -> bool:
     '''return value specifies whether or not to go back to subbox'''
-    getPageSize = lambda : int((getTerminalSize()[1] - 3)/3)
+    getPageSize = lambda : int((getTerminalSize()[1] - 3)/4)
 
     comments = commentList.getPaginated(pageNum, getPageSize())
 
@@ -487,7 +487,7 @@ def commentsPage(state: CliState, commentList: ytapih.YtApiList[str], videoTitle
         cfg.logger.info(f"Comments Page {pageNum} of Video: {videoTitle}")
 
         for i,comment in enumerate(comments):
-            cfg.logger.info(f'{i}) {comment}')
+            cfg.logger.info(f'{i}) {comment}\n')
 
         chosenOption = input(
             'Options: (p)revious/(n)ext page, (h)ome, (b)ack\n'

@@ -2,7 +2,7 @@ from .ytContIter import YtInitalPage
 from . import controlPanel as ctrlp 
 from .ytApiList import YtApiList
 #from urllib.parse import quote_plus
-from .controlPanel import Upload, SearchType, SearchVideo, SearchChannel, ChannelInfo, VideoInfo, RelatedVideo, SearchElementFromData
+from .controlPanel import Upload, SearchType, SearchVideo, SearchChannel, ChannelInfo, VideoInfo, RelatedVideo, SearchElementFromData, Comment
 from typing import Tuple, Union
 from .helpers import addResultIfNotNone
 
@@ -19,10 +19,7 @@ def getUploadList(uploadsPage:YtInitalPage, onExtend = uploadsCallback) -> YtApi
 
 # comments
 def commentCallback(res):
-    for i,comment in enumerate(res):
-        res[i] = ''.join(comment)
-
-    return res
+    return [Comment.fromData(x) for x in res]
 
 def getCommentList(videoPage: YtInitalPage, onExtend = commentCallback) -> YtApiList[str]:
     return YtApiList(videoPage, ctrlp.commentsApiUrl, ctrlp.commentScrapeFmt, onExtend = onExtend)
