@@ -842,7 +842,7 @@ def subboxPage(state: CliState, pageNum: int = 1, tags:Union[set[str], None] = N
 
 
 def cli():
-    cfg.testing = True
+    #cfg.testing = True
     setupLogger()
     setupPool()
 

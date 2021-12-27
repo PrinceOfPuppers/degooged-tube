@@ -1,4 +1,8 @@
-#import mpv
+import mpv
+
+
+
+
 import subprocess
 import degooged_tube.config as cfg
 
