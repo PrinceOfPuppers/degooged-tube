@@ -256,6 +256,7 @@ class SubBox:
             channel
         )
         self.channelDict[channel.channelUrl] = channel
+        self.atMaxLen = False
 
         return channel
 

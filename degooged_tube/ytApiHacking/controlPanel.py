@@ -211,7 +211,6 @@ videoInfoScrapeFmt = \
                     ScrapeNth("url",[], rename = 'channelUrlFragment'),
                 ], collapse = True),
 
-                ScrapeNth("thumbnails",[]),
             ],collapse=True),
 
             ScrapeNth("subscriberCountText",[
@@ -245,7 +244,6 @@ class VideoInfo:
 
     uploadedOn:str
     subscribers:str
-    thumbnails:list
 
     @classmethod
     def fromData(cls, data:dict) -> Union['VideoInfo', None]:
@@ -269,9 +267,8 @@ class VideoInfo:
 
         channelName:str             = tryGet(data, 'channelName')
         subscribers:str             = tryGet(data, 'subscribers', "0")
-        thumbnails:list[Thumbnail]  = [Thumbnail.fromData(datum) for datum in tryGet(data, 'thumbnails', [])]
 
-        return cls(description, title, views, viewsNum, likes, likesNum, channelName, channelUrlFragment, channelUrl, uploadedOn, subscribers, thumbnails, )
+        return cls(description, title, views, viewsNum, likes, likesNum, channelName, channelUrlFragment, channelUrl, uploadedOn, subscribers)
 
 
 ############################################
@@ -458,7 +455,7 @@ searchFilterScrapeFmt = \
                     ]),
 
                     ScrapeNth("url", [], rename="searchUrlFragment"),
-                    ScrapeNth("status", [], rename="searchUrlFragment", optional = True)
+                    ScrapeNth("status", [], optional = True)
 
                 ],  collapse=True),
             ]),
@@ -497,13 +494,12 @@ class SearchType:
                 label = f['label']
                 searchUrlFragment = f['searchUrlFragment']
             except KeyError as e:
-                if cfg.testing:
-                    raise Exception(f'Missing Required Key "{e.args[0]}"\nFrom Data: {data}')
                 cfg.logger.debug(f'In {cls.__name__}.fromData(), Data is Missing Required Key "{e.args[0]}"')
                 continue
 
             try:
                 selected = f['status'] == searchFilterSelectedStatus
+                print(f"{selected=}")
             except KeyError:
                 selected = False
 
@@ -523,7 +519,6 @@ class SearchType:
 
 
 searchScrapeFmt = \
-        ScrapeNth("itemSectionRenderer",[
             ScrapeAllUnion("", [
 
                 ScrapeAllUnionNode("channelRenderer", [
@@ -587,7 +582,6 @@ searchScrapeFmt = \
                 ], rename = "video")
 
         ], collapse = True)
-    ], collapse= True)
 
 def SearchElementFromData(data:dict):
     if "video" in data:
@@ -634,7 +628,7 @@ class SearchVideo:
         return cls(title, channelName, channelUrlFragment, channelUrl, videoId, url, thumbnails, views, duration, uploadedOn)
 
     def __repr__(self):
-        return f'Video: {self.title}\n     > {self.channelName} | {self.duration} | {self.uploadedOn} | {self.views}\n'
+        return f'Video: {self.title}\n     > {self.channelName} | {self.duration} | {self.uploadedOn} | {self.views}'
 
     def __str__(self):
         return self.__repr__()

@@ -302,7 +302,7 @@ def searchPage(state: CliState, pageNum: int = 1) -> bool:
         cfg.logger.info(searchTitle)
 
         for i,searchItem in enumerate(searchRes):
-            cfg.logger.info(f'{i}) {searchItem}')
+            cfg.logger.info(f'{i}) {searchItem}\n')
 
         chosenOption = input(
             'List Options: (c)hoose item\n'
@@ -538,7 +538,6 @@ def videoInfoPage(state: CliState, videoUrl: str, channel: Union[SubBoxChannel, 
     while True:
         likeViewRatio = "N/A" if videoInfo.viewsNum == 0 else (videoInfo.likesNum / videoInfo.viewsNum)
 
-        thumbnail = "" if len(videoInfo.thumbnails)==0 else videoInfo.thumbnails[-1]
         cfg.logger.info(
             f"Video Info:\n"
             f"Title:       {videoInfo.title}\n"
@@ -547,7 +546,6 @@ def videoInfoPage(state: CliState, videoUrl: str, channel: Union[SubBoxChannel, 
             f"Likes:       {videoInfo.likesNum}\n"
             f"Views:       {videoInfo.viewsNum}\n"
             f"Likes/Views: {likeViewRatio}\n"
-            f"Thumbnail:   {thumbnail}\n"
             f"Description: \n{videoInfo.description}\n"
         )
 
@@ -728,9 +726,9 @@ def subboxPage(state: CliState, pageNum: int = 1, tags:Union[set[str], None] = N
     if tags is None:
         tags = set()
 
-    uploads = state.subbox.getPaginatedUploads(pageNum, getPageSize(), tags)
 
     while True:
+        uploads = state.subbox.getPaginatedUploads(pageNum, getPageSize(), tags)
 
         if tags != None and len(tags) > 0:
             subboxTitle = f'Subbox Page {pageNum}, Tags: {tags}:' 
@@ -760,7 +758,7 @@ def subboxPage(state: CliState, pageNum: int = 1, tags:Union[set[str], None] = N
         # general options
         if chosenOption == 'n':
             pageNum += 1
-            uploads = state.subbox.getPaginatedUploads(pageNum, getPageSize(), tags)
+            #uploads = state.subbox.getPaginatedUploads(pageNum, getPageSize(), tags)
             continue
 
         if chosenOption == 'p':
@@ -768,7 +766,7 @@ def subboxPage(state: CliState, pageNum: int = 1, tags:Union[set[str], None] = N
                 cfg.logger.error('Already On First Page')
                 continue
             pageNum -= 1
-            uploads = state.subbox.getPaginatedUploads(pageNum, getPageSize(), tags)
+            #uploads = state.subbox.getPaginatedUploads(pageNum, getPageSize(), tags)
             continue
 
         if chosenOption == 'f':
@@ -844,6 +842,7 @@ def subboxPage(state: CliState, pageNum: int = 1, tags:Union[set[str], None] = N
 
 
 def cli():
+    cfg.testing = True
     setupLogger()
     setupPool()
 

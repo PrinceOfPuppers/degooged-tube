@@ -265,7 +265,6 @@ class test_getFunctionsAndFmts(TestCase):
 
         _ = getVideoInfo(page)
 
-        #filteredSearch = getSearchList(filters['type']['channel'])
 
     def test_getSearchList(self):
         logName(self, inspect.currentframe())
@@ -281,7 +280,24 @@ class test_SpecialCases(TestCase):
     def test_bigFilter(self):
         _ = self.subBox.getPaginatedUploads(1, 40, self.tags[1])
 
+    def test_loadalot(self):
+        _ = self.subBox.getPaginatedUploads(1, 1000)
+
+    def test_searchFilters(self):
+        logName(self, inspect.currentframe())
+
+        numFilterTests = 10
+        for i in range(0,numFilterTests):
+            searchVideoList, filters = getSearchList("test")
+            for i in range(0,20):
+                _ = searchVideoList[i]
+            filterCatigory = filters[i%len(filters)]
+            filter = filterCatigory.filters[(i+3)%len(filterCatigory.filters)]
+            cfg.logger.debug(f"Toggling Filter {filterCatigory.searchType} - {filter.label}")
+            searchVideoList, filters = getSearchList(filter.searchUrlFragment)
+
+
 if __name__ == "__main__":
     cfg.testing = True
-    t = test_getFunctionsAndFmts()
-    t.test_getSearchList()
+    t = test_SpecialCases()
+    t.test_searchFilters()
