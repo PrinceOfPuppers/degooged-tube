@@ -10,7 +10,7 @@ from degooged_tube.tests.unitTests import logName
 from degooged_tube import setupPool
 
 
-def getUploads(pageSize: int, numPages: int, subBox: SubBox, tags:set[str] = None) -> list[Upload]:
+def getLimitOffset(pageSize: int, numPages: int, subBox: SubBox, tags:set[str] = None) -> list[Upload]:
     uploads = []
     for pageNum in range(1,numPages + 1):
         page = subBox.getPaginatedUploads(pageNum, pageSize, tags)
@@ -98,14 +98,14 @@ class test_SubBox(TestCase):
         logName(self, inspect.currentframe())
         pageSize = 10
         numPages = 2
-        uploads = getUploads(pageSize, numPages, self.subBox)
+        uploads = getLimitOffset(pageSize, numPages, self.subBox)
         self.assertTrue(checkNoMisses(uploads, self.subBox))
 
     def test_duplicates(self):
         logName(self, inspect.currentframe())
         pageSize = 10
         numPages = 2
-        uploads = getUploads(pageSize, numPages, self.subBox)
+        uploads = getLimitOffset(pageSize, numPages, self.subBox)
         self.assertTrue(checkNoDuplicates(uploads))
 
 
@@ -114,7 +114,7 @@ class test_SubBox(TestCase):
         pageSize = 10
         numPages = 2
 
-        uploads = getUploads(pageSize, numPages, self.subBox)
+        uploads = getLimitOffset(pageSize, numPages, self.subBox)
 
         self.assertTrue(checkOrdering(uploads))
 
@@ -131,13 +131,13 @@ class test_SubBox(TestCase):
         sanitizedChannelUrl = sanitizeChannelUrl(newChannelUrl)
 
         for _ in range(numExtensionBeforeFail):
-            initalUploads = getUploads(pageSize, numPages, self.subBox)
+            initalUploads = getLimitOffset(pageSize, numPages, self.subBox)
             initalVideoIds = [upload.videoId for upload in initalUploads]
 
             self.subBox.addChannelFromUrl(newChannelUrl)
             self.assertTrue(checkNoDuplicates(self.subBox.orderedUploads))
 
-            uploads = getUploads(pageSize, numPages, self.subBox)
+            uploads = getLimitOffset(pageSize, numPages, self.subBox)
 
             videoChannels = [
                 upload.channelUrl 
@@ -159,7 +159,7 @@ class test_SubBox(TestCase):
 
             self.subBox.popChannel(self.subBox.getChannelIndex(newChannelUrl))
 
-            endUploads = getUploads(pageSize, numPages, self.subBox)
+            endUploads = getLimitOffset(pageSize, numPages, self.subBox)
             endVideoIds = [upload.videoId for upload in endUploads]
 
             self.assertTrue(checkNoDuplicates(uploads))
@@ -188,7 +188,7 @@ class test_SubBox(TestCase):
         logName(self, inspect.currentframe())
         pageSize = 10
         numPages = 2
-        uploads = getUploads(pageSize, numPages, self.subBox, {'speedrunning'})
+        uploads = getLimitOffset(pageSize, numPages, self.subBox, {'speedrunning'})
         self.assertTrue(checkNoMisses(uploads, self.subBox, {'speedrunning'}))
 
 
@@ -197,7 +197,7 @@ class test_SubBox(TestCase):
         pageSize = 10
         numPages = 2
 
-        uploads = getUploads(pageSize, numPages, self.subBox, {'gaming'})
+        uploads = getLimitOffset(pageSize, numPages, self.subBox, {'gaming'})
 
         self.assertTrue(checkOrdering(uploads))
 
@@ -209,7 +209,7 @@ class test_SubBox(TestCase):
         t = self.tags[0]
         channelUrl = self.subscribed[0]
 
-        uploads = getUploads(pageSize, numPages, self.subBox, t)
+        uploads = getLimitOffset(pageSize, numPages, self.subBox, t)
 
         for upload in uploads:
             self.assertEqual(upload.channelUrl, channelUrl)

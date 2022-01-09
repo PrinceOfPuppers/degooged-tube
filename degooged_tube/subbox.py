@@ -176,7 +176,7 @@ class SubBox:
         cfg.logger.debug(debugMessage)
 
 
-    def getUploads(self, limit: int, offset: int, tags: Union[set[str], None]) -> list[ytapih.Upload]:
+    def getLimitOffset(self, limit: int, offset: int, tags: Union[set[str], None]) -> list[ytapih.Upload]:
         if tags is None or len(tags) == 0:
             channelUrlWhitelist = None
         else:
@@ -215,14 +215,14 @@ class SubBox:
         start = min(offset, len(uploads))
         end = min(offset+limit, len(uploads))
         if start >= end:
-            cfg.logger.debug(f"SubBox.getUploads(limit= {limit}, offset= {offset}), Returning Empty List")
+            cfg.logger.debug(f"SubBox.getLimitOffset(limit= {limit}, offset= {offset}), Returning Empty List")
             return []
         
         return uploads[offset: offset+limit]
 
     def getPaginatedUploads(self, pageNum: int, pageSize: int, tags: Union[set[str], None] = None) -> list[ytapih.Upload]:
         limit, offset = paginationCalculator(pageNum, pageSize)
-        return self.getUploads(limit, offset, tags)
+        return self.getLimitOffset(limit, offset, tags)
 
     def addChannelFromInitalPage(self, initalPage: ytapih.YtInitalPage, tags: set[str] = set()):
         channel = SubBoxChannel.fromInitalPage(initalPage, tags)

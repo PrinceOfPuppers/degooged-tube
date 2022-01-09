@@ -38,4 +38,4 @@ def getStreamLink(maxQuality:str, maxFps:str):
         x = ydl.extract_info('https://youtu.be/mI85lQ44Zfc', False)
         return x['url']
 
-print(getStreamLink('720', '60'))
+# print(getStreamLink('720', '60'))
