@@ -303,6 +303,7 @@ class Upload:
     title:str
     channelName:str
     channelUrl:str
+    avatar:list[Thumbnail]
 
     @classmethod
     def fromData(cls, data:dict) -> Union['Upload', None]:
@@ -325,7 +326,8 @@ class Upload:
         # the following are added by subbox
         channelName:str = ''
         channelUrl:str = ''
-        return cls(videoId, url, unixTime, thumbnails, uploadedOn, views, duration, title, channelName, channelUrl)
+        avatar:list[Thumbnail] = list()
+        return cls(videoId, url, unixTime, thumbnails, uploadedOn, views, duration, title, channelName, channelUrl, avatar)
     
     def __repr__(self):
         return f'{self.title}\n     > {self.channelName} | {self.duration} | {self.uploadedOn} | {self.views}\n'
@@ -386,7 +388,11 @@ relatedVideosScrapeFmt = \
         ], rename = "channelName"),
         ScrapeNth("longBylineText", [
             ScrapeNth("url", [], collapse = True)
-        ],rename = "channelUrlFragment")
+        ],rename = "channelUrlFragment"),
+        ScrapeNth("channelThumbnail",[
+            ScrapeNth("thumbnails",[], collapse=True),
+        ], rename = "avatar"),
+
     ], collapse = True)
 
 @dataclass
@@ -402,6 +408,7 @@ class RelatedVideo:
     channelName:str
     channelUrlFragment:str
     channelUrl:str
+    avatar:list[Thumbnail]
 
     @classmethod
     def fromData(cls, data:dict) -> Union['RelatedVideo', None]:
@@ -424,7 +431,9 @@ class RelatedVideo:
         channelName:str = tryGet(data, "channelName")
         channelUrl:str = 'https://www.youtube.com' + channelUrlFragment
 
-        return cls(videoId, url, thumbnails, uploadedOn, views, duration, title, channelName, channelUrlFragment, channelUrl)
+        avatar:list[Thumbnail]  = [Thumbnail.fromData(datum) for datum in tryGet(data, 'avatar', [])]
+
+        return cls(videoId, url, thumbnails, uploadedOn, views, duration, title, channelName, channelUrlFragment, channelUrl, avatar)
     
     def __repr__(self):
         return f'{self.title}\n     > {self.channelName} | {self.duration} | {self.uploadedOn} | {self.views}\n'
