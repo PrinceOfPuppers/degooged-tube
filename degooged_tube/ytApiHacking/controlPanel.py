@@ -540,7 +540,7 @@ searchScrapeFmt = \
                         ScrapeNth("canonicalBaseUrl", [],  collapse=True),
                     ], rename = 'channelUrlFragment'),
 
-                    ScrapeNth("thumbnails",[], rename = 'channelIcons'),
+                    #ScrapeNth("thumbnails",[], rename = 'channelIcons'),
 
                     ScrapeNth("descriptionSnippet",[
                         ScrapeNth("text", [],  collapse=True),
@@ -555,6 +555,10 @@ searchScrapeFmt = \
                             ScrapeAll("text",[], collapse=True)
                         ],collapse=True)
                     ], rename = "videoCount"),
+
+                    ScrapeNth("thumbnail",[
+                        ScrapeNth("thumbnails",[], collapse=True),
+                    ], rename = "avatar"),
 
                 ], rename="channel"),
 
@@ -574,7 +578,14 @@ searchScrapeFmt = \
 
                     ScrapeNth("videoId",[]),
 
-                    ScrapeNth("thumbnails",[]),
+
+                    ScrapeNth("thumbnail",[
+                        ScrapeNth("thumbnails",[], collapse=True),
+                    ], rename = "thumbnail"),
+
+                    ScrapeNth("channelThumbnailSupportedRenderers",[
+                        ScrapeNth("thumbnails",[], collapse=True),
+                    ], rename = "avatar"),
 
                     ScrapeNth("viewCountText",[
                         ScrapeNth("simpleText",[],collapse=True)
@@ -605,6 +616,7 @@ class SearchVideo:
     channelName:str
     channelUrlFragment:str
     channelUrl:str
+    avatar:list[Thumbnail]
     videoId:str
     url:str
     thumbnails: list
@@ -628,13 +640,14 @@ class SearchVideo:
         channelUrl = 'https://www.youtube.com' + channelUrlFragment
 
         channelName                 = tryGet(data, "channelName")
+        avatar:list[Thumbnail]      = [Thumbnail.fromData(datum) for datum in tryGet(data, 'avatar', [])]
         videoId                     = tryGet(data, "videoId")
         thumbnails:list[Thumbnail]  = [Thumbnail.fromData(datum) for datum in tryGet(data, 'thumbnails', [])]
         views                       = tryGet(data, "views")
         duration                    = tryGet(data, "duration")
         uploadedOn                  = tryGet(data, "uploadedOn")
 
-        return cls(title, channelName, channelUrlFragment, channelUrl, videoId, url, thumbnails, views, duration, uploadedOn)
+        return cls(title, channelName, channelUrlFragment, channelUrl, avatar, videoId, url, thumbnails, views, duration, uploadedOn)
 
     def __repr__(self):
         return f'Video: {self.title}\n     > {self.channelName} | {self.duration} | {self.uploadedOn} | {self.views}'
@@ -647,7 +660,7 @@ class SearchChannel:
     channelName:str
     channelUrlFragment:str
     channelUrl:str
-    channelIcons: list
+    avatar:list[Thumbnail]
     channelDescription:str
     subscribers:str
     videoCount:str
@@ -664,12 +677,12 @@ class SearchChannel:
             return None
 
         channelUrl         = 'https://www.youtube.com' + channelUrlFragment
-        channelIcons       = tryGet(data, 'channelIcons', [])
+        avatar:list[Thumbnail]        = [Thumbnail.fromData(datum) for datum in tryGet(data, 'avatar', [])]
         channelDescription = tryGet(data, 'channelDescription')
         subscribers        = tryGet(data, 'subscribers')
         videoCount         = " ".join(tryGet(data, 'videoCount', []))
 
-        return cls(channelName, channelUrlFragment, channelUrl, channelIcons, channelDescription, subscribers, videoCount)
+        return cls(channelName, channelUrlFragment, channelUrl, avatar, channelDescription, subscribers, videoCount)
 
     def __repr__(self):
         return f'Channel: {self.channelName}\n     > {self.subscribers} | {self.videoCount}'
