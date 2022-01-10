@@ -67,7 +67,7 @@ class Thumbnail:
     def fromData(cls, data) -> 'Thumbnail':
         width:int  = int(tryGet(data, "width", "0"))
         height:int = int(tryGet(data, "height", "0"))
-        url:str    = tryGet(data, "url")
+        url:str    = "https:" + tryGet(data, "url").strip('http:').strip("https:")
         return cls(width, height, url)
 
     def __repr__(self):
@@ -581,7 +581,7 @@ searchScrapeFmt = \
 
                     ScrapeNth("thumbnail",[
                         ScrapeNth("thumbnails",[], collapse=True),
-                    ], rename = "thumbnail"),
+                    ], rename = "thumbnails"),
 
                     ScrapeNth("channelThumbnailSupportedRenderers",[
                         ScrapeNth("thumbnails",[], collapse=True),
