@@ -13,7 +13,7 @@ from degooged_tube import setupPool
 def getLimitOffset(pageSize: int, numPages: int, subBox: SubBox, tags:set[str] = None) -> list[Upload]:
     uploads = []
     for pageNum in range(1,numPages + 1):
-        page = subBox.getPaginatedUploads(pageNum, pageSize, tags)
+        page = subBox.getPaginated(pageNum, pageSize, tags)
         uploads.extend(page)
 
     return uploads
@@ -85,11 +85,11 @@ class test_SubBox(TestCase):
         logName(self, inspect.currentframe())
         pageSize = 10
 
-        uploads1 = self.subBox.getPaginatedUploads(1, pageSize)
+        uploads1 = self.subBox.getPaginated(1, pageSize)
 
         videoIds1 = [upload.videoId for upload in uploads1]
 
-        uploads2 = self.subBox.getPaginatedUploads(2, pageSize)
+        uploads2 = self.subBox.getPaginated(2, pageSize)
         videoIds2 = [upload.videoId for upload in uploads2]
 
         self.assertTrue(checkNoOverlap(videoIds1, videoIds2))
@@ -175,11 +175,11 @@ class test_SubBox(TestCase):
         logName(self, inspect.currentframe())
         pageSize = 10
 
-        uploads1 = self.subBox.getPaginatedUploads(1, pageSize, {'gaming'})
+        uploads1 = self.subBox.getPaginated(1, pageSize, {'gaming'})
 
         videoIds1 = [upload.videoId for upload in uploads1]
 
-        uploads2 = self.subBox.getPaginatedUploads(2, pageSize, {'gaming'})
+        uploads2 = self.subBox.getPaginated(2, pageSize, {'gaming'})
         videoIds2 = [upload.videoId for upload in uploads2]
 
         self.assertTrue(checkNoOverlap(videoIds1, videoIds2))
@@ -278,10 +278,10 @@ class test_SpecialCases(TestCase):
     subBox = SubBox.fromUrls(subscribed, tags)
 
     def test_bigFilter(self):
-        _ = self.subBox.getPaginatedUploads(1, 40, self.tags[1])
+        _ = self.subBox.getPaginated(1, 40, self.tags[1])
 
     def test_loadalot(self):
-        _ = self.subBox.getPaginatedUploads(1, 1000)
+        _ = self.subBox.getPaginated(1, 1000)
 
     def test_searchFilters(self):
         logName(self, inspect.currentframe())

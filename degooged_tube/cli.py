@@ -728,7 +728,7 @@ def subboxPage(state: CliState, pageNum: int = 1, tags:Union[set[str], None] = N
 
 
     while True:
-        uploads = state.subbox.getPaginatedUploads(pageNum, getPageSize(), tags)
+        uploads = state.subbox.getPaginated(pageNum, getPageSize(), tags)
 
         if tags != None and len(tags) > 0:
             subboxTitle = f'Subbox Page {pageNum}, Tags: {tags}:' 
@@ -758,7 +758,7 @@ def subboxPage(state: CliState, pageNum: int = 1, tags:Union[set[str], None] = N
         # general options
         if chosenOption == 'n':
             pageNum += 1
-            #uploads = state.subbox.getPaginatedUploads(pageNum, getPageSize(), tags)
+            #uploads = state.subbox.getPaginated(pageNum, getPageSize(), tags)
             continue
 
         if chosenOption == 'p':
@@ -766,7 +766,7 @@ def subboxPage(state: CliState, pageNum: int = 1, tags:Union[set[str], None] = N
                 cfg.logger.error('Already On First Page')
                 continue
             pageNum -= 1
-            #uploads = state.subbox.getPaginatedUploads(pageNum, getPageSize(), tags)
+            #uploads = state.subbox.getPaginated(pageNum, getPageSize(), tags)
             continue
 
         if chosenOption == 'f':
@@ -795,7 +795,7 @@ def subboxPage(state: CliState, pageNum: int = 1, tags:Union[set[str], None] = N
 
             tags.clear()
             tags.update(t)
-            uploads = state.subbox.getPaginatedUploads(pageNum, getPageSize(), tags)
+            uploads = state.subbox.getPaginated(pageNum, getPageSize(), tags)
             continue
 
         if chosenOption == 's':

@@ -176,7 +176,7 @@ class SubBox:
         cfg.logger.debug(debugMessage)
 
 
-    def getLimitOffset(self, limit: int, offset: int, tags: Union[set[str], None]) -> list[ytapih.Upload]:
+    def getLimitOffset(self, limit: int, offset: int, tags: Union[set[str], None] = None) -> list[ytapih.Upload]:
         if tags is None or len(tags) == 0:
             channelUrlWhitelist = None
         else:
@@ -220,7 +220,7 @@ class SubBox:
         
         return uploads[offset: offset+limit]
 
-    def getPaginatedUploads(self, pageNum: int, pageSize: int, tags: Union[set[str], None] = None) -> list[ytapih.Upload]:
+    def getPaginated(self, pageNum: int, pageSize: int, tags: Union[set[str], None] = None) -> list[ytapih.Upload]:
         limit, offset = paginationCalculator(pageNum, pageSize)
         return self.getLimitOffset(limit, offset, tags)
 

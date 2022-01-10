@@ -87,6 +87,14 @@ def removeUser(username: str):
 
     shutil.rmtree(userPath)
 
+def renameUser(username: str, newUserName: str):
+    userPath = f'{cfg.userDataPath}/{username}'
+    newUserPath = f'{cfg.userDataPath}/{newUserName}'
+    if not os.path.exists(userPath):
+        return
+    os.rename(userPath, newUserPath)
+
+
 
 
 
