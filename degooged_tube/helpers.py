@@ -18,3 +18,6 @@ def paginationCalculator(pageNum, pageSize):
     offset = (pageNum - 1)*pageSize
 
     return limit, offset
+
+def sanitizeFileName(f:str):
+    return "".join(x for x in f if x not in "\\/:*?<>|")

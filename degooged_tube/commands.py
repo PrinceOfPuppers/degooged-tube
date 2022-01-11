@@ -3,7 +3,7 @@ import os
 import shutil
 
 from degooged_tube.subbox import SubBox, SubBoxChannel, AlreadySubscribed
-from degooged_tube.helpers import createPath
+from degooged_tube.helpers import createPath, sanitizeFileName
 import degooged_tube.config as cfg
 import degooged_tube.prompts as prompts
 
@@ -32,6 +32,7 @@ def removeSubFromUserData(subs, channelUrl: str):
 ########################
 def createNewUser(username:str, initalSubUrls: list[str] = list(), initalTags: list[set[str]] = None) -> SubBox:
     subbox = SubBox.fromUrls(initalSubUrls, initalTags);
+    username = sanitizeFileName(username)
 
     userPath = f"{cfg.userDataPath}/{username}"
     
@@ -52,6 +53,7 @@ def createNewUser(username:str, initalSubUrls: list[str] = list(), initalTags: l
 def loadUserSubbox(username:str) -> Tuple[SubBox, str]:
     channelUrls = []
     channelTags = []
+    username = sanitizeFileName(username)
 
     with shelve.open(f"{cfg.userDataPath}/{username}/data", 'c',writeback=True) as userData:
         subs = userData['subscriptions']
@@ -81,6 +83,7 @@ def getUsers() -> list[str]:
     return os.listdir(path=cfg.userDataPath) 
 
 def removeUser(username: str):
+    username = sanitizeFileName(username)
     userPath = f'{cfg.userDataPath}/{username}'
     if not os.path.exists(userPath):
         return
@@ -88,12 +91,19 @@ def removeUser(username: str):
     shutil.rmtree(userPath)
 
 def renameUser(username: str, newUserName: str):
+    username = sanitizeFileName(username)
+    newUserName = sanitizeFileName(newUserName)
+
     userPath = f'{cfg.userDataPath}/{username}'
     newUserPath = f'{cfg.userDataPath}/{newUserName}'
     if not os.path.exists(userPath):
         return
     os.rename(userPath, newUserPath)
 
+
+def isExistingUser(username: str):
+    username = sanitizeFileName(username)
+    return username in getUsers()
 
 
 
