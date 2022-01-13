@@ -302,7 +302,7 @@ def searchPage(state: CliState, pageNum: int = 1) -> bool:
         cfg.logger.info(searchTitle)
 
         for i,searchItem in enumerate(searchRes):
-            cfg.logger.info(f'{i}) {searchItem}\n')
+            cfg.logger.info(f'{i}) {searchItem}')
 
         chosenOption = input(
             'List Options: (c)hoose item\n'
