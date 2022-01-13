@@ -650,7 +650,7 @@ class SearchVideo:
         return cls(title, channelName, channelUrlFragment, channelUrl, avatar, videoId, url, thumbnails, views, duration, uploadedOn)
 
     def __repr__(self):
-        return f'Video: {self.title}\n     > {self.channelName} | {self.duration} | {self.uploadedOn} | {self.views}'
+        return f'Video: {self.title}\n     > {self.channelName} | {self.duration} | {self.uploadedOn} | {self.views}\n'
 
     def __str__(self):
         return self.__repr__()
@@ -685,7 +685,7 @@ class SearchChannel:
         return cls(channelName, channelUrlFragment, channelUrl, avatar, channelDescription, subscribers, videoCount)
 
     def __repr__(self):
-        return f'Channel: {self.channelName}\n     > {self.subscribers} | {self.videoCount}'
+        return f'Channel: {self.channelName}\n     > {self.subscribers} | {self.videoCount}\n'
 
     def __str__(self):
         return self.__repr__()
