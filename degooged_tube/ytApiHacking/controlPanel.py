@@ -211,6 +211,7 @@ videoInfoScrapeFmt = \
                     ScrapeNth("url",[], rename = 'channelUrlFragment'),
                 ], collapse = True),
 
+                ScrapeNth("thumbnails",[], rename="avatar"),
             ],collapse=True),
 
             ScrapeNth("subscriberCountText",[
@@ -242,6 +243,8 @@ class VideoInfo:
     channelUrlFragment:str
     channelUrl:str
 
+    avatar:list[Thumbnail]
+
     uploadedOn:str
     subscribers:str
 
@@ -265,10 +268,12 @@ class VideoInfo:
         likes:str                   = tryGetMultiKey(data, "0", "exactLikes", "approxLikes")
         likesNum:int                = getApproximateNum(likes)
 
+        avatar:list[Thumbnail]      = [Thumbnail.fromData(datum) for datum in tryGet(data, 'avatar', [])]
+
         channelName:str             = tryGet(data, 'channelName')
         subscribers:str             = tryGet(data, 'subscribers', "0")
 
-        return cls(description, title, views, viewsNum, likes, likesNum, channelName, channelUrlFragment, channelUrl, uploadedOn, subscribers)
+        return cls(description, title, views, viewsNum, likes, likesNum, channelName, channelUrlFragment, channelUrl, avatar, uploadedOn, subscribers)
 
 
 ############################################

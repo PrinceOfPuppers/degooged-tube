@@ -542,6 +542,7 @@ def videoInfoPage(state: CliState, videoUrl: str, channel: Union[SubBoxChannel, 
             f"Video Info:\n"
             f"Title:       {videoInfo.title}\n"
             f"Uploader:    {videoInfo.channelName}\n"
+            f"Avatar:      {'' if len(videoInfo.avatar) == 0 else videoInfo.avatar[-1]}\n"
             f"UploadDate:  {videoInfo.uploadedOn}\n"
             f"Likes:       {videoInfo.likesNum}\n"
             f"Views:       {videoInfo.viewsNum}\n"

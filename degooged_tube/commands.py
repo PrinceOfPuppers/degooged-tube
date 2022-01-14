@@ -112,7 +112,7 @@ def isExistingUser(username: str):
 ###########################
 # Subbox State Management #
 ###########################
-def subscribe(username:str, subbox: SubBox, channelUrl:str, tags:set[str], throwIfSubscribed:bool = False) -> Union[None, SubBoxChannel]:
+def subscribe(username:str, subbox: SubBox, channelUrl:str, tags:set[str] = set(), throwIfSubscribed:bool = False) -> Union[None, SubBoxChannel]:
     if throwIfSubscribed:
         channel = subbox.addChannelFromUrl(channelUrl, tags)
     else:

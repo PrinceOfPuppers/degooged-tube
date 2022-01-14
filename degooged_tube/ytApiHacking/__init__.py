@@ -43,7 +43,6 @@ def getCommentList(videoPage: YtInitalPage, onExtend = commentCallback) -> YtApi
 
 # video Info
 def processVideoInfo(info):
-    # Todo join description
     return VideoInfo.fromData(info)
 
 def getVideoInfo(videoPage: YtInitalPage) -> Union[VideoInfo, None]:
