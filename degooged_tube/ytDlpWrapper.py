@@ -31,11 +31,11 @@ def _getFormat(maxQuality: str, maxFps: str):
     return f'bestvideo[height <= {maxQuality}]{fpsStr}/{backup}'
 
 
-def getStreamLink(maxQuality:str, maxFps:str):
+def getStreamLink(videoUrl:str, maxQuality:str, maxFps:str):
     format = _getFormat(maxQuality, maxFps)
     ydl_opts = {'writeinfojson': True, 'quiet': True, 'format': format}
     with YoutubeDL(ydl_opts) as ydl:
-        x = ydl.extract_info('https://youtu.be/mI85lQ44Zfc', False)
+        x = ydl.extract_info(videoUrl, False)
         return x['url']
 
 # print(getStreamLink('720', '60'))

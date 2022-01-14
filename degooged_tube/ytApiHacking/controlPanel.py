@@ -224,7 +224,7 @@ videoInfoScrapeFmt = \
         ], rename='uploadedOn'),
 
         ScrapeNth("subscriberCountText",[
-            ScrapeAll("simpleText",[], collapse=True),
+            ScrapeNth("simpleText",[], collapse=True),
         ], rename='subscribers'),
     ],collapse=True)
 
