@@ -55,9 +55,15 @@ def setupPool():
     global pool 
     pool = multiprocessing.Pool(processes=multiprocessing.cpu_count())
     signal(SIGINT,noInterrupt.handler)
+    return pool
+
+def getPool():
+    global pool
+    if pool is None:
+        return None
+    return pool
 
 
 def main():
     from degooged_tube.cli import cli
-
     cli()

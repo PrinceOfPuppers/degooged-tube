@@ -19,8 +19,10 @@ class YtApiList(Generic[_T]):
     atMaxLen: bool = False
     scrapeFmt: ScrapeElement
     onExtend: Callable
+    onExtendKwargs:dict
 
-    def __init__(self, initalPage: YtInitalPage, apiUrl: str, scrapeFmt: Union[ScrapeElement, list[ScrapeElement]], getInitalData: bool= False, onExtend: Callable[[list[dict]], list[_T]] = lambda res: res):
+    def __init__(self, initalPage: YtInitalPage, apiUrl: str, scrapeFmt: Union[ScrapeElement, list[ScrapeElement]], getInitalData: bool= False, 
+                        onExtend: Callable[[list[dict]], list[_T]] = lambda res: res, onExtendKwargs = dict()):
         self._list = []
 
         self.apiUrl = apiUrl
@@ -32,6 +34,7 @@ class YtApiList(Generic[_T]):
         self._scrapeFmt = ScrapeLongest(ctrlp.continuationPageDataContainerKey, scrapeList , collapse = True)
 
         self.onExtend = onExtend
+        self.onExtendKwargs = onExtendKwargs
 
         if getInitalData:
             if initalPage.initalData is None:
@@ -51,7 +54,7 @@ class YtApiList(Generic[_T]):
             self.atMaxLen = True
             return
 
-        self._list.extend(self.onExtend(res))
+        self._list.extend(self.onExtend(res, **self.onExtendKwargs))
 
     def getAll(self):
         while not self.atMaxLen:

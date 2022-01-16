@@ -24,10 +24,7 @@ def getUploadList(uploadsPage:YtInitalPage, onExtend = None, **kwargs) -> YtApiL
     else:
         callback = onExtend
 
-    if len(kwargs) > 0:
-        callback = lambda res: uploadsCallback(res, **kwargs)
-
-    return YtApiList(uploadsPage, ctrlp.uploadsApiUrl, ctrlp.uploadScrapeFmt, getInitalData=True, onExtend = callback)
+    return YtApiList(uploadsPage, ctrlp.uploadsApiUrl, ctrlp.uploadScrapeFmt, getInitalData=True, onExtend = callback, onExtendKwargs = kwargs)
 
 
 

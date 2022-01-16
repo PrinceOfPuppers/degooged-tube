@@ -2,7 +2,7 @@ import degooged_tube.ytApiHacking as ytapih
 import degooged_tube.config as cfg
 from typing import Union, Tuple
 from degooged_tube.subboxChannel import SubBoxChannel, ChannelLoadIssue, loadChannel
-from degooged_tube import pool
+from degooged_tube import getPool
 from degooged_tube.helpers import paginationCalculator
 
 
@@ -63,6 +63,8 @@ class SubBox:
         else:
             assert len(urls) == len(channelTags)
 
+        
+        pool = getPool() 
         if cfg.testing or pool is None:
             channels = [loadChannel(data) for data in zip(urls, channelTags)]
         else:
