@@ -1,6 +1,6 @@
 from .jsonScraping import ScrapeNth, ScrapeAll, ScrapeElement, ScrapeAllUnion, ScrapeAllUnionNode
 from typing import Union
-from .helpers import tryGet, approxTimeToUnix, tryGetMultiKey, getApproximateNum
+from .helpers import tryGet, approxTimeToUnix, tryGetMultiKey, getApproximateNum, jsonRegex
 import re
 from dataclasses import dataclass
 
@@ -15,8 +15,8 @@ currentTime = int(time.time())
 channelVideoPath = '/videos'
 
 # scraping regexs for inital pages
-apiKeyRe = re.compile(r'[\'\"]INNERTUBE_API_KEY[\'\"]:[\'\"](.*?)[\'\"]')
-clientVersionRe = re.compile(r'[\'\"]cver[\'\"]: [\'|\"](.*?)[\'\"]')
+apiKeyRe = re.compile(jsonRegex("INNERTUBE_API_KEY", "(.*?)"))
+clientVersionRe = re.compile(jsonRegex("key", "cver", "value", "(.*?)" , surroundingBrace = True))
 ytInitalDataRe = re.compile(r"ytInitialData = (\{.*?\});</script>")
 
 # inital page continuation token and apiUrl scraping 

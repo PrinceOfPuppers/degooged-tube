@@ -3,12 +3,19 @@ import json
 from dataclasses import dataclass
 from typing import Union
 
-from .jsonScraping import scrapeJsonTree, ScrapeElement, ScrapeError, dumpDebugData
+from .jsonScraping import scrapeJsonTree, scrapeFirstJson, ScrapeElement, ScrapeError, dumpDebugData
 from . import controlPanel as ctrlp 
 from . import customExceptions as ce 
 
 
 import degooged_tube.config as cfg
+
+def dumpInitalRequestDebugData(requestText: str, reName: str, reText: str):
+    with open(cfg.testDataDumpPath, 'w') as f:
+        f.write(f"\nInital Request:\n==================================================\n")
+        f.write(requestText)
+        f.write('\n'+ f'Missing RE {reName}: {reText}')
+
 
 @dataclass
 class YtInitalPage:
@@ -33,13 +40,21 @@ class YtInitalPage:
 
         x, y, z = ctrlp.apiKeyRe.search(r.text), ctrlp.ytInitalDataRe.search(r.text), ctrlp.clientVersionRe.search(r.text)
 
+
         if not x:
+            if cfg.testing:
+                dumpInitalRequestDebugData(r.text, "apiKeyRe", ctrlp.apiKeyRe.pattern)
             raise ce.UnableToGetPage("Unable to Find INNERTUBE_API_KEY")
 
         if not y:
+            if cfg.testing:
+                dumpInitalRequestDebugData(r.text, "ytInitalDataRe", ctrlp.ytInitalDataRe.pattern)
             raise ce.UnableToGetPage("Unable to Find Inital Data")
 
+
         if not z:
+            if cfg.testing:
+                dumpInitalRequestDebugData(r.text, "clientVersionRe", ctrlp.clientVersionRe.pattern)
             raise ce.UnableToGetPage("Unable to Find Youtube Client Version")
 
         key = x.group(1)
