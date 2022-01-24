@@ -16,6 +16,7 @@ class YtContIter:
 
     apiUrl: str
     continuationTokens: list[str]
+    numInitalTokens: int
 
     getInitData = False
     initalData: Union[dict, None] = None
@@ -24,7 +25,16 @@ class YtContIter:
         self.endOfData = False
         self.initalPage = initalPage
 
-        self.continuationTokens = initalPage.getContinuationTokens(apiUrl)
+        try:
+            self.continuationTokens = initalPage.getContinuationTokens(apiUrl)
+        except Exception as e:
+            if cfg.testing:
+                raise e
+
+            cfg.logger.debug(e)
+            self.continuationTokens = []
+
+        self.numInitalTokens = len(self.continuationTokens)
 
         if getInitalData:
             if initalPage.initalData is None:
@@ -44,9 +54,8 @@ class YtContIter:
             return self.initalPage.scrapeInitalData(dataFmt)
 
 
-        if self.endOfData:
+        if self.endOfData or self.numInitalTokens == 0:
             return None
-
 
         elif len(self.continuationTokens) > 1:
             cfg.logger.debug(f"YtApiContIter for {self.apiUrl} of {self.initalPage.url} \nHas {len(self.continuationTokens)} Continuation Tokens, Iterating Through Them...")
@@ -58,9 +67,11 @@ class YtContIter:
         else:
             debugData = None
 
+
         while True:
+
             if len(self.continuationTokens) == 0:
-                cfg.logger.error(
+                cfg.logger.debug(
                     f"YtApiContIter for {self.apiUrl} of {self.initalPage.url} \n"
                     f"Has No Continuation Tokens!\n"
                     f"This Means the Data Scraping Format Does Not Match The Data Found at The Url:\n"
@@ -68,7 +79,13 @@ class YtContIter:
                 )
 
                 dumpDebugData(debugData, cfg.testDataDumpPath)
-                raise ScrapeError
+
+                if cfg.testing:
+                    raise ScrapeError
+
+                self.endOfData = True
+                return  None
+
 
             continuationToken = self.continuationTokens[0]
 
@@ -79,7 +96,7 @@ class YtContIter:
             b = requests.post(reqUrl, data=requestData)
 
             if b.status_code != 200:
-                cfg.logger.error(
+                cfg.logger.debug(
                     f"Error Sending Post Request to: {reqUrl}\n"
                     f"clientVersion: {self.initalPage.clientVersion}\n"
                     f"continuationToken: {continuationToken}\n"
