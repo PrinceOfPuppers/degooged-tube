@@ -121,11 +121,12 @@ def getVideoId(videoUrl: str) -> str:
 
 def jsonRegex(*args, surroundingBrace = False):
     r = ""
+    quote = r"(?:\'|\"|\\\"|\\\')"
 
     numPairs = len(args)//2
     for i in range(numPairs):
-        r += r"\s*[\'\"]" + args[2*i] + r"[\'\"]\s*:\s*"
-        r += r"[\'\"]" + args[2*i+1] + r"[\'\"]\s*.?"
+        r += r"\s*"+ quote + args[2*i] + quote +r"\s*:\s*"
+        r += quote + args[2*i+1] + quote + r"\s*.?"
 
     if surroundingBrace:
         r = "{" + r + "}"
