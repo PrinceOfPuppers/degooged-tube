@@ -1,7 +1,7 @@
 import degooged_tube.ytApiHacking as ytapih
 import degooged_tube.config as cfg
 from typing import Union, Tuple
-from degooged_tube.subboxChannel import SubBoxChannel, ChannelLoadIssue, loadChannel
+from degooged_tube.subboxChannel import SubBoxChannel, ChannelLoadIssue, loadChannel, callReload
 from degooged_tube import getPool
 from degooged_tube.helpers import paginationCalculator
 
@@ -64,7 +64,7 @@ class SubBox:
             assert len(urls) == len(channelTags)
 
         
-        pool = getPool() 
+        pool = getPool()
         if cfg.testing or pool is None:
             channels = [loadChannel(data) for data in zip(urls, channelTags)]
         else:
@@ -92,6 +92,24 @@ class SubBox:
 
 
         return cls(channels, prevOrdering)
+
+    def reload(self):
+        self.orderedUploads.clear()
+        self.atMaxLen = False
+        for channel in self.channels:
+            channel.reload()
+
+        pool = getPool()
+        if cfg.testing or pool is None:
+            for channel in self.channels:
+                channel.reload()
+        else:
+            pool.map(callReload, self.channels)
+
+
+        self.channelDict = {}
+        for channel in self.channels:
+            self.channelDict[channel.channelUrl] = channel
 
 
     def _getNextChannelWithMoreUploads(self, startIndex: int) -> Tuple[int, SubBoxChannel, ytapih.Upload]:

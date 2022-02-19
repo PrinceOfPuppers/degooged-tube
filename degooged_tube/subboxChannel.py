@@ -32,6 +32,25 @@ class SubBoxChannel:
 
         return cls(channelInfo, uploadList, channelName, channelUrl, 0, channelTags)
 
+    def reload(self):
+        self._extensionIndex = 0
+        initalPage = ytapih.YtInitalPage.fromUrl( ytapih.sanitizeChannelUrl(self.uploadList.getInitalPage().url, ytapih.ctrlp.channelVideoPath) )
+        if initalPage is None:
+            if cfg.testing:
+                raise ChannelLoadIssue(f"InitalPage is Missing on SubboxChannel Reload URL: {self.channelUrl}")
+            return
+        try:
+            self.channelInfo = ytapih.getChannelInfoFromInitalPage(initalPage)
+            self.channelName = self.channelInfo.channelName
+            avatar = self.channelInfo.avatar
+            self.uploadList = ytapih.getUploadList(initalPage, channelName = self.channelName, channelUrl= self.channelUrl, avatar=avatar)
+        except Exception as e:
+            if cfg.testing:
+                cfg.logger.debug(e, exc_info=True)
+                raise ChannelLoadIssue(f"Issue Reloading: {self.channelUrl}")
+            return
+
+
     @classmethod
     def fromUrl(cls, url: str, channelTags:set[str]) -> 'SubBoxChannel':
         initalPage = ytapih.YtInitalPage.fromUrl( ytapih.sanitizeChannelUrl(url, ytapih.ctrlp.channelVideoPath) )
@@ -56,6 +75,8 @@ class SubBoxChannel:
 
 
 
+# targets for multiprocessing maps
+
 def loadChannel(data) -> Union[SubBoxChannel, str]:
     url, channelTags = data
     try:
@@ -69,3 +90,6 @@ def loadChannel(data) -> Union[SubBoxChannel, str]:
         cfg.logger.debug("Channel Load Issue Triggered")
         # if theres an error, return the url so it can be printed in error message
         return url
+
+def callReload(subboxChannel:SubBoxChannel):
+    subboxChannel.reload()

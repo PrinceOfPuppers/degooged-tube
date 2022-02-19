@@ -76,7 +76,7 @@ class YtInitalPage:
         for continuation in a:
             try:
                 token = continuation['token']
-                apiUrl = continuation['apiUrl']
+                apiUrl = continuation['apiUrl'].strip('/')
             except KeyError:
                 continue
 

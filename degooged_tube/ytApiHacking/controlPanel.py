@@ -506,7 +506,15 @@ class SearchType:
         for f in filterData:
             try:
                 label = f['label']
-                searchUrlFragment = f['searchUrlFragment']
+
+                _searchUrlFragment = f['searchUrlFragment']
+                searchUrlFragmentList = _searchUrlFragment.split("search_query=", maxsplit = 1)
+                if len(searchUrlFragmentList) == 1:
+                    searchUrlFragment = searchUrlFragmentList[0]
+                else:
+                    searchUrlFragment = searchUrlFragmentList[1]
+
+
             except KeyError as e:
                 cfg.logger.debug(f'In {cls.__name__}.fromData(), Data is Missing Required Key "{e.args[0]}"')
                 continue

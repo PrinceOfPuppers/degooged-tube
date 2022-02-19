@@ -22,11 +22,12 @@ class YtContIter:
     initalData: Union[dict, None] = None
 
     def __init__(self, initalPage: YtInitalPage, apiUrl: str, getInitalData:bool = False):
+        self.apiUrl = apiUrl.strip('/')
         self.endOfData = False
         self.initalPage = initalPage
 
         try:
-            self.continuationTokens = initalPage.getContinuationTokens(apiUrl)
+            self.continuationTokens = initalPage.getContinuationTokens(self.apiUrl)
         except Exception as e:
             if cfg.testing:
                 raise e
@@ -43,7 +44,31 @@ class YtContIter:
             self.initalData = initalPage.initalData
             self.getInitData = True
 
-        self.apiUrl = apiUrl.strip('/')
+    @classmethod
+    def fromUrl(cls, url, apiUrl: str, getInitalData:bool = False):
+        initalPage = YtInitalPage.fromUrl(url)
+        return cls(initalPage, apiUrl, getInitalData)
+
+    def reload(self):
+        self.endOfData = False
+        self.initalPage = YtInitalPage.fromUrl(self.initalPage.url)
+
+        try:
+            self.continuationTokens = self.initalPage.getContinuationTokens(self.apiUrl)
+        except Exception as e:
+            if cfg.testing:
+                raise e
+
+            cfg.logger.debug(e)
+            self.continuationTokens = []
+
+        self.numInitalTokens = len(self.continuationTokens)
+
+        if self.getInitData:
+            if self.initalPage.initalData is None:
+                raise Exception("No Inital Data To Get")
+
+            self.initalData = self.initalPage.initalData
 
 
     def getNext(self, dataFmt: Union[ScrapeElement, list[ScrapeElement]]) -> Union[dict, list, None]:

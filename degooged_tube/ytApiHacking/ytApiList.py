@@ -21,6 +21,9 @@ class YtApiList(Generic[_T]):
     onExtend: Callable
     onExtendKwargs:dict
 
+    _getInitData = False
+    initScrapeFmt = None
+
     def __init__(self, initalPage: YtInitalPage, apiUrl: str, scrapeFmt: Union[ScrapeElement, list[ScrapeElement]], getInitalData: bool= False, 
                         onExtend: Callable[[list[dict]], list[_T]] = lambda res: res, onExtendKwargs = dict()):
         self._list = []
@@ -39,8 +42,22 @@ class YtApiList(Generic[_T]):
         if getInitalData:
             if initalPage.initalData is None:
                 raise Exception("No Inital Data To Get")
-            initScrapeFmt = ScrapeLongest(ctrlp.initalPageDataContainerKey, scrapeList, collapse = True)
-            self._extend(initScrapeFmt)
+            self.initScrapeFmt = ScrapeLongest(ctrlp.initalPageDataContainerKey, scrapeList, collapse = True)
+            self._extend(self.initScrapeFmt)
+            self._getInitData = getInitalData
+
+    def reload(self):
+        self._list.clear()
+        self._index = 0
+        self.atMaxLen = False
+        self._iter.reload()
+        if self._getInitData:
+            if self._iter.initalPage.initalData is None or self.initScrapeFmt is None:
+                raise Exception("No Inital Data To Get")
+            self._extend(self.initScrapeFmt)
+
+    def getInitalPage(self):
+        return self._iter.initalPage
 
     def _extend(self, fmt):
         res = self._iter.getNext(fmt)
@@ -129,5 +146,4 @@ class YtApiList(Generic[_T]):
     def getPaginated(self, pageNum:int, pageSize:int) -> list[_T]:
         limit, offset = paginationCalculator(pageNum, pageSize)
         return self.getLimitOffset(limit, offset)
-
 

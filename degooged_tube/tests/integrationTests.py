@@ -214,6 +214,26 @@ class test_SubBox(TestCase):
         for upload in uploads:
             self.assertEqual(upload.channelUrl, channelUrl)
 
+    def test_reload(self):
+        logName(self, inspect.currentframe())
+
+        pageSize = 10
+        self.subBox.reload()
+
+        uploads1 = self.subBox.getPaginated(1, pageSize)
+        videoIds1 = [upload.videoId for upload in uploads1]
+
+        self.assertTrue(checkNoMisses(uploads1, self.subBox))
+        self.assertTrue(checkOrdering(uploads1))
+        self.assertTrue(checkNoDuplicates(uploads1))
+
+        uploads2 = self.subBox.getPaginated(2, pageSize)
+        videoIds2 = [upload.videoId for upload in uploads2]
+
+        self.assertTrue(checkNoOverlap(videoIds1, videoIds2))
+
+
+
 
 
 # we are checking the formats for the next section of tests, hence we dont want the onExtend callbacks to interfere

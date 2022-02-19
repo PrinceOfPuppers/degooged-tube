@@ -743,13 +743,13 @@ def subboxPage(state: CliState, pageNum: int = 1, tags:Union[set[str], None] = N
         # TODO: add subbox tag filtering
         chosenOption = input(
             'Video Options: (w)atch, (r)elated videos, (v)ideo info, (c)hannel info \n'
-            'General Options: (p)revious/(n)ext page, (f)ilter by tag, (s)earch, (e)dit subs, (l)ogout\n'
+            'General Options: (p)revious/(n)ext page, (r)efresh, (f)ilter by tag, (s)earch, (e)dit subs, (l)ogout\n'
             'Option: '
         ).strip().lower()
 
         options = [
             'w', 'r', 'v', 'c', 
-            'p', 'n', 'f', 's', 'e', 'l'
+            'p', 'n', 'r', 'f', 's', 'e', 'l'
         ]
 
         if(len(chosenOption)!= 1 or chosenOption not in options):
@@ -768,6 +768,11 @@ def subboxPage(state: CliState, pageNum: int = 1, tags:Union[set[str], None] = N
                 continue
             pageNum -= 1
             #uploads = state.subbox.getPaginated(pageNum, getPageSize(), tags)
+            continue
+
+        if chosenOption == 'r':
+            pageNum = 1
+            state.subbox.reload()
             continue
 
         if chosenOption == 'f':
