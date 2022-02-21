@@ -2,7 +2,7 @@ from unittest import TestCase
 import inspect
 
 import degooged_tube.config as cfg
-from degooged_tube.subbox import SubBox, listsOverlap
+from degooged_tube.subbox import SubBox, listsOverlap, AlreadySubscribed
 from degooged_tube.ytApiHacking import sanitizeChannelUrl, getChannelInfo, getCommentList, getRelatedVideoList, getUploadList, \
                                        getVideoInfo, getSearchList, YtInitalPage, Upload
 #import degooged_tube.ytApiHacking.controlPanel as ctrlp
@@ -231,6 +231,28 @@ class test_SubBox(TestCase):
         videoIds2 = [upload.videoId for upload in uploads2]
 
         self.assertTrue(checkNoOverlap(videoIds1, videoIds2))
+
+    def test_duplicateSubscription(self):
+        dupeChannelUrl1 = "https://www.youtube.com/c/MattMcMuscles"
+        dupeChannelUrl2 = "https://www.youtube.com/channel/UCiP_FwGyJQ_6P8k5ON5mncQ"
+        try:
+            self.subBox.addChannelFromUrl(dupeChannelUrl1)
+            self.fail()
+        except AlreadySubscribed:
+            pass
+        except:
+            self.fail()
+
+        try:
+            self.subBox.addChannelFromUrl(dupeChannelUrl2)
+            self.fail()
+        except AlreadySubscribed:
+            pass
+        except:
+            self.fail()
+
+
+
 
 
 
