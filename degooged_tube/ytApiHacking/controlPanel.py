@@ -115,6 +115,7 @@ channelInfoScrapeFmt = \
     [
         ScrapeNth("header",[
             ScrapeNth("title",[], rename='channelName'),
+            ScrapeNth("channelId",[], rename='channelId'),
             ScrapeNth("avatar",[
                 ScrapeNth("thumbnails",[], collapse=True),
             ]),
@@ -132,12 +133,14 @@ channelInfoScrapeFmt = \
         ScrapeNth("metadata", [
             ScrapeNth("vanityChannelUrl",[], rename='channelUrl'),
             ScrapeNth("description",[], optional = True),
+            ScrapeNth("externalId",[]), # duplicate of channelId used as a backup
         ], collapse = True),
     ]
 
 @dataclass
 class ChannelInfo:
     channelName:str
+    channelId:str
     avatar:list[Thumbnail]
     banners:list[Thumbnail]
     mobileBanners:list[Thumbnail]
@@ -150,6 +153,7 @@ class ChannelInfo:
         data = {**data[0], **data[1]}
 
         channelName:str               = tryGet(data, 'channelName')
+        channelId:str                 = tryGetMultiKey(data, '', 'channelId', 'externalId')
         avatar:list[Thumbnail]        = [Thumbnail.fromData(datum) for datum in tryGet(data, 'avatar', [])]
         banners:list[Thumbnail]       = [Thumbnail.fromData(datum) for datum in tryGet(data, 'banners', [])]
         mobileBanners:list[Thumbnail] = [Thumbnail.fromData(datum) for datum in tryGet(data, 'mobileBanners', [])]
@@ -157,7 +161,7 @@ class ChannelInfo:
         channelUrl:str                = tryGet(data, 'channelUrl')
         description:str               = tryGet(data, 'description')
 
-        return cls(channelName, avatar, banners, mobileBanners, subscribers, channelUrl, description)
+        return cls(channelName, channelId, avatar, banners, mobileBanners, subscribers, channelUrl, description)
 
 
 channelUrlSanitizationSplitsPostfix = ['?', '&', '/channels', '/channels', '/about', '/featured', '/videos']

@@ -83,8 +83,8 @@ class SubBox:
                 ch2 = channels[j]
                 assert not isinstance(ch1,str)
                 assert not isinstance(ch2,str)
-                if ch1.channelName == ch2.channelName:
-                    cfg.logger.info(f'{ch1.channelUrl} \nand \n{ch2.channelUrl} \nHave the Same Name: {ch1.channelName}, Removing Duplicate channel')
+                if ch1 == ch2:
+                    cfg.logger.info(f'{ch1.channelUrl} \nand \n{ch2.channelUrl} \nAre the Same {ch1.channelName}, Removing Duplicate channel')
                     duplicateIndices.append(i)
 
         for i in duplicateIndices:
@@ -249,8 +249,8 @@ class SubBox:
         cfg.logger.debug(f"Adding new Channel to SubBox {channel.channelUrl}")
 
         for c in self.channels:
-            if channel.channelName == c.channelName:
-                cfg.logger.debug(f"Channel Name: {channel.channelName} Already exists in SubBox:\n{[channel.channelName for channel in self.channels]}")
+            if channel == c:
+                cfg.logger.debug(f"Channel ({channel.channelName}, {channel.channelId}) Already exists in SubBox:\n{[(channel.channelName, channel.channelId) for channel in self.channels]}")
                 cfg.logger.error(f"You're Already Subscribed to {channel.channelName}")
                 raise AlreadySubscribed()
 

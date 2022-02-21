@@ -13,6 +13,7 @@ class SubBoxChannel:
 
     uploadList: ytapih.YtApiList[ytapih.Upload]
     channelName: str
+    channelId: str
     channelUrl:  str
     _extensionIndex: int
     tags: set[str]
@@ -23,6 +24,7 @@ class SubBoxChannel:
         try:
             channelInfo = ytapih.getChannelInfoFromInitalPage(initalPage)
             channelName = channelInfo.channelName
+            channelId = channelInfo.channelId
             avatar = channelInfo.avatar
             uploadList = ytapih.getUploadList(initalPage, channelName = channelName, channelUrl= channelUrl, avatar=avatar)
         except Exception as e:
@@ -30,7 +32,7 @@ class SubBoxChannel:
             raise ChannelLoadIssue(channelUrl)
 
 
-        return cls(channelInfo, uploadList, channelName, channelUrl, 0, channelTags)
+        return cls(channelInfo, uploadList, channelName, channelId, channelUrl, 0, channelTags)
 
     def reload(self):
         self._extensionIndex = 0
@@ -63,6 +65,22 @@ class SubBoxChannel:
 
     def __str__(self):
         return self.__repr__()
+
+    def __eq__(self, other):
+        if not isinstance(other,SubBoxChannel):
+            return False
+
+        if self.channelId and other.channelId:
+            if self.channelId == other.channelId:
+                return True
+            return False
+
+        #backup if ids are missing
+        if self.channelName == other.channelName:
+            return True
+        return False
+
+
 
     def popNextUploadInQueue(self):
         upload = self.uploadList[self._extensionIndex]
