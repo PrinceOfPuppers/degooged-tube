@@ -30,7 +30,11 @@ class YtInitalPage:
 
     @classmethod
     def fromUrl(cls, url:str) -> 'YtInitalPage':
-        r=requests.get(url)
+        try:
+            r=requests.get(url)
+        except Exception as e:
+            cfg.logger.debug(f"Get Request Error:\n{e}")
+            raise ce.UnableToGetPage(f"Get Request Failed: {e}")
 
         if r.status_code != 200:
             raise requests.HTTPError(
