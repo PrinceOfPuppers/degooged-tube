@@ -188,4 +188,12 @@ def removeTags(username:str, channel: SubBoxChannel, tags: set[str]):
         for tag in tags:
             userData['subscriptions'][channel.channelUrl]['tags'].discard(tags)
 
+def setTags(username:str, channel: SubBoxChannel, tags: set[str]):
+    channel.tags = tags.copy()
 
+    with shelve.open(f"{cfg.userDataPath}/{username}/data", 'c',writeback=True) as userData:
+        userData['subscriptions'][channel.channelUrl]['tags'] = tags
+
+def clearTags(username:str, channel: SubBoxChannel):
+    with shelve.open(f"{cfg.userDataPath}/{username}/data", 'c',writeback=True) as userData:
+        userData['subscriptions'][channel.channelUrl]['tags'] = set()

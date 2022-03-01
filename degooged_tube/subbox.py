@@ -152,6 +152,7 @@ class SubBox:
         self.orderedUploads.append(mostRecentChannel.popNextUploadInQueue())
             
     def _getChannelUrlsUnderTags(self, tags: set[str]):
+        # a channel must have every tag in tags in order to appear (tags must be a subset of the channels tags)
         return [channel.channelUrl for channel in self.channels if tags.issubset(channel.tags)]
 
     def _numUploads(self, channelUrlWhitelist: list[str]):
