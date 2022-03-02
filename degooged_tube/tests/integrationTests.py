@@ -134,7 +134,7 @@ class test_SubBox(TestCase):
             initalUploads = getLimitOffset(pageSize, numPages, self.subBox)
             initalVideoIds = [upload.videoId for upload in initalUploads]
 
-            self.subBox.addChannelFromUrl(newChannelUrl)
+            newChannel = self.subBox.addChannelFromUrl(newChannelUrl)
             self.assertTrue(checkNoDuplicates(self.subBox.orderedUploads))
 
             uploads = getLimitOffset(pageSize, numPages, self.subBox)
@@ -149,7 +149,7 @@ class test_SubBox(TestCase):
 
             if sanitizedChannelUrl not in videoChannels:
                 pageSize += pageSizeExtension
-                self.subBox.popChannel(self.subBox.getChannelIndex(newChannelUrl))
+                self.subBox.popChannel(self.subBox.getChannelIndex(newChannel.channelId))
                 cfg.logger.info("videoId belonging to newly added channel not found in subbox")
                 continue
 
@@ -157,7 +157,7 @@ class test_SubBox(TestCase):
             self.assertTrue(checkNoMisses(uploads, self.subBox))
             self.assertTrue(checkOrdering(uploads))
 
-            self.subBox.popChannel(self.subBox.getChannelIndex(newChannelUrl))
+            self.subBox.popChannel(self.subBox.getChannelIndex(newChannel.channelId))
 
             endUploads = getLimitOffset(pageSize, numPages, self.subBox)
             endVideoIds = [upload.videoId for upload in endUploads]

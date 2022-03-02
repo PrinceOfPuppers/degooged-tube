@@ -40,7 +40,7 @@ class SubBox:
         self.channelDict = {}
 
         for channel in self.channels:
-            self.channelDict[channel.channelUrl] = channel
+            self.channelDict[channel.channelId] = channel
 
         self.orderedUploads = []
 
@@ -109,7 +109,7 @@ class SubBox:
 
         self.channelDict = {}
         for channel in self.channels:
-            self.channelDict[channel.channelUrl] = channel
+            self.channelDict[channel.channelId] = channel
 
 
     def _getNextChannelWithMoreUploads(self, startIndex: int) -> Tuple[int, SubBoxChannel, ytapih.Upload]:
@@ -151,21 +151,21 @@ class SubBox:
 
         self.orderedUploads.append(mostRecentChannel.popNextUploadInQueue())
             
-    def _getChannelUrlsUnderTags(self, tags: set[str]):
+    def _getChannelIdsUnderTags(self, tags: set[str]):
         # a channel must have every tag in tags in order to appear (tags must be a subset of the channels tags)
-        return [channel.channelUrl for channel in self.channels if tags.issubset(channel.tags)]
+        return [channel.channelId for channel in self.channels if tags.issubset(channel.tags)]
 
-    def _numUploads(self, channelUrlWhitelist: list[str]):
-        if len(channelUrlWhitelist) == 0:
+    def _numUploads(self, channelIdWhitelist: list[str]):
+        if len(channelIdWhitelist) == 0:
             return len(self.orderedUploads)
         num = 0
         for upload in self.orderedUploads:
-            if upload.channelUrl in channelUrlWhitelist:
+            if upload.channelId in channelIdWhitelist:
                 num+=1
 
         return num
 
-    def _extendOrderedUploads(self, desiredLen: int, channelUrlWhitelist: Union[list[str], None]):
+    def _extendOrderedUploads(self, desiredLen: int, channelIdWhitelist: Union[list[str], None]):
         initalLength = len(self.orderedUploads) 
 
         debugMessage = \
@@ -174,23 +174,23 @@ class SubBox:
             f"Desired Length: {desiredLen}\n" \
             f"Length After Extenion: {len(self.orderedUploads)}"
 
-        if channelUrlWhitelist is None or len(channelUrlWhitelist) == 0:
+        if channelIdWhitelist is None or len(channelIdWhitelist) == 0:
             numExtend = desiredLen - initalLength
             for _ in range(numExtend):
                 self._appendNextUpload()
 
         else:
-            currentLen = self._numUploads(channelUrlWhitelist)
+            currentLen = self._numUploads(channelIdWhitelist)
             initalLen = currentLen
             numExtend = desiredLen - currentLen
 
             while numExtend > 0:
                 for _ in range(numExtend):
                     self._appendNextUpload()
-                currentLen = self._numUploads(channelUrlWhitelist)
+                currentLen = self._numUploads(channelIdWhitelist)
                 numExtend = desiredLen - currentLen
 
-            debugMessage += f"\nSpecified Channels: {channelUrlWhitelist}"\
+            debugMessage += f"\nSpecified Channels: {channelIdWhitelist}"\
                             f"\nLength of Tagged Uploads Before Extension: {initalLen}"\
                             f"\nLength of Tagged Uploads After Extension: {currentLen}"\
 
@@ -199,28 +199,28 @@ class SubBox:
 
     def getLimitOffset(self, limit: int, offset: int, tags: Union[set[str], None] = None) -> list[ytapih.Upload]:
         if tags is None or len(tags) == 0:
-            channelUrlWhitelist = None
+            channelIdWhitelist = None
         else:
-            channelUrlWhitelist = self._getChannelUrlsUnderTags(tags)
-            if len(channelUrlWhitelist) == 0:
+            channelIdWhitelist = self._getChannelIdsUnderTags(tags)
+            if len(channelIdWhitelist) == 0:
                 cfg.logger.debug(f"Provided Tags: {tags} Exclude All Channels")
                 return []
             # special case for tag filtering that involves one channel
-            if len(channelUrlWhitelist) == 1:
-                return self.channelDict[channelUrlWhitelist[0]].uploadList.getLimitOffset(limit, offset)
+            if len(channelIdWhitelist) == 1:
+                return self.channelDict[channelIdWhitelist[0]].uploadList.getLimitOffset(limit, offset)
 
         desiredLen = limit + offset
         try:
-            self._extendOrderedUploads(desiredLen, channelUrlWhitelist)
+            self._extendOrderedUploads(desiredLen, channelIdWhitelist)
         except EndOfSubBox:
             pass
 
-        if channelUrlWhitelist is None:
+        if channelIdWhitelist is None:
             uploads = self.orderedUploads
         else:
             uploads = list(
                 filter(
-                    lambda upload: upload.channelUrl in channelUrlWhitelist,
+                    lambda upload: upload.channelId in channelIdWhitelist,
                     self.orderedUploads
                 )
             )
@@ -247,7 +247,7 @@ class SubBox:
 
     def addChannelFromInitalPage(self, initalPage: ytapih.YtInitalPage, tags: set[str] = set()):
         channel = SubBoxChannel.fromInitalPage(initalPage, tags)
-        cfg.logger.debug(f"Adding new Channel to SubBox {channel.channelUrl}")
+        cfg.logger.debug(f"Adding new Channel to SubBox\nName:{channel.channelName}\nURL: {channel.channelUrl}")
 
         for c in self.channels:
             if channel == c:
@@ -276,7 +276,7 @@ class SubBox:
         self.channels.append(
             channel
         )
-        self.channelDict[channel.channelUrl] = channel
+        self.channelDict[channel.channelId] = channel
         self.atMaxLen = False
 
         return channel
@@ -284,42 +284,42 @@ class SubBox:
     def addChannelFromUrl(self, url: str, tags: set[str] = set()):
         url = ytapih.sanitizeChannelUrl(url, ytapih.ctrlp.channelVideoPath)
 
-        if url in self.channelDict.keys():
-            cfg.logger.debug(f"url: {url} Already exists in SubBox Urls:\n{[channel.channelUrl for channel in self.channels]}")
-            cfg.logger.info(f"You're Already Subscribed to {url}")
-            raise AlreadySubscribed()
+        for channel in self.channelDict.values():
+            if url == channel.channelUrl:
+                cfg.logger.debug(f"url: {url} Already exists in SubBox Urls:\n{[channel.channelUrl for channel in self.channels]}")
+                cfg.logger.info(f"You're Already Subscribed to {url}")
+                raise AlreadySubscribed()
 
         channel = self.addChannelFromInitalPage(ytapih.YtInitalPage.fromUrl(url), tags)
         return channel
 
 
     def popChannel(self, channelIndex: int):
-        channelUrl = self.channels[channelIndex].channelUrl
-        cfg.logger.debug(f"Remvoing Channel from SubBox, URL: {channelUrl}")
+        channelId = self.channels[channelIndex].channelId
+        cfg.logger.debug(f"Remvoing Channel from SubBox, Id: {channelId}")
 
         i = 0
         while i < len(self.orderedUploads):
             upload = self.orderedUploads[i]
-            if upload.channelUrl != channelUrl:
+            if upload.channelId != channelId:
                 i+=1
                 continue
 
             self.orderedUploads.pop(i)
 
         channel = self.channels[channelIndex]
-        self.channelDict.pop(self.channels[channelIndex].channelUrl)
+        self.channelDict.pop(self.channels[channelIndex].channelId)
         self.channels.pop(channelIndex)
 
         return channel
 
-    def getChannelIndex(self, channelUrl: str):
-        channelUrl = ytapih.sanitizeChannelUrl(channelUrl)
+    def getChannelIndex(self, channelId: str):
         for channelIndex in range(len(self.channels)):
             channel = self.channels[channelIndex]
-            if channel.channelUrl == channelUrl:
+            if channel.channelId == channelId:
                 return channelIndex
-        cfg.logger.debug(f"Channel Urls: {[key for key in self.channelDict.keys()]}")
-        raise KeyError(f"No Channel with Channel URL: {channelUrl}")
+        cfg.logger.debug(f"Channel Ids: {[key for key in self.channelDict.keys()]}")
+        raise KeyError(f"No Channel with Channel Id: {channelId}")
 
     def getAllTags(self):
         tags = set()

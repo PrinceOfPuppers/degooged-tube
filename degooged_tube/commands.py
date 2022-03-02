@@ -13,15 +13,16 @@ class UserAlreadyExistsException(Exception):
     pass
 
 
-def addSubToUserData(subs, channelUrl:str, tags:set[str]):
-    subs[channelUrl] = {
-        'tags': tags
+def addSubToUserData(subs, channelId:str, channelUrl:str, tags:set[str]):
+    subs[channelId] = {
+        'tags': tags,
+        'url': channelUrl
     }
 
 
-def removeSubFromUserData(subs, channelUrl: str):
-    if channelUrl in subs:
-        subs.pop(channelUrl)
+def removeSubFromUserData(subs, channelId: str):
+    if channelId in subs:
+        subs.pop(channelId)
 
 
 
@@ -46,33 +47,34 @@ def createNewUser(username:str, initalSubUrls: list[str] = list(), initalTags: l
         userData['subscriptions'] = subs
 
         for channel in subbox.channels:
-            subs[channel.channelUrl] = {'tags': channel.tags}
+            subs[channel.channelId] = {'tags': channel.tags, 'url': channel.channelUrl}
 
     return subbox
 
 def loadUserSubbox(username:str) -> Tuple[SubBox, str]:
     channelUrls = []
     channelTags = []
+    channelIds = []
     username = sanitizeFileName(username)
 
     with shelve.open(f"{cfg.userDataPath}/{username}/data", 'c',writeback=True) as userData:
         subs = userData['subscriptions']
         assert isinstance(subs,dict)
-        for channelUrl in subs.keys():
-            channelUrls.append(channelUrl)
-            channelTags.append(subs[channelUrl]['tags'])
+        for channelId in subs.keys():
+            channelIds.append(channelId)
+            channelUrls.append(subs[channelId]['url'])
+            channelTags.append(subs[channelId]['tags'])
 
     subbox = SubBox.fromUrls(channelUrls, channelTags)
 
     # Sanitize Subscriptions
-    for channelUrl in channelUrls:
-        if channelUrl not in subbox.channelDict.keys():
+    for i,channelId in enumerate(channelIds):
+        if channelId not in subbox.channelDict.keys():
+            channelUrl = channelUrls[i]
             if(prompts.yesNoPrompt(f"Issue Loading {channelUrl} \nWould You Like to Unsubscribe from it?")):
                 with shelve.open(f"{cfg.userDataPath}/{username}/data", 'c',writeback=True) as userData:
-                    removeSubFromUserData(userData['subscriptions'], channelUrl)
-
+                    removeSubFromUserData(userData['subscriptions'], channelId)
                 cfg.logger.info(f"Unsubscribed to {channelUrl}")
-
 
     return subbox, username
     
@@ -125,7 +127,7 @@ def subscribe(username:str, subbox: SubBox, channelUrl:str, tags:set[str] = set(
             return None
 
     with shelve.open(f"{cfg.userDataPath}/{username}/data", 'c',writeback=True) as userData:
-        addSubToUserData(userData['subscriptions'], channelUrl, tags)
+        addSubToUserData(userData['subscriptions'], channel.channelId, channelUrl, tags)
 
     cfg.logger.info(f"Subscribed to {channel.channelName}")
     return channel
@@ -135,27 +137,27 @@ def subscribe(username:str, subbox: SubBox, channelUrl:str, tags:set[str] = set(
 
 
 
-def unsubscribe(username:str, subbox: SubBox, channelUrl: str):
+def unsubscribe(username:str, subbox: SubBox, channelId: str, channelUrl: str):
     try:
-        channel = subbox.popChannel(subbox.getChannelIndex(channelUrl))
+        channel = subbox.popChannel(subbox.getChannelIndex(channelId))
     except KeyError:
         cfg.logger.error(f"Not Subscribed to {channelUrl}")
         return
 
     with shelve.open(f"{cfg.userDataPath}/{username}/data", 'c',writeback=True) as userData:
-        removeSubFromUserData(userData['subscriptions'], channelUrl)
+        removeSubFromUserData(userData['subscriptions'], channelId)
 
     cfg.logger.info(f"Unsubscribed to {channel.channelName}")
 
 
-def subscribeUnsubscribe(username, subbox: SubBox, channelUrl: str, channelName:str):
+def subscribeUnsubscribe(username, subbox: SubBox, channelId: str, channelUrl: str, channelName:str):
     try:
         channel = subscribe(username, subbox, channelUrl, set(), throwIfSubscribed = True)
         if channel is None:
             raise Exception()
     except AlreadySubscribed:
         if(prompts.yesNoPrompt(f"Are You Sure You Want to Unsubscribe from {channelName}")):
-            unsubscribe(username, subbox, channelUrl)
+            unsubscribe(username, subbox, channelId, channelUrl)
             return
         return
     except:
@@ -177,7 +179,7 @@ def addTags(username:str, channel: SubBoxChannel, tags: set[str]):
     channel.tags.update(tags)
 
     with shelve.open(f"{cfg.userDataPath}/{username}/data", 'c',writeback=True) as userData:
-        userData['subscriptions'][channel.channelUrl]['tags'].update(tags)
+        userData['subscriptions'][channel.channelId]['tags'].update(tags)
 
 
 def removeTags(username:str, channel: SubBoxChannel, tags: set[str]):
@@ -186,14 +188,14 @@ def removeTags(username:str, channel: SubBoxChannel, tags: set[str]):
 
     with shelve.open(f"{cfg.userDataPath}/{username}/data", 'c',writeback=True) as userData:
         for tag in tags:
-            userData['subscriptions'][channel.channelUrl]['tags'].discard(tags)
+            userData['subscriptions'][channel.channelId]['tags'].discard(tags)
 
 def setTags(username:str, channel: SubBoxChannel, tags: set[str]):
     channel.tags = tags.copy()
 
     with shelve.open(f"{cfg.userDataPath}/{username}/data", 'c',writeback=True) as userData:
-        userData['subscriptions'][channel.channelUrl]['tags'] = tags
+        userData['subscriptions'][channel.channelId]['tags'] = tags
 
 def clearTags(username:str, channel: SubBoxChannel):
     with shelve.open(f"{cfg.userDataPath}/{username}/data", 'c',writeback=True) as userData:
-        userData['subscriptions'][channel.channelUrl]['tags'] = set()
+        userData['subscriptions'][channel.channelId]['tags'] = set()

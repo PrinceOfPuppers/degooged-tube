@@ -213,9 +213,14 @@ videoInfoScrapeFmt = \
                 ScrapeNth("title",[
                     ScrapeNth("text",[], rename="channelName"),
                     ScrapeNth("url",[], rename = 'channelUrlFragment'),
+                    ScrapeNth("browseId",[], rename = 'channelId'),
                 ], collapse = True),
 
                 ScrapeNth("thumbnails",[], rename="avatar"),
+            ],collapse=True),
+
+            ScrapeNth("navigationEndpoint",[
+                ScrapeNth("browseId",[], rename = 'channelIdBackup'),
             ],collapse=True),
 
             ScrapeNth("subscriberCountText",[
@@ -246,6 +251,7 @@ class VideoInfo:
     channelName:str
     channelUrlFragment:str
     channelUrl:str
+    channelId:str
 
     avatar:list[Thumbnail]
 
@@ -257,6 +263,11 @@ class VideoInfo:
         try:
             channelUrlFragment:str      = data['channelUrlFragment']
             uploadedOn:str              = data['uploadedOn']
+
+            channelId:str               = tryGet(data, "channelId")
+            if not channelId:
+                channelId = data["channelIdBackup"] # if this doesn't work, we raise the key error
+
         except KeyError as e:
             if cfg.testing:
                 raise Exception(f'Missing Required Key "{e.args[0]}"\nFrom Data: {data}')
@@ -277,7 +288,7 @@ class VideoInfo:
         channelName:str             = tryGet(data, 'channelName')
         subscribers:str             = tryGet(data, 'subscribers', "0")
 
-        return cls(description, title, views, viewsNum, likes, likesNum, channelName, channelUrlFragment, channelUrl, avatar, uploadedOn, subscribers)
+        return cls(description, title, views, viewsNum, likes, likesNum, channelName, channelUrlFragment, channelUrl, channelId, avatar, uploadedOn, subscribers)
 
 
 ############################################
@@ -312,6 +323,7 @@ class Upload:
     title:str
     channelName:str
     channelUrl:str
+    channelId:str
     avatar:list[Thumbnail]
 
     @classmethod
@@ -335,8 +347,9 @@ class Upload:
         # the following are added by subbox
         channelName:str = ''
         channelUrl:str = ''
+        channelId:str = ''
         avatar:list[Thumbnail] = list()
-        return cls(videoId, url, unixTime, thumbnails, uploadedOn, views, duration, title, channelName, channelUrl, avatar)
+        return cls(videoId, url, unixTime, thumbnails, uploadedOn, views, duration, title, channelName, channelUrl, channelId, avatar)
     
     def __repr__(self):
         return f'{self.title}\n     > {self.channelName} | {self.duration} | {self.uploadedOn} | {self.views}\n'

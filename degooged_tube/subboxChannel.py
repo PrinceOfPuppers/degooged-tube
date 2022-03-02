@@ -26,7 +26,7 @@ class SubBoxChannel:
             channelName = channelInfo.channelName
             channelId = channelInfo.channelId
             avatar = channelInfo.avatar
-            uploadList = ytapih.getUploadList(initalPage, channelName = channelName, channelUrl= channelUrl, avatar=avatar)
+            uploadList = ytapih.getUploadList(initalPage, channelName = channelName, channelUrl= channelUrl, channelId = channelId, avatar=avatar)
         except Exception as e:
             cfg.logger.debug(e, exc_info=True)
             raise ChannelLoadIssue(channelUrl)
