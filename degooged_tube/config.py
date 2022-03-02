@@ -16,7 +16,9 @@ def writeToConfig(key,value):
 
 def _getConfig():
     defaultConfig = {
-        'userDataPath': 'userData'
+        'userDataPath': 'userData',
+        'maxQuality': 'best',
+        'maxFps': 'highest'
     }
     cfgPath = f'{modulePath}/config.ini'
 
@@ -51,10 +53,24 @@ unitTestPath = f"{modulePath}/tests/unitTest.py"
 # global variables
 testing = False
 
+availableFps = [
+    '30', '60', 'highest'
+]
 
+availableQualities = [
+        '144',
+        '240',
+        '360',
+        '480',
+        '720',
+        '1080',
+        'best'
+]
 
 # config variables
 userDataPath = f"{modulePath}/{_config['userDataPath']}"
+maxQuality = _config['maxQuality']
+maxFps = _config['maxFps']
 
 # logger
 import logging
