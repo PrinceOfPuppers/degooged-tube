@@ -538,7 +538,6 @@ class SearchType:
 
             try:
                 selected = f['status'] == searchFilterSelectedStatus
-                print(f"{selected=}")
             except KeyError:
                 selected = False
 
