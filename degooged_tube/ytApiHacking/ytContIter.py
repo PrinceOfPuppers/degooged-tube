@@ -29,7 +29,7 @@ class YtContIter:
         try:
             self.continuationTokens = initalPage.getContinuationTokens(self.apiUrl)
         except Exception as e:
-            if cfg.testing:
+            if cfg.testing and not getInitalData:
                 raise e
 
             cfg.logger.debug(e)

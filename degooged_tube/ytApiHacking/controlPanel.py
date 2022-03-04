@@ -79,7 +79,6 @@ class Thumbnail:
 
 
 
-
 # some stuff shares scraper formats, such as uploads and recommended videos, so we create wrappers for them
 def _uploadAndRelatedFmt(titleTextKey: str, durationTextContainerKey: str) -> list[ScrapeElement]:
     return [
@@ -166,6 +165,7 @@ class ChannelInfo:
 
 channelUrlSanitizationSplitsPostfix = ['?', '&', '/channels', '/channels', '/about', '/featured', '/videos']
 channelUrlSanitizationSplitsPrefix = ['https', 'http']
+
 
 
 videoInfoScrapeFmt = \
@@ -356,6 +356,42 @@ class Upload:
 
     def __str__(self):
         return self.__repr__()
+
+
+
+# > Channel Playlists < #
+channelPlaylistsApiUrl = '/youtubei/v1/browse'
+
+channelPlaylistScrapeFmt = ScrapeAll("gridPlaylistRenderer", [
+        ScrapeNth("title",[
+            ScrapeAll("text",[], collapse=True),
+        ], rename = "playlistTitle"),
+        ScrapeNth("thumbnails",[], rename = 'playlistThumbnails'),
+        ScrapeNth("playlistId",[]),
+    ], collapse = True)
+
+@dataclass
+class ChannelPlaylist:
+    playlistTitle:str
+    playlistThumbnails:list[Thumbnail]
+    playlistId:str
+    playlistUrl:str
+
+    @classmethod
+    def fromData(cls, data:dict) -> Union['ChannelPlaylist', None]:
+        try:
+            playlistId:str = data['playlistId']
+        except KeyError as e:
+            if cfg.testing:
+                raise Exception(f'Missing Required Key "{e.args[0]}"\nFrom Data: {data}')
+            cfg.logger.debug(f'In {cls.__name__}.fromData(), Data is Missing Required Key "{e.args[0]}"')
+            return None
+
+        playlistTitle:str = "".join(tryGet(data, 'playlistTitle', []))
+        playlistThumbnails:list[Thumbnail]        = [Thumbnail.fromData(datum) for datum in tryGet(data, 'playlistThumbnails', [])]
+        playlistUrl:str = "https://www.youtube.com/playlist?list=" + playlistId
+
+        return cls(playlistTitle, playlistThumbnails, playlistId, playlistUrl)
 
 
 

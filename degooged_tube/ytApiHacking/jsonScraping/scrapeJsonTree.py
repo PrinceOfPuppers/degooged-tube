@@ -1,5 +1,6 @@
 from typing import Union, Callable, Any
 from dataclasses import dataclass
+from datetime import datetime, timezone
 import json
 
 from .basicScraping import scrapeFirstJson, scrapeJson, scrapeJsonMultiKey
@@ -19,6 +20,7 @@ def dumpDebugData(debugDataList: Union[list[ScrapeJsonTreeDebugData], None], tes
         return
 
     with open(testDataDumpPath, 'w') as f:
+        f.write( f"Timestamp:\nUTC:   {datetime.now(timezone.utc)}\nLocal: {datetime.now()}\n" )
         for i,debugData in enumerate(debugDataList):
             data = debugData.data
             

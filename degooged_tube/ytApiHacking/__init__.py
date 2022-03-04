@@ -2,7 +2,8 @@ from .ytContIter import YtInitalPage
 from . import controlPanel as ctrlp 
 from .ytApiList import YtApiList
 #from urllib.parse import quote_plus
-from .controlPanel import Upload, SearchType, SearchVideo, SearchChannel, ChannelInfo, VideoInfo, RelatedVideo, SearchElementFromData, Comment
+from .controlPanel import Upload, SearchType, SearchVideo, SearchChannel, ChannelInfo, VideoInfo, \
+                          RelatedVideo, SearchElementFromData, Comment, ChannelPlaylist
 from typing import Tuple, Union
 from .helpers import addResultIfNotNone
 
@@ -69,6 +70,29 @@ def getChannelInfo(channelUrl) -> ChannelInfo:
     channelUrl = sanitizeChannelUrl(channelUrl)
     channelPage = YtInitalPage.fromUrl(channelUrl)
     return getChannelInfoFromInitalPage(channelPage)
+
+
+
+# Channel Playlists
+def channelPlaylistsCallback(res, **kwargs) -> list[ChannelPlaylist]:
+    l = []
+    for r in res:
+        channelPlaylist = ChannelPlaylist.fromData(r)
+        if channelPlaylist is not None:
+            for key,item in kwargs.items():
+                setattr(channelPlaylist, key, item)
+            l.append(channelPlaylist)
+    return l
+
+def getChannelPlaylistsList(channelPlaylistPage :YtInitalPage, onExtend = None, **kwargs) -> YtApiList[ChannelPlaylist]:
+    '''kwargs are constant values to add to scraped data (ie channel name and url)'''
+    if onExtend is None:
+        callback = channelPlaylistsCallback
+    else:
+        callback = onExtend
+
+    return YtApiList(channelPlaylistPage, ctrlp.channelPlaylistsApiUrl,
+                     ctrlp.channelPlaylistScrapeFmt, getInitalData=True, onExtend = callback, onExtendKwargs = kwargs)
 
 
 
