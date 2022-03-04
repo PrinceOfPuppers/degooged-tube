@@ -3,7 +3,7 @@ from . import controlPanel as ctrlp
 from .ytApiList import YtApiList
 #from urllib.parse import quote_plus
 from .controlPanel import Upload, SearchType, SearchVideo, SearchChannel, ChannelInfo, VideoInfo, \
-                          RelatedVideo, SearchElementFromData, Comment, ChannelPlaylist
+                          RelatedVideo, SearchElementFromData, Comment, ChannelPlaylist, PlaylistVideo
 from typing import Tuple, Union
 from .helpers import addResultIfNotNone
 
@@ -59,6 +59,14 @@ def getRelatedVideoList(videoPage: YtInitalPage, onExtend = relatedVideosCallbac
     return YtApiList(videoPage, ctrlp.relatedVideosApiUrl, ctrlp.relatedVideosScrapeFmt, onExtend = onExtend)
 
 
+# playlist videos
+def playlistVideosCallback(res):
+    l = []
+    addResultIfNotNone(res, PlaylistVideo.fromData, l)
+    return l
+
+def getPlaylistVideoList(videoPage: YtInitalPage, onExtend = playlistVideosCallback):
+    return YtApiList(videoPage, ctrlp.playlistVideosApiUrl, ctrlp.playlistVideosScrapeFmt, getInitalData = True, onExtend = onExtend)
 
 
 # Channel Info

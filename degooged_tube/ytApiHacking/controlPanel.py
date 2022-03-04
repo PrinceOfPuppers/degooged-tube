@@ -79,20 +79,13 @@ class Thumbnail:
 
 
 
-# some stuff shares scraper formats, such as uploads and recommended videos, so we create wrappers for them
-def _uploadAndRelatedFmt(titleTextKey: str, durationTextContainerKey: str) -> list[ScrapeElement]:
-    return [
+# some stuff shares scraper formats, such as uploads, recommended, and playlist videos, so we create wrappers for them
+def _uploadAndRelatedFmt(titleTextKey: str, durationTextContainerKey: str, 
+                         includeViewCount = True, includePublishedTime = True) -> list[ScrapeElement]:
+    l:list[ScrapeElement] = [
          ScrapeNth("videoId",[]),
 
          ScrapeNth("thumbnails",[]),
-
-         ScrapeNth("publishedTimeText",[
-             ScrapeNth("simpleText",[], collapse=True)
-         ], rename = "uploadedOn"),
-
-         ScrapeNth("viewCountText",[
-             ScrapeNth("simpleText",[], collapse=True)
-         ], rename = "views"),
 
          ScrapeNth(durationTextContainerKey, [
              ScrapeNth("simpleText",[], collapse=True)
@@ -102,6 +95,21 @@ def _uploadAndRelatedFmt(titleTextKey: str, durationTextContainerKey: str) -> li
              ScrapeNth(titleTextKey, [], collapse=True)
          ]),
     ]
+
+    if includePublishedTime:
+        l.append(
+             ScrapeNth("publishedTimeText",[
+                 ScrapeNth("simpleText",[], collapse=True)
+             ], rename = "uploadedOn"),
+        )
+    if includeViewCount:
+        l.append(
+             ScrapeNth("viewCountText",[
+                 ScrapeNth("simpleText",[], collapse=True)
+             ], rename = "views"),
+        )
+
+    return l
 
 
 
@@ -392,6 +400,65 @@ class ChannelPlaylist:
         playlistUrl:str = "https://www.youtube.com/playlist?list=" + playlistId
 
         return cls(playlistTitle, playlistThumbnails, playlistId, playlistUrl)
+
+
+# >Playlist Video< #
+playlistVideosApiUrl = '/youtubei/v1/browse'
+
+playlistVideosScrapeFmt = \
+    ScrapeAll("playlistVideoRenderer", [
+        *_uploadAndRelatedFmt("text", "lengthText", includePublishedTime = False, includeViewCount = False), 
+        ScrapeNth("shortBylineText", [
+            ScrapeNth("text", [], collapse = True),
+        ], rename = "channelName"),
+        ScrapeNth("shortBylineText", [
+            ScrapeNth("url", [], collapse = True)
+        ],rename = "channelUrlFragment"),
+    ], collapse = True)
+
+@dataclass
+class PlaylistVideo:
+    videoId:str
+    url:str
+    thumbnails:list[Thumbnail]
+    uploadedOn:str
+    views:str
+    duration:str
+    title:str
+
+    channelName:str
+    channelUrlFragment:str
+    channelUrl:str
+
+    @classmethod
+    def fromData(cls, data:dict) -> Union['PlaylistVideo', None]:
+        try:
+            videoId:str                 = data['videoId']
+            channelUrlFragment:str      = data["channelUrlFragment"]
+        except KeyError as e:
+            if cfg.testing:
+                raise Exception(f'Missing Required Key "{e.args[0]}"\nFrom Data: {data}')
+            cfg.logger.debug(f'In {cls.__name__}.fromData(), Data is Missing Required Key "{e.args[0]}"')
+            return None
+
+        uploadedOn:str              = tryGet(data, 'uploadedOn')
+        url:str                     = 'https://www.youtube.com/watch?v=' + videoId
+        thumbnails:list[Thumbnail]  = [Thumbnail.fromData(datum) for datum in tryGet(data, 'thumbnails', [])]
+        views:str                   = tryGet(data, 'views')
+        duration:str                = tryGet(data, 'duration')
+        title:str                   = tryGet(data, 'title')
+
+        channelName:str = tryGet(data, "channelName")
+        channelUrl:str = 'https://www.youtube.com' + channelUrlFragment
+
+
+        return cls(videoId, url, thumbnails, uploadedOn, views, duration, title, channelName, channelUrlFragment, channelUrl)
+    
+    def __repr__(self):
+        return f'{self.title}\n     > {self.channelName} | {self.duration} \n'
+
+    def __str__(self):
+        return self.__repr__()
 
 
 

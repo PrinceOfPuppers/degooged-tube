@@ -4,7 +4,7 @@ import inspect
 import degooged_tube.config as cfg
 from degooged_tube.subbox import SubBox, listsOverlap, AlreadySubscribed
 from degooged_tube.ytApiHacking import sanitizeChannelUrl, getChannelInfo, getCommentList, getRelatedVideoList, getUploadList, \
-                                       getVideoInfo, getSearchList, YtInitalPage, Upload, getChannelPlaylistsList
+                                       getVideoInfo, getSearchList, YtInitalPage, Upload, getChannelPlaylistsList, getPlaylistVideoList
 #import degooged_tube.ytApiHacking.controlPanel as ctrlp
 from degooged_tube.tests.unitTests import logName
 from degooged_tube import setupPool
@@ -268,6 +268,7 @@ class test_getFunctionsAndFmts(TestCase):
     channelVideosUrl = sanitizeChannelUrl('https://www.youtube.com/c/GamersNexus', '/videos')
     videoUrl = 'https://www.youtube.com/watch?v=B14h25fKMpY'
     channelPlaylistsUrl = sanitizeChannelUrl('https://www.youtube.com/c/GamersNexus', '/playlists')
+    playlistUrl = "https://www.youtube.com/playlist?list=PLsuVSmND84QuVMZuk2HGUtCSYXR7nmC5a"
 
     def test_getChannelInfo(self):
         logName(self, inspect.currentframe())
@@ -322,6 +323,14 @@ class test_getFunctionsAndFmts(TestCase):
         _ = playlists[0]
         for i in range(0, 10):
             _ = playlists[i]
+
+    def test_getPlaylistVideoList(self):
+        logName(self, inspect.currentframe())
+        page = YtInitalPage.fromUrl(self.playlistUrl)
+        playlist = getPlaylistVideoList(page)
+        _ = playlist[0]
+        for i in range(0, 10):
+            _ = playlist[i]
 
 
 class test_SpecialCases(TestCase):
