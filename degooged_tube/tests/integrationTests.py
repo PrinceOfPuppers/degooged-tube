@@ -2,9 +2,10 @@ from unittest import TestCase
 import inspect
 
 import degooged_tube.config as cfg
+import degooged_tube.ytApiHacking.controlPanel as ctrlp
 from degooged_tube.subbox import SubBox, listsOverlap, AlreadySubscribed
-from degooged_tube.ytApiHacking import sanitizeChannelUrl, getChannelInfo, getCommentList, getRelatedVideoList, getUploadList, \
-                                       getVideoInfo, getSearchList, YtInitalPage, Upload, getChannelPlaylistsList, getPlaylistVideoList
+from degooged_tube.ytApiHacking import sanitizeChannelUrl, getChannelInfo, getCommentList, getRelatedVideoList, getUploadList, getVideoInfo, \
+                                       getSearchList, YtInitalPage, Upload, getChannelPlaylistsList, getPlaylistVideoList, getPlaylistInfo
 #import degooged_tube.ytApiHacking.controlPanel as ctrlp
 from degooged_tube.tests.unitTests import logName
 from degooged_tube import setupPool
@@ -265,9 +266,9 @@ def nothingCallback(res):
 
 class test_getFunctionsAndFmts(TestCase):
     channelUrl = sanitizeChannelUrl('https://www.youtube.com/c/GamersNexus')
-    channelVideosUrl = sanitizeChannelUrl('https://www.youtube.com/c/GamersNexus', '/videos')
+    channelVideosUrl = sanitizeChannelUrl('https://www.youtube.com/c/GamersNexus', ctrlp.channelVideoPath)
     videoUrl = 'https://www.youtube.com/watch?v=B14h25fKMpY'
-    channelPlaylistsUrl = sanitizeChannelUrl('https://www.youtube.com/c/GamersNexus', '/playlists')
+    channelPlaylistsUrl = sanitizeChannelUrl('https://www.youtube.com/c/GamersNexus', ctrlp.channelPlaylistsPath)
     playlistUrl = "https://www.youtube.com/playlist?list=PLsuVSmND84QuVMZuk2HGUtCSYXR7nmC5a"
 
     def test_getChannelInfo(self):
@@ -323,6 +324,11 @@ class test_getFunctionsAndFmts(TestCase):
         _ = playlists[0]
         for i in range(0, 10):
             _ = playlists[i]
+
+    def test_getPlaylistInfo(self):
+        logName(self, inspect.currentframe())
+        page = YtInitalPage.fromUrl(self.playlistUrl)
+        _ = getPlaylistInfo(page)
 
     def test_getPlaylistVideoList(self):
         logName(self, inspect.currentframe())

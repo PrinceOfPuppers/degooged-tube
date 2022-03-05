@@ -1,11 +1,11 @@
 from .ytContIter import YtInitalPage
 from . import controlPanel as ctrlp 
 from .ytApiList import YtApiList
-#from urllib.parse import quote_plus
 from .controlPanel import Upload, SearchType, SearchVideo, SearchChannel, ChannelInfo, VideoInfo, \
-                          RelatedVideo, SearchElementFromData, Comment, ChannelPlaylist, PlaylistVideo
+                          RelatedVideo, SearchElementFromData, Comment, ChannelPlaylist, PlaylistVideo, PlaylistInfo
 from typing import Tuple, Union
 from .helpers import addResultIfNotNone
+
 
 # uploads
 def uploadsCallback(res, **kwargs) -> list[Upload]:
@@ -49,6 +49,16 @@ def getVideoInfo(videoPage: YtInitalPage) -> Union[VideoInfo, None]:
 
 
 
+# playlist Info
+def processPlaylistInfo(info):
+    return PlaylistInfo.fromData(info)
+
+def getPlaylistInfo(playlistPage: YtInitalPage) -> Union[PlaylistInfo]:
+    info = playlistPage.scrapeInitalData(ctrlp.playlistInfoScrapeFmt)
+    return processPlaylistInfo(info)
+
+
+
 # related videos
 def relatedVideosCallback(res):
     l = []
@@ -59,6 +69,7 @@ def getRelatedVideoList(videoPage: YtInitalPage, onExtend = relatedVideosCallbac
     return YtApiList(videoPage, ctrlp.relatedVideosApiUrl, ctrlp.relatedVideosScrapeFmt, onExtend = onExtend)
 
 
+
 # playlist videos
 def playlistVideosCallback(res):
     l = []
@@ -67,6 +78,7 @@ def playlistVideosCallback(res):
 
 def getPlaylistVideoList(videoPage: YtInitalPage, onExtend = playlistVideosCallback):
     return YtApiList(videoPage, ctrlp.playlistVideosApiUrl, ctrlp.playlistVideosScrapeFmt, getInitalData = True, onExtend = onExtend)
+
 
 
 # Channel Info
@@ -117,7 +129,7 @@ def searchCallback(res):
     addResultIfNotNone(res, SearchElementFromData, l)
     return l
 
-
+# Search
 def getSearchList(term:str, onExtend = searchCallback) -> Tuple[YtApiList[Union[SearchVideo, SearchChannel]], list[SearchType]]:
     url = ctrlp.searchUrl + term
 
@@ -125,6 +137,9 @@ def getSearchList(term:str, onExtend = searchCallback) -> Tuple[YtApiList[Union[
     searchList = YtApiList(searchInitalPage, ctrlp.searchApiUrl, ctrlp.searchScrapeFmt, getInitalData = True, onExtend = onExtend)
     filterData = processFilterData( searchInitalPage.scrapeInitalData(ctrlp.searchFilterScrapeFmt) )
     return searchList, filterData
+
+
+
 
 
 def sanitizeChannelUrl(channelUrl: str, path:str = ''):

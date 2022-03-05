@@ -18,6 +18,8 @@ class SubBoxChannel:
     _extensionIndex: int
     tags: set[str]
 
+    playlistsList: Union[ytapih.YtApiList[ytapih.ChannelPlaylist], None]
+
     @classmethod
     def fromInitalPage(cls, initalPage: ytapih.YtInitalPage, channelTags:set[str]) -> 'SubBoxChannel':
         channelUrl = ytapih.sanitizeChannelUrl(initalPage.url) # to keep channelUrl consistant
@@ -31,8 +33,7 @@ class SubBoxChannel:
             cfg.logger.debug(e, exc_info=True)
             raise ChannelLoadIssue(channelUrl)
 
-
-        return cls(channelInfo, uploadList, channelName, channelId, channelUrl, 0, channelTags)
+        return cls(channelInfo, uploadList, channelName, channelId, channelUrl, 0, channelTags, None)
 
     def reload(self):
         self._extensionIndex = 0
@@ -57,6 +58,14 @@ class SubBoxChannel:
     def fromUrl(cls, url: str, channelTags:set[str]) -> 'SubBoxChannel':
         initalPage = ytapih.YtInitalPage.fromUrl( ytapih.sanitizeChannelUrl(url, ytapih.ctrlp.channelVideoPath) )
         return cls.fromInitalPage(initalPage, channelTags)
+
+
+    def getPlaylists(self):
+        if self.playlistsList is not None:
+            return self.playlistsList
+        initalPage = ytapih.YtInitalPage.fromUrl( ytapih.sanitizeChannelUrl(self.uploadList.getInitalPage().url, ytapih.ctrlp.channelPlaylistsPath) )
+        self.playlistsList = ytapih.getChannelPlaylistsList(initalPage)
+        return self.playlistsList
 
     
     def __repr__(self):

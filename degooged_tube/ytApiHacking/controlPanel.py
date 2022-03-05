@@ -13,6 +13,7 @@ currentTime = int(time.time())
 #  General Stuff  ##
 ####################
 channelVideoPath = '/videos'
+channelPlaylistsPath = '/playlists'
 
 # scraping regexs for inital pages
 apiKeyRe = re.compile(jsonRegex("INNERTUBE_API_KEY", "(.*?)"))
@@ -299,6 +300,32 @@ class VideoInfo:
         return cls(description, title, views, viewsNum, likes, likesNum, channelName, channelUrlFragment, channelUrl, channelId, avatar, uploadedOn, subscribers)
 
 
+
+# >Playlist Info< #
+playlistInfoScrapeFmt = \
+    ScrapeNth("metadata", [
+        ScrapeNth("title", [], rename = "title"),
+        ScrapeNth("description", [],rename = "description", optional=True),
+    ], collapse = True)
+
+@dataclass
+class PlaylistInfo:
+    title:str
+    description:str
+
+    @classmethod
+    def fromData(cls, data:dict) -> 'PlaylistInfo':
+        title:str                   = tryGet(data, 'title')
+        description:str             = tryGet(data, 'description')
+        return cls(title, description)
+    
+    def __repr__(self):
+        return f'{self.title}\n{self.description}\n'
+
+    def __str__(self):
+        return self.__repr__()
+
+
 ############################################
 ##  Continuation Api Route Specific Stuff  #
 ############################################
@@ -376,6 +403,9 @@ channelPlaylistScrapeFmt = ScrapeAll("gridPlaylistRenderer", [
         ], rename = "playlistTitle"),
         ScrapeNth("thumbnails",[], rename = 'playlistThumbnails'),
         ScrapeNth("playlistId",[]),
+        ScrapeNth("videoCountText",[
+            ScrapeAll("text",[], collapse=True),
+        ], rename = "videoCount"),
     ], collapse = True)
 
 @dataclass
@@ -384,6 +414,7 @@ class ChannelPlaylist:
     playlistThumbnails:list[Thumbnail]
     playlistId:str
     playlistUrl:str
+    videoCount:str
 
     @classmethod
     def fromData(cls, data:dict) -> Union['ChannelPlaylist', None]:
@@ -398,8 +429,9 @@ class ChannelPlaylist:
         playlistTitle:str = "".join(tryGet(data, 'playlistTitle', []))
         playlistThumbnails:list[Thumbnail]        = [Thumbnail.fromData(datum) for datum in tryGet(data, 'playlistThumbnails', [])]
         playlistUrl:str = "https://www.youtube.com/playlist?list=" + playlistId
+        videoCount:str = "".join(tryGet(data, 'videoCount', []))
 
-        return cls(playlistTitle, playlistThumbnails, playlistId, playlistUrl)
+        return cls(playlistTitle, playlistThumbnails, playlistId, playlistUrl, videoCount)
 
 
 # >Playlist Video< #
@@ -421,8 +453,6 @@ class PlaylistVideo:
     videoId:str
     url:str
     thumbnails:list[Thumbnail]
-    uploadedOn:str
-    views:str
     duration:str
     title:str
 
@@ -441,10 +471,8 @@ class PlaylistVideo:
             cfg.logger.debug(f'In {cls.__name__}.fromData(), Data is Missing Required Key "{e.args[0]}"')
             return None
 
-        uploadedOn:str              = tryGet(data, 'uploadedOn')
         url:str                     = 'https://www.youtube.com/watch?v=' + videoId
         thumbnails:list[Thumbnail]  = [Thumbnail.fromData(datum) for datum in tryGet(data, 'thumbnails', [])]
-        views:str                   = tryGet(data, 'views')
         duration:str                = tryGet(data, 'duration')
         title:str                   = tryGet(data, 'title')
 
@@ -452,7 +480,7 @@ class PlaylistVideo:
         channelUrl:str = 'https://www.youtube.com' + channelUrlFragment
 
 
-        return cls(videoId, url, thumbnails, uploadedOn, views, duration, title, channelName, channelUrlFragment, channelUrl)
+        return cls(videoId, url, thumbnails, duration, title, channelName, channelUrlFragment, channelUrl)
     
     def __repr__(self):
         return f'{self.title}\n     > {self.channelName} | {self.duration} \n'
