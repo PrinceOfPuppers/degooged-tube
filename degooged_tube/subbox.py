@@ -1,6 +1,6 @@
 import degooged_tube.ytApiHacking as ytapih
 import degooged_tube.config as cfg
-from typing import Union, Tuple
+from typing import Union, Tuple, List
 from degooged_tube.subboxChannel import SubBoxChannel, ChannelLoadIssue, loadChannel, callReload
 from degooged_tube import getPool
 from degooged_tube.helpers import paginationCalculator
@@ -31,10 +31,8 @@ class SubBox:
     atMaxLen: bool
 
     orderedUploads: list[ytapih.Upload]
-    prevOrdering: list[str]
-    
 
-    def __init__(self, subBoxChannels: list[SubBoxChannel], prevOrdering: list):
+    def __init__(self, subBoxChannels: list[SubBoxChannel]):
         self.channels = subBoxChannels
 
         self.channelDict = {}
@@ -46,16 +44,9 @@ class SubBox:
 
         self.atMaxLen = False
 
-        if prevOrdering != []:
-            raise NotImplementedError
-
-        self.prevOrdering = prevOrdering
 
     @classmethod
-    def fromUrls(cls, urls: list[str], channelTags:list[set[str]] = None, prevOrdering:list = list()) -> 'SubBox':
-        cfg.logger.info("Loading SubBox... ")
-        cfg.logger.debug(f"Creating SubBox From Urls:\n{urls}")
-
+    def _loadChannels(cls, urls, channelTags) -> List[SubBoxChannel]:
         channels = []
 
         if channelTags is None:
@@ -63,7 +54,6 @@ class SubBox:
         else:
             assert len(urls) == len(channelTags)
 
-        
         pool = getPool()
         if cfg.testing or pool is None:
             channels = [loadChannel(data) for data in zip(urls, channelTags)]
@@ -90,24 +80,23 @@ class SubBox:
         for i in duplicateIndices:
             channels.pop(i)
 
+        return channels
 
-        return cls(channels, prevOrdering)
+
+    @classmethod
+    def fromUrls(cls, urls: list[str], channelTags:list[set[str]] = None) -> 'SubBox':
+        cfg.logger.info("Loading SubBox... ")
+        cfg.logger.debug(f"Creating SubBox From Urls:\n{urls}")
+
+        return cls(cls._loadChannels(urls, channelTags))
 
     def reload(self):
         self.orderedUploads.clear()
         self.atMaxLen = False
-        for channel in self.channels:
-            channel.reload()
 
-        pool = getPool()
-        if cfg.testing or pool is None:
-            for channel in self.channels:
-                channel.reload()
-        else:
-            pool.map(callReload, self.channels)
+        self.channels = SubBox._loadChannels([channel.channelUrl for channel in self.channels], [channel.tags for channel in self.channels])
 
-
-        self.channelDict = {}
+        self.channelDict.clear()
         for channel in self.channels:
             self.channelDict[channel.channelId] = channel
 
@@ -155,9 +144,11 @@ class SubBox:
         # a channel must have every tag in tags in order to appear (tags must be a subset of the channels tags)
         return [channel.channelId for channel in self.channels if tags.issubset(channel.tags)]
 
-    def _numUploads(self, channelIdWhitelist: list[str]):
-        if len(channelIdWhitelist) == 0:
+    def _numUploads(self, channelIdWhitelist: Union[list[str], None]):
+        if channelIdWhitelist is None:
             return len(self.orderedUploads)
+        if len(channelIdWhitelist) == 0:
+            return 0
         num = 0
         for upload in self.orderedUploads:
             if upload.channelId in channelIdWhitelist:
@@ -170,31 +161,36 @@ class SubBox:
 
         debugMessage = \
             f"SubBox Extenion Requested:\n" \
+            f"SubBox Extenion Requested:\n" \
             f"Length Before Extension: {initalLength}\n" \
-            f"Desired Length: {desiredLen}\n" \
-            f"Length After Extenion: {len(self.orderedUploads)}"
+            f"Desired Length: {desiredLen}\n"
 
-        if channelIdWhitelist is None or len(channelIdWhitelist) == 0:
-            numExtend = desiredLen - initalLength
-            for _ in range(numExtend):
-                self._appendNextUpload()
-
-        else:
-            currentLen = self._numUploads(channelIdWhitelist)
-            initalLen = currentLen
-            numExtend = desiredLen - currentLen
-
-            while numExtend > 0:
+        try:
+            if channelIdWhitelist is None:
+                numExtend = desiredLen - initalLength
                 for _ in range(numExtend):
                     self._appendNextUpload()
+                debugMessage+=f"Length After Extenion: {len(self.orderedUploads)}"
+
+            else:
+                assert len(channelIdWhitelist)!= 0
                 currentLen = self._numUploads(channelIdWhitelist)
+                initalLen = currentLen
                 numExtend = desiredLen - currentLen
 
-            debugMessage += f"\nSpecified Channels: {channelIdWhitelist}"\
-                            f"\nLength of Tagged Uploads Before Extension: {initalLen}"\
-                            f"\nLength of Tagged Uploads After Extension: {currentLen}"\
+                while numExtend > 0:
+                    for _ in range(numExtend):
+                        self._appendNextUpload()
+                    currentLen = self._numUploads(channelIdWhitelist)
+                    numExtend = desiredLen - currentLen
 
-        cfg.logger.debug(debugMessage)
+                debugMessage += f"\nSpecified Channels: {channelIdWhitelist}"\
+                                f"\nLength of Tagged Uploads Before Extension: {initalLen}"\
+                                f"\nLength of Tagged Uploads After Extension: {currentLen}"\
+
+        # always print debug message
+        finally:
+            cfg.logger.debug(debugMessage)
 
 
     def getLimitOffset(self, limit: int, offset: int, tags: Union[set[str], None] = None) -> list[ytapih.Upload]:
@@ -213,6 +209,7 @@ class SubBox:
         try:
             self._extendOrderedUploads(desiredLen, channelIdWhitelist)
         except EndOfSubBox:
+            cfg.logger.debug(f"Reached End of Subbox \ntags: {tags} \nlimit: {limit} \noffset:{offset}")
             pass
 
         if channelIdWhitelist is None:

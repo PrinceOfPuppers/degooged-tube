@@ -1,4 +1,4 @@
-from .jsonScraping import ScrapeNth, ScrapeAll, ScrapeElement, ScrapeAllUnion, ScrapeAllUnionNode
+from .jsonScraping import ScrapeNth, ScrapeAll, ScrapeElement, ScrapeAllUnion, ScrapeAllUnionNode, ScrapeUnion, ScrapeLongest
 from typing import Union
 from .helpers import tryGet, approxTimeToUnix, tryGetMultiKey, getApproximateNum, jsonRegex
 import re
@@ -99,9 +99,17 @@ def _uploadAndRelatedFmt(titleTextKey: str, durationTextContainerKey: str,
 
     if includePublishedTime:
         l.append(
-             ScrapeNth("publishedTimeText",[
-                 ScrapeNth("simpleText",[], collapse=True)
-             ], rename = "uploadedOn"),
+             ScrapeUnion([
+                 # not currently live
+                 ScrapeNth("publishedTimeText",[
+                     ScrapeNth("simpleText",[], collapse=True)
+                 ], rename = "uploadedOn"),
+
+                 # live
+                 ScrapeNth("thumbnailOverlayTimeStatusRenderer",[
+                     ScrapeNth("label",[], collapse=True, dataCondition = lambda text: text.lower() == "live")
+                 ], rename = "uploadedOn"),
+             ])
         )
     if includeViewCount:
         l.append(
@@ -121,7 +129,7 @@ def _uploadAndRelatedFmt(titleTextKey: str, durationTextContainerKey: str,
 
 channelInfoScrapeFmt = \
     [
-        ScrapeNth("header",[
+        ScrapeNth("c4TabbedHeaderRenderer",[
             ScrapeNth("title",[], rename='channelName'),
             ScrapeNth("channelId",[], rename='channelId'),
             ScrapeNth("avatar",[

@@ -3,7 +3,7 @@ import inspect
 import json
 import degooged_tube.config as cfg
 from degooged_tube.ytApiHacking.jsonScraping import scrapeJsonTree, ScrapeAll, ScrapeNth, ScrapeLongest, ScrapeUnion, ScrapeAllUnion, ScrapeAllUnionNode, ScrapeError
-from degooged_tube.ytApiHacking.helpers import getApproximateNum
+from degooged_tube.ytApiHacking.helpers import getApproximateNum, approxTimeToUnix
 
 def logName(testInstance, frame):
     assert frame is not None
@@ -647,3 +647,21 @@ class test_helpers(TestCase):
         x = "11 "
         val = getApproximateNum(x)
         self.assertEqual (11, val)
+
+    def test_approxTimeToUnix_1(self):
+        logName(self, inspect.currentframe())
+        x = "9 hours ago "
+        val = approxTimeToUnix(0, x)
+        self.assertEqual (-32400, val)
+
+    def test_approxTimeToUnix_2(self):
+        logName(self, inspect.currentframe())
+        x = "9 h ago  "
+        val = approxTimeToUnix(0, x)
+        self.assertEqual (-32400, val)
+
+    def test_approxTimeToUnix_4(self):
+        logName(self, inspect.currentframe())
+        x = "streamed 9 h ago"
+        val = approxTimeToUnix(0, x)
+        self.assertEqual (-32400, val)

@@ -35,25 +35,6 @@ class SubBoxChannel:
 
         return cls(channelInfo, uploadList, channelName, channelId, channelUrl, 0, channelTags, None)
 
-    def reload(self):
-        self._extensionIndex = 0
-        initalPage = ytapih.YtInitalPage.fromUrl( ytapih.sanitizeChannelUrl(self.uploadList.getInitalPage().url, ytapih.ctrlp.channelVideoPath) )
-        if initalPage is None:
-            if cfg.testing:
-                raise ChannelLoadIssue(f"InitalPage is Missing on SubboxChannel Reload URL: {self.channelUrl}")
-            return
-        try:
-            self.channelInfo = ytapih.getChannelInfoFromInitalPage(initalPage)
-            self.channelName = self.channelInfo.channelName
-            avatar = self.channelInfo.avatar
-            self.uploadList = ytapih.getUploadList(initalPage, channelName = self.channelName, channelUrl= self.channelUrl, avatar=avatar)
-        except Exception as e:
-            if cfg.testing:
-                cfg.logger.debug(e, exc_info=True)
-                raise ChannelLoadIssue(f"Issue Reloading: {self.channelUrl}")
-            return
-
-
     @classmethod
     def fromUrl(cls, url: str, channelTags:set[str]) -> 'SubBoxChannel':
         initalPage = ytapih.YtInitalPage.fromUrl( ytapih.sanitizeChannelUrl(url, ytapih.ctrlp.channelVideoPath) )
@@ -90,7 +71,6 @@ class SubBoxChannel:
         return False
 
 
-
     def popNextUploadInQueue(self):
         upload = self.uploadList[self._extensionIndex]
         self._extensionIndex += 1
@@ -101,9 +81,7 @@ class SubBoxChannel:
         return upload
 
 
-
 # targets for multiprocessing maps
-
 def loadChannel(data) -> Union[SubBoxChannel, str]:
     url, channelTags = data
     try:

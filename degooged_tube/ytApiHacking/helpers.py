@@ -37,24 +37,33 @@ def addResultIfNotNone(inputs:list, func:Callable, output:list):
 # Time Conversion
 
 _ytTimeConversion = {
+    "s":       1,
+    "sec":     1,
     "second":  1,
     "seconds": 1,
 
+    "m":       60,
+    "min":     60,
     "minute":  60,
     "minutes": 60,
 
+    "h":       3600,
     "hour":    3600,
     "hours":   3600,
 
+    "d":       86400,
     "day":     86400,
     "days":    86400,
 
+    "w":       604800,
     "week":    604800,
     "weeks":   604800,
 
+    "mon":     2419200,
     "month":   2419200,
     "months":  2419200,
 
+    "y":       29030400,
     "year":    29030400,
     "years":   29030400,
 }
@@ -63,6 +72,9 @@ _timeDelineations = "|".join(_ytTimeConversion.keys())
 _approxTimeRe = re.compile(r"(\d+)\s+("+_timeDelineations +r")\s+ago", re.I)
 
 def approxTimeToUnix(currentTime:int, approxTime: str)->int:
+    if approxTime.lower() == "live":
+        return currentTime
+
     matches = _approxTimeRe.search(approxTime)
     if matches is None:
         raise UnableToGetUploadTime(f"Unrecognized Time String: {approxTime}")
@@ -131,4 +143,3 @@ def jsonRegex(*args, surroundingBrace = False):
     if surroundingBrace:
         r = "{" + r + "}"
     return r
-
