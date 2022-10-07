@@ -80,6 +80,9 @@ class Thumbnail:
 
 
 
+def _isLive(text):
+    return text.lower() == "live"
+
 # some stuff shares scraper formats, such as uploads, recommended, and playlist videos, so we create wrappers for them
 def _uploadAndRelatedFmt(titleTextKey: str, durationTextContainerKey: str, 
                          includeViewCount = True, includePublishedTime = True) -> list[ScrapeElement]:
@@ -107,7 +110,7 @@ def _uploadAndRelatedFmt(titleTextKey: str, durationTextContainerKey: str,
 
                  # live
                  ScrapeNth("thumbnailOverlayTimeStatusRenderer",[
-                     ScrapeNth("label",[], collapse=True, dataCondition = lambda text: text.lower() == "live")
+                     ScrapeNth("label",[], collapse=True, dataCondition = _isLive)
                  ], rename = "uploadedOn"),
              ])
         )
