@@ -51,7 +51,7 @@ def createNewUser(username:str, initalSubUrls: list[str] = list(), initalTags: l
 
     return subbox
 
-def loadUserSubbox(username:str) -> Tuple[SubBox, str]:
+def loadUserSubbox(username:str, promptOnError:bool = True) -> Tuple[SubBox, str]:
     channelUrls = []
     channelTags = []
     channelIds = []
@@ -71,10 +71,11 @@ def loadUserSubbox(username:str) -> Tuple[SubBox, str]:
     for i,channelId in enumerate(channelIds):
         if channelId not in subbox.channelDict.keys():
             channelUrl = channelUrls[i]
-            if(prompts.yesNoPrompt(f"Issue Loading {channelUrl} \nWould You Like to Unsubscribe from it?")):
-                with shelve.open(f"{cfg.userDataPath}/{username}/data", 'c',writeback=True) as userData:
-                    removeSubFromUserData(userData['subscriptions'], channelId)
-                cfg.logger.info(f"Unsubscribed to {channelUrl}")
+            if promptOnError:
+                if(prompts.yesNoPrompt(f"Issue Loading {channelUrl} \nWould You Like to Unsubscribe from it?")):
+                    with shelve.open(f"{cfg.userDataPath}/{username}/data", 'c',writeback=True) as userData:
+                        removeSubFromUserData(userData['subscriptions'], channelId)
+                    cfg.logger.info(f"Unsubscribed to {channelUrl}")
 
     return subbox, username
     
