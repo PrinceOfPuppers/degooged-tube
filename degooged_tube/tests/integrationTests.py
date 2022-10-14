@@ -365,6 +365,13 @@ class test_SpecialCases(TestCase):
 
 
 if __name__ == "__main__":
+    import logging
+    import sys
+
+    stream = logging.StreamHandler(sys.stdout)
+    cfg.logger.setLevel(logging.DEBUG)
+    stream.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s"))
+    cfg.logger.addHandler(stream)
     cfg.testing = True
     t = test_SpecialCases()
     t.test_searchFilters()

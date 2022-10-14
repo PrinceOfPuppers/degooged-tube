@@ -611,6 +611,7 @@ class RelatedVideo:
 searchUrl = "https://www.youtube.com/results?search_query="
 searchApiUrl = '/youtubei/v1/search'
 searchFilterSelectedStatus = "FILTER_STATUS_SELECTED"
+searchFilterDisabledStatus = "FILTER_STATUS_DISABLED"
 
 
 # Search Filters
@@ -637,6 +638,7 @@ searchFilterScrapeFmt = \
 @dataclass
 class SearchFilter:
     label:str
+    # will be empty if selected
     searchUrlFragment:str
     selected:bool
 
@@ -665,8 +667,19 @@ class SearchType:
         for f in filterData:
             try:
                 label = f['label']
+                if 'status' in f:
+                    if f['status'] == searchFilterDisabledStatus:
+                        continue
+                    selected = f['status'] == searchFilterSelectedStatus
+                else:
+                    selected = False
+
+                # some selections have no url because they cannot be toggled off (ie sort by section)
+                if 'searchUrlFragment' not in f and selected:
+                    continue
 
                 _searchUrlFragment = f['searchUrlFragment']
+
                 searchUrlFragmentList = _searchUrlFragment.split("search_query=", maxsplit = 1)
                 if len(searchUrlFragmentList) == 1:
                     searchUrlFragment = searchUrlFragmentList[0]
@@ -675,13 +688,11 @@ class SearchType:
 
 
             except KeyError as e:
+                if cfg.testing:
+                    raise Exception(f'Missing Required Key "{e.args[0]}"\nFrom Data: {data}')
                 cfg.logger.debug(f'In {cls.__name__}.fromData(), Data is Missing Required Key "{e.args[0]}"')
                 continue
 
-            try:
-                selected = f['status'] == searchFilterSelectedStatus
-            except KeyError:
-                selected = False
 
             filters.append(SearchFilter(label, searchUrlFragment, selected))
 
