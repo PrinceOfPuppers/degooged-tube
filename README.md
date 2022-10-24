@@ -3,11 +3,13 @@
 > An adless, accountless, trackerless youtube interface with a sub box
 - [INSTALLATION](#INSTALLATION)
 - [ABOUT](#ABOUT)
-- [USAGE](#USAGE)
+- [CLI-USAGE](#CLI-USAGE)
+- [API-USAGE](#API-USAGE)
 - [DEVELOPMENT](#DEVLOPMENT)
 - [SCRAPING](#SCRAPING)
-- [API](#API)
-
+- [SANATIZATION](#SANATIZATION)
+- [YOUTUBE-API-WRAPPERS](#YOUTUBE-API-WRAPPERS)
+- [DATA-PIPELINE](#DATA-PIPELINE)
 
 
 # INSTALLATION
@@ -28,7 +30,7 @@ All youtube API scraping is done internally, with the exception of getting the s
 
 
 
-# Usage
+# CLI-USAGE
 Launch in terminal with command
 ```
 degooged-tube
@@ -40,6 +42,9 @@ CLI is interactive, options are displayed on the bottom of the screen and can be
 
 Some options IE `(w)atch` will show you a numbered list then prompt you for which number you want to watch, others IE `(p)revious/(n)ext page` will just preform the action.
 
+
+# API-USAGE
+`degooged_tube/ytApiHacking/__init__.py` contains getter functions to return dataclasses, aswell as `YtapiList` of dataclasses containing scraped data, the data in the dataclasses is self explainitory and the `YtapiList` can be indexed like normal python lists, throwing `IndexError` if value is out of bounds. There is also `YtApiList.getPaginated(pageNum, pageSize)` which returns a list of elements (pageSize is upper bound)
 
 
 # DEVELOPMENT
@@ -161,9 +166,7 @@ The continuation chain is decided using the apiUrl, and by duck-typing based on 
 Contains `YtContIter`, an iterator which wraps the continuation chains, deals the requests, as well as implements the aforementioned duck-typing
 
 
-# DEGOOGED-TUBE-API
-`degooged_tube/ytApiHacking/__init__.py` contains getter functions to return dataclasses, aswell as `YtApiLists` of dataclasses containing scraped data
-
+# DATA-PIPELINE
 pipeline under the hood (note this is not a callstack, for example processInfo is called in getter, its more a sequence diagram):
 ```
                                                                 youtube-api
