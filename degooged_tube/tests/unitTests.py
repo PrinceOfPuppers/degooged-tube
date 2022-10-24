@@ -19,7 +19,7 @@ class test_scrapeJsonTree(TestCase):
     def test_handmade_1(self):
         logName(self, inspect.currentframe())
 
-        uploadScrapeFmt = \
+        scrapeFmt = \
               ScrapeAll("greetings",[
                   ScrapeNth("hi",[
                       ScrapeAll("name",[])
@@ -27,7 +27,7 @@ class test_scrapeJsonTree(TestCase):
               ])
 
         try:
-            answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt)
+            answer = test_scrapeJsonTreeHelper("random.json", scrapeFmt)
         except KeyError:
             self.fail("Scrape Json Tree Missed Key")
 
@@ -42,14 +42,14 @@ class test_scrapeJsonTree(TestCase):
     def test_handmade_2(self):
         logName(self, inspect.currentframe())
 
-        uploadScrapeFmt = \
+        scrapeFmt = \
               ScrapeAll("greetings",[
                   ScrapeNth("hi",[
                       ScrapeAll("name",[])
                   ]),
               ], collapse = True)
         try:
-            answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt)
+            answer = test_scrapeJsonTreeHelper("random.json", scrapeFmt)
         except KeyError:
             self.fail("Scrape Json Tree Missed Key")
 
@@ -61,7 +61,7 @@ class test_scrapeJsonTree(TestCase):
     def test_handmade_3(self):
         logName(self, inspect.currentframe())
 
-        uploadScrapeFmt = \
+        scrapeFmt = \
               ScrapeAll("greetings",[
                   ScrapeNth("hi",[
                       ScrapeAll("name",[], collapse = True)
@@ -69,7 +69,7 @@ class test_scrapeJsonTree(TestCase):
               ], collapse = True)
 
         try:
-            answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt)
+            answer = test_scrapeJsonTreeHelper("random.json", scrapeFmt)
         except KeyError:
             self.fail("Scrape Json Tree Missed Key")
 
@@ -79,7 +79,7 @@ class test_scrapeJsonTree(TestCase):
     def test_handmade_4(self):
         logName(self, inspect.currentframe())
 
-        uploadScrapeFmt = \
+        scrapeFmt = \
               ScrapeAll("greetings",[
                   ScrapeNth("hi",[
                       ScrapeAll("name",[], collapse = True)
@@ -87,7 +87,7 @@ class test_scrapeJsonTree(TestCase):
               ])
 
         try:
-            answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt)
+            answer = test_scrapeJsonTreeHelper("random.json", scrapeFmt)
         except KeyError:
             self.fail("Scrape Json Tree Missed Key")
 
@@ -98,7 +98,7 @@ class test_scrapeJsonTree(TestCase):
     def test_handmade_5(self):
         logName(self, inspect.currentframe())
 
-        uploadScrapeFmt = \
+        scrapeFmt = \
               ScrapeAll("greetings",[
                   ScrapeNth("hi",[
                       ScrapeAll("name",[], collapse = True)
@@ -106,7 +106,7 @@ class test_scrapeJsonTree(TestCase):
               ], collapse = True)
 
         try:
-            answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt)
+            answer = test_scrapeJsonTreeHelper("random.json", scrapeFmt)
         except KeyError:
             self.fail("Scrape Json Tree Missed Key")
 
@@ -117,7 +117,7 @@ class test_scrapeJsonTree(TestCase):
     def test_handmade_6(self):
         logName(self, inspect.currentframe())
 
-        uploadScrapeFmt = \
+        scrapeFmt = \
               ScrapeAll("greetings",[
                   ScrapeNth("hi",[
                       ScrapeAll("name",[], collapse = True)
@@ -125,7 +125,7 @@ class test_scrapeJsonTree(TestCase):
               ], collapse = True)
 
         try:
-            answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt)
+            answer = test_scrapeJsonTreeHelper("random.json", scrapeFmt)
         except KeyError:
             self.fail("Scrape Json Tree Missed Key")
 
@@ -136,7 +136,7 @@ class test_scrapeJsonTree(TestCase):
     def test_handmade_7(self):
         logName(self, inspect.currentframe())
 
-        uploadScrapeFmt = \
+        scrapeFmt = \
               ScrapeAll("greetings",[
                   ScrapeNth("hi",[
                       ScrapeAll("coolness",[], collapse = True)
@@ -144,7 +144,7 @@ class test_scrapeJsonTree(TestCase):
               ], collapse = True)
 
         try:
-            answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt)
+            answer = test_scrapeJsonTreeHelper("random.json", scrapeFmt)
         except KeyError:
             self.fail("Scrape Json Tree Missed Key")
 
@@ -155,7 +155,7 @@ class test_scrapeJsonTree(TestCase):
     def test_handmade_8(self):
         logName(self, inspect.currentframe())
 
-        uploadScrapeFmt = \
+        scrapeFmt = \
               ScrapeAll("greetings",[
                   ScrapeNth("hi",[], collapse = True),
               ], collapse = True)
@@ -171,7 +171,7 @@ class test_scrapeJsonTree(TestCase):
         ]
 
         try:
-            answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt)
+            answer = test_scrapeJsonTreeHelper("random.json", scrapeFmt)
         except KeyError:
             self.fail("Scrape Json Tree Missed Key")
 
@@ -181,7 +181,7 @@ class test_scrapeJsonTree(TestCase):
     def test_handmade_9(self):
         logName(self, inspect.currentframe())
 
-        uploadScrapeFmt = \
+        scrapeFmt = \
               ScrapeLongest("greetings",[
                   ScrapeNth("hi",[], collapse = True),
               ], collapse = True)
@@ -194,7 +194,7 @@ class test_scrapeJsonTree(TestCase):
         ]
 
         try:
-            answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt)
+            answer = test_scrapeJsonTreeHelper("random.json", scrapeFmt)
         except KeyError:
             self.fail("Scrape Json Tree Missed Key")
 
@@ -204,7 +204,7 @@ class test_scrapeJsonTree(TestCase):
     def test_handmade_10(self):
         logName(self, inspect.currentframe())
 
-        uploadScrapeFmt = \
+        scrapeFmt = \
               ScrapeLongest("greetings",[
                   ScrapeNth("hi",[]),
               ], collapse = True)
@@ -220,7 +220,7 @@ class test_scrapeJsonTree(TestCase):
             }
 
         try:
-            answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt)
+            answer = test_scrapeJsonTreeHelper("random.json", scrapeFmt)
         except KeyError:
             self.fail("Scrape Json Tree Missed Key")
 
@@ -230,7 +230,7 @@ class test_scrapeJsonTree(TestCase):
     def test_handmade_11(self):
         logName(self, inspect.currentframe())
 
-        uploadScrapeFmt = \
+        scrapeFmt = \
               ScrapeLongest("greetings",[
                   ScrapeNth("hi",[
                       ScrapeAll("name",[], collapse = True)
@@ -240,7 +240,7 @@ class test_scrapeJsonTree(TestCase):
         solution = { "hi" : ['alice', 'bob', 'carol', 'dave'] }
 
         try:
-            answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt)
+            answer = test_scrapeJsonTreeHelper("random.json", scrapeFmt)
         except KeyError:
             self.fail("Scrape Json Tree Missed Key")
 
@@ -250,7 +250,7 @@ class test_scrapeJsonTree(TestCase):
     def test_handmade_12(self):
         logName(self, inspect.currentframe())
 
-        uploadScrapeFmt = \
+        scrapeFmt = \
               ScrapeLongest("greetings",[
                   ScrapeLongest("hi",[
                       ScrapeAll("name",[], collapse = True)
@@ -260,7 +260,7 @@ class test_scrapeJsonTree(TestCase):
         solution = { "hi" : ['alice', 'bob', 'carol', 'dave'] }
 
         try:
-            answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt)
+            answer = test_scrapeJsonTreeHelper("random.json", scrapeFmt)
         except KeyError:
             self.fail("Scrape Json Tree Missed Key")
 
@@ -269,13 +269,13 @@ class test_scrapeJsonTree(TestCase):
     def test_handmade_13(self):
         logName(self, inspect.currentframe())
 
-        uploadScrapeFmt = \
+        scrapeFmt = \
                   ScrapeNth("colors",[])
 
         solution = {"colors": ["purple", "green" ,"red" ]}
 
         try:
-            answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt)
+            answer = test_scrapeJsonTreeHelper("random.json", scrapeFmt)
         except KeyError:
             self.fail("Scrape Json Tree Missed Key")
 
@@ -284,7 +284,7 @@ class test_scrapeJsonTree(TestCase):
     def test_handmade_14(self):
         logName(self, inspect.currentframe())
 
-        uploadScrapeFmt = \
+        scrapeFmt = \
               ScrapeLongest("greetings",[
                   ScrapeNth("hi",[]),
               ], collapse = True)
@@ -300,7 +300,7 @@ class test_scrapeJsonTree(TestCase):
             }
 
         try:
-            answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt)
+            answer = test_scrapeJsonTreeHelper("random.json", scrapeFmt)
         except KeyError:
             self.fail("Scrape Json Tree Missed Key")
 
@@ -309,7 +309,7 @@ class test_scrapeJsonTree(TestCase):
     def test_handmade_15(self):
         logName(self, inspect.currentframe())
 
-        uploadScrapeFmt = \
+        scrapeFmt = \
               [
                   ScrapeNth("nested",[
                           ScrapeAll("name",[], rename="names")
@@ -321,7 +321,7 @@ class test_scrapeJsonTree(TestCase):
         solution = [ {"names" : ['partner', 'alice', 'bob', 'carol', 'dave']},  {"colors": ["purple", "green" ,"red" ]} ]
 
         try:
-            answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt)
+            answer = test_scrapeJsonTreeHelper("random.json", scrapeFmt)
         except KeyError:
             self.fail("Scrape Json Tree Missed Key")
 
@@ -330,7 +330,7 @@ class test_scrapeJsonTree(TestCase):
     def test_handmade_16(self):
         logName(self, inspect.currentframe())
 
-        uploadScrapeFmt = \
+        scrapeFmt = \
                   ScrapeLongest("beverages",[
                           ScrapeNth("coffee",[], rename = "Bean Juice"),
                           ScrapeNth("kvass",[], rename ="Bread Blessing")
@@ -338,14 +338,14 @@ class test_scrapeJsonTree(TestCase):
 
         solution = {"Bean Juice": "omegaGood", "Bread Blessing": "megaGood"}
 
-        answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt)
+        answer = test_scrapeJsonTreeHelper("random.json", scrapeFmt)
 
         self.assertEqual(answer, solution)
 
     def test_handmade_16_optional(self):
         logName(self, inspect.currentframe())
 
-        uploadScrapeFmt = \
+        scrapeFmt = \
                   ScrapeLongest("beverages",[
                           ScrapeNth("coffee",[], rename = "Bean Juice"),
                           ScrapeNth("kvass",[], rename ="Bread Blessing", optional=True)
@@ -353,14 +353,14 @@ class test_scrapeJsonTree(TestCase):
 
         solution = {"Bean Juice": "omegaGood", "Bread Blessing": "megaGood"}
 
-        answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt)
+        answer = test_scrapeJsonTreeHelper("random.json", scrapeFmt)
 
         self.assertEqual(answer, solution)
 
     def test_handmade_17(self):
         logName(self, inspect.currentframe())
 
-        uploadScrapeFmt = \
+        scrapeFmt = \
               ScrapeNth("greetings",[
                   ScrapeNth("hi",[
                       ScrapeAll("name",[], rename="names"),
@@ -374,13 +374,13 @@ class test_scrapeJsonTree(TestCase):
                 "favColors": ["blue", "green", "purple", "purple" ]
             }
 
-        answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt)
+        answer = test_scrapeJsonTreeHelper("random.json", scrapeFmt)
         self.assertEqual(answer, solution)
 
     def test_handmade_18(self):
         logName(self, inspect.currentframe())
 
-        uploadScrapeFmt = \
+        scrapeFmt = \
               ScrapeNth("greetings",[
                   ScrapeNth("hi",[
                       ScrapeAll("name",[], rename="names", dataCondition = lambda l: "blue" in l),
@@ -393,14 +393,14 @@ class test_scrapeJsonTree(TestCase):
                 "favColors": ["blue", "green", "purple", "purple" ]
             }
 
-        answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt)
+        answer = test_scrapeJsonTreeHelper("random.json", scrapeFmt)
 
         self.assertEqual(answer, solution)
 
     def test_someMissing_1(self):
         logName(self, inspect.currentframe())
 
-        uploadScrapeFmt = \
+        scrapeFmt = \
               [
                   ScrapeNth("nested",[
                       ScrapeAll("name",[], rename="names")
@@ -412,14 +412,14 @@ class test_scrapeJsonTree(TestCase):
               ]
 
         try:
-            _ = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt, 1.0)
+            _ = test_scrapeJsonTreeHelper("random.json", scrapeFmt, 1.0)
         except ScrapeError:
             pass
         else:
             self.fail("ScrapeJsonTree Should have Raised Excpetion")
 
         try:
-            answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt, 0.5)
+            answer = test_scrapeJsonTreeHelper("random.json", scrapeFmt, 0.5)
         except ScrapeError:
             self.fail("ScrapeJsonTree Should Not Have Raised Excpetion")
 
@@ -488,7 +488,7 @@ class test_scrapeJsonTree(TestCase):
     def test_handmade_badFmt_1(self):
         logName(self, inspect.currentframe())
 
-        uploadScrapeFmt = \
+        scrapeFmt = \
               ScrapeLongest("greetings",[
                   ScrapeLongest("hi",[
                       ScrapeAll("name",[], collapse = True)
@@ -498,7 +498,7 @@ class test_scrapeJsonTree(TestCase):
         solution = { "hi" : ['alice', 'bob', 'carol', 'dave'] }
 
         try:
-            answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt)
+            answer = test_scrapeJsonTreeHelper("random.json", scrapeFmt)
         except KeyError:
             self.fail("Scrape Json Tree Missed Key")
 
@@ -507,7 +507,7 @@ class test_scrapeJsonTree(TestCase):
     def test_handmade_ScrapeUnion_1(self):
         logName(self, inspect.currentframe())
 
-        uploadScrapeFmt = \
+        scrapeFmt = \
             ScrapeUnion([
               ScrapeAll("hello",[]),
               ScrapeAll("howdy",[]),
@@ -518,14 +518,14 @@ class test_scrapeJsonTree(TestCase):
                 "hello": ["there", "boio"], 
             }
 
-        answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt, 1.0)
+        answer = test_scrapeJsonTreeHelper("random.json", scrapeFmt, 1.0)
 
         self.assertEqual(answer, solution)
 
     def test_handmade_ScrapeUnion_2(self):
         logName(self, inspect.currentframe())
 
-        uploadScrapeFmt = \
+        scrapeFmt = \
             ScrapeUnion([
               ScrapeAll("hello",[], collapse = True),
               ScrapeAll("howdy",[]),
@@ -533,14 +533,44 @@ class test_scrapeJsonTree(TestCase):
 
         solution = ["there", "boio"]
 
-        answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt, 1.0)
+        answer = test_scrapeJsonTreeHelper("random.json", scrapeFmt, 1.0)
+
+        self.assertEqual(answer, solution)
+
+    def test_handmade_ScrapeUnion_3(self):
+        logName(self, inspect.currentframe())
+
+        scrapeFmt = \
+            ScrapeUnion([
+              ScrapeAll("howdy",[], collapse=True),
+              ScrapeAll("hello",[], collapse = True),
+            ])
+
+        solution = [{"name": "partner"}]
+
+        answer = test_scrapeJsonTreeHelper("random.json", scrapeFmt, 1.0)
+
+        self.assertEqual(answer, solution)
+
+    def test_handmade_ScrapeUnion_4(self):
+        logName(self, inspect.currentframe())
+
+        scrapeFmt = \
+            ScrapeUnion([
+              ScrapeAll("key not in data",[], collapse=True),
+              ScrapeAll("hello",[], collapse = True),
+            ])
+
+        solution = ["there", "boio"]
+
+        answer = test_scrapeJsonTreeHelper("random.json", scrapeFmt, 1.0)
 
         self.assertEqual(answer, solution)
 
     def test_handmade_ScrapeAllUnion_1(self):
         logName(self, inspect.currentframe())
 
-        uploadScrapeFmt = \
+        scrapeFmt = \
             ScrapeAllUnion("", [
               ScrapeAllUnionNode("hello",[], collapse = True),
               ScrapeAllUnionNode("howdy",[
@@ -550,14 +580,14 @@ class test_scrapeJsonTree(TestCase):
 
         solution = ["there", "partner", "boio"]
 
-        answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt, 1.0)
+        answer = test_scrapeJsonTreeHelper("random.json", scrapeFmt, 1.0)
 
         self.assertEqual(answer, solution)
 
     def test_handmade_ScrapeAllUnion_2(self):
         logName(self, inspect.currentframe())
 
-        uploadScrapeFmt = \
+        scrapeFmt = \
             ScrapeAllUnion("", [
               ScrapeAllUnionNode("hello",[]),
               ScrapeAllUnionNode("howdy",[
@@ -567,14 +597,14 @@ class test_scrapeJsonTree(TestCase):
 
         solution = [{"hello":"there"}, "partner", {"hello":"boio"}]
 
-        answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt, 1.0)
+        answer = test_scrapeJsonTreeHelper("random.json", scrapeFmt, 1.0)
 
         self.assertEqual(answer, solution)
 
     def test_handmade_ScrapeAllUnion_3(self):
         logName(self, inspect.currentframe())
 
-        uploadScrapeFmt = \
+        scrapeFmt = \
             ScrapeAllUnion("", [
               ScrapeAllUnionNode("hello",[], rename = "test"),
               ScrapeAllUnionNode("howdy",[
@@ -584,14 +614,14 @@ class test_scrapeJsonTree(TestCase):
 
         solution = [{"test":"there"}, "partner", {"test":"boio"}]
 
-        answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt, 1.0)
+        answer = test_scrapeJsonTreeHelper("random.json", scrapeFmt, 1.0)
 
         self.assertEqual(answer, solution)
 
     def test_handmade_ScrapeAllUnion_4(self):
         logName(self, inspect.currentframe())
 
-        uploadScrapeFmt = \
+        scrapeFmt = \
             ScrapeAllUnion("testing", [
                 ScrapeAllUnionNode("coolness",[], rename = "test", dataCondition = lambda val: isinstance(val,int), collapse = True),
               ScrapeAllUnionNode("beverages",[
@@ -601,14 +631,14 @@ class test_scrapeJsonTree(TestCase):
 
         solution = {"testing": [11, "omegaGood"]}
 
-        answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt, 1.0)
+        answer = test_scrapeJsonTreeHelper("random.json", scrapeFmt, 1.0)
 
         self.assertEqual(answer, solution)
 
     def test_handmade_ScrapeAllUnion_5(self):
         logName(self, inspect.currentframe())
 
-        uploadScrapeFmt = \
+        scrapeFmt = \
             ScrapeAllUnion("testing", [
                 ScrapeAllUnionNode("coolness",[], rename = "test", dataCondition = lambda val: isinstance(val,int), collapse = True),
               ScrapeAllUnionNode("beverages",[
@@ -618,7 +648,7 @@ class test_scrapeJsonTree(TestCase):
 
         solution = {"testing": [11, "omegaGood"]}
 
-        answer = test_scrapeJsonTreeHelper("random.json", uploadScrapeFmt, 1.0)
+        answer = test_scrapeJsonTreeHelper("random.json", scrapeFmt, 1.0)
 
         self.assertEqual(answer, solution)
 

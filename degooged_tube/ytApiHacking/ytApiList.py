@@ -26,6 +26,10 @@ class YtApiList(Generic[_T]):
 
     def __init__(self, initalPage: YtInitalPage, apiUrl: str, scrapeFmt: Union[ScrapeElement, list[ScrapeElement]], getInitalData: bool= False, 
                         onExtend: Callable[[list[dict]], list[_T]] = lambda res: res, onExtendKwargs = dict()):
+        '''
+        Notes: 
+            - onExtendKwargs will be passed to onExtend (used for passing data like a channel url to all its videos and etc)
+        '''
         self._list = []
 
         self.apiUrl = apiUrl

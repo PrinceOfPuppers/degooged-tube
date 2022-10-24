@@ -33,7 +33,11 @@ def removeSubFromUserData(subs, channelId: str):
 ########################
 def createNewUser(username:str, initalSubUrls: list[str] = list(), initalTags: list[set[str]] = None) -> SubBox:
     subbox = SubBox.fromUrls(initalSubUrls, initalTags);
+
     username = sanitizeFileName(username)
+
+    if username == '':
+        username = 'default'
 
     userPath = f"{cfg.userDataPath}/{username}"
     
