@@ -8,7 +8,7 @@ from .helpers import addResultIfNotNone
 
 
 # uploads
-def uploadsCallback(res, **kwargs) -> list[Upload]:
+def uploadsOnExtend(res, **kwargs) -> list[Upload]:
     l = []
     for r in res:
         upload = Upload.fromData(r)
@@ -18,22 +18,17 @@ def uploadsCallback(res, **kwargs) -> list[Upload]:
             l.append(upload)
     return l
 
-def getUploadList(uploadsPage:YtInitalPage, onExtend = None, **kwargs) -> YtApiList[Upload]:
+def getUploadList(uploadsPage:YtInitalPage, onExtend = uploadsOnExtend, **kwargs) -> YtApiList[Upload]:
     '''kwargs are constant values to add to scraped data (ie channel name and url)'''
-    if onExtend is None:
-        callback = uploadsCallback
-    else:
-        callback = onExtend
-
-    return YtApiList(uploadsPage, ctrlp.uploadsApiUrl, ctrlp.uploadScrapeFmt, getInitalData=True, onExtend = callback, onExtendKwargs = kwargs)
+    return YtApiList(uploadsPage, ctrlp.uploadsApiUrl, ctrlp.uploadScrapeFmt, getInitalData=True, onExtend = onExtend, onExtendKwargs = kwargs)
 
 
 
 # comments
-def commentCallback(res):
+def commentOnExtend(res):
     return [Comment.fromData(x) for x in res]
 
-def getCommentList(videoPage: YtInitalPage, onExtend = commentCallback) -> YtApiList[str]:
+def getCommentList(videoPage: YtInitalPage, onExtend = commentOnExtend) -> YtApiList[str]:
     return YtApiList(videoPage, ctrlp.commentsApiUrl, ctrlp.commentScrapeFmt, onExtend = onExtend)
 
 
@@ -60,23 +55,23 @@ def getPlaylistInfo(playlistPage: YtInitalPage) -> Union[PlaylistInfo]:
 
 
 # related videos
-def relatedVideosCallback(res):
+def relatedVideosOnExtend(res):
     l = []
     addResultIfNotNone(res, RelatedVideo.fromData, l)
     return l
 
-def getRelatedVideoList(videoPage: YtInitalPage, onExtend = relatedVideosCallback):
+def getRelatedVideoList(videoPage: YtInitalPage, onExtend = relatedVideosOnExtend):
     return YtApiList(videoPage, ctrlp.relatedVideosApiUrl, ctrlp.relatedVideosScrapeFmt, onExtend = onExtend)
 
 
 
 # playlist videos
-def playlistVideosCallback(res):
+def playlistVideosOnExtend(res):
     l = []
     addResultIfNotNone(res, PlaylistVideo.fromData, l)
     return l
 
-def getPlaylistVideoList(videoPage: YtInitalPage, onExtend = playlistVideosCallback):
+def getPlaylistVideoList(videoPage: YtInitalPage, onExtend = playlistVideosOnExtend):
     return YtApiList(videoPage, ctrlp.playlistVideosApiUrl, ctrlp.playlistVideosScrapeFmt, getInitalData = True, onExtend = onExtend)
 
 
@@ -94,7 +89,7 @@ def getChannelInfo(channelUrl) -> ChannelInfo:
 
 
 # Channel Playlists
-def channelPlaylistsCallback(res, **kwargs) -> list[ChannelPlaylist]:
+def channelPlaylistsOnExtend(res, **kwargs) -> list[ChannelPlaylist]:
     l = []
     for r in res:
         channelPlaylist = ChannelPlaylist.fromData(r)
@@ -104,15 +99,10 @@ def channelPlaylistsCallback(res, **kwargs) -> list[ChannelPlaylist]:
             l.append(channelPlaylist)
     return l
 
-def getChannelPlaylistsList(channelPlaylistPage :YtInitalPage, onExtend = None, **kwargs) -> YtApiList[ChannelPlaylist]:
+def getChannelPlaylistsList(channelPlaylistPage :YtInitalPage, onExtend = channelPlaylistsOnExtend, **kwargs) -> YtApiList[ChannelPlaylist]:
     '''kwargs are constant values to add to scraped data (ie channel name and url)'''
-    if onExtend is None:
-        callback = channelPlaylistsCallback
-    else:
-        callback = onExtend
-
     return YtApiList(channelPlaylistPage, ctrlp.channelPlaylistsApiUrl,
-                     ctrlp.channelPlaylistScrapeFmt, getInitalData=True, onExtend = callback, onExtendKwargs = kwargs)
+                     ctrlp.channelPlaylistScrapeFmt, getInitalData=True, onExtend = onExtend, onExtendKwargs = kwargs)
 
 
 
@@ -124,13 +114,13 @@ def processFilterData(res):
     return l
 
 # Search Results
-def searchCallback(res):
+def searchOnExtend(res):
     l = []
     addResultIfNotNone(res, SearchElementFromData, l)
     return l
 
 # Search
-def getSearchList(term:str, onExtend = searchCallback) -> Tuple[YtApiList[Union[SearchVideo, SearchChannel]], list[SearchType]]:
+def getSearchList(term:str, onExtend = searchOnExtend) -> Tuple[YtApiList[Union[SearchVideo, SearchChannel]], list[SearchType]]:
     url = ctrlp.searchUrl + term
 
     searchInitalPage = YtInitalPage.fromUrl(url)
