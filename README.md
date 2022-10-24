@@ -105,21 +105,29 @@ It works by defining nodes in a json tree down to the data you wish to collect, 
 }
 ```
 Example Scrapers: 
-- `ScrapeNth("howdy")` (N defaults to 1 or first) we would just get `{"howdy": {"name": "partner"}}`
+- `ScrapeNth("howdy")` (N defaults to 1 or first) \
+we would just get `{"howdy": {"name": "partner"}}`
 
-- `ScrapeNth("howdy", collapse = True)` we would just get `{"name": "partner"}`, collapse just returns the data for a node, rather than key value pairs
+- `ScrapeNth("howdy", collapse = True)` \
+we would just get `{"name": "partner"}`, collapse just returns the data for a node, rather than key value pairs
 
-- `ScrapeAll("name")` we would just get `{"name": ["partner", "alice", "bob", "carol", "dave"]}`
+- `ScrapeAll("name")` \
+we would just get `{"name": ["partner", "alice", "bob", "carol", "dave"]}`
 
-- `ScrapeNth("hi", [ScrapeNth("name" )])` we would get `{"hi": {"name": "alice"}}"` because we would first get `"hi"`, and then scrape for the first `"name"` in said data
+- `ScrapeNth("hi", [ScrapeNth("name" )])` \
+we would get `{"hi": {"name": "alice"}}"` because we would first get `"hi"`, and then scrape for the first `"name"` in said data
 
-- `ScrapeNth("hi", [ScrapeNth("name", collapse=True)])` we would get `{"hi": "alice"}"`, `"name"` has been collapsed
+- `ScrapeNth("hi", [ScrapeNth("name", collapse=True)])` \
+we would get `{"hi": "alice"}"`, `"name"` has been collapsed
 
-- `ScrapeNth("hi", [ScrapeNth("name"), ScrapeNth("favColor")])` we would get `{"hi": [{"name": "alice"}, {"favColor":"blue"}]}`
+- `ScrapeNth("hi", [ScrapeNth("name"), ScrapeNth("favColor")])` \
+we would get `{"hi": [{"name": "alice"}, {"favColor":"blue"}]}`
 
-- `ScrapeAll("name", collapse=True, dataCondition=lambda data: data[1] = 'a')` we would get `['carol', 'dave']` as `dataCondition` filters all data which fail the condition
+- `ScrapeAll("name", collapse=True, dataCondition=lambda data: data[1] = 'a')` \
+we would get `['carol', 'dave']` as `dataCondition` filters all data which fail the condition
 
-- `ScrapeUnion([ScrapeNth("missing key",[], collapse=True), ScrapeNth("hello",[], collapse = True)])` we would get `"there"`, however if `"missing key"` was present we would get the data for that instead
+- `ScrapeUnion([ScrapeNth("missing key",[], collapse=True), ScrapeNth("hello",[], collapse = True)])` \
+we would get `"there"`, however if `"missing key"` was present we would get the data for that instead
 
 For more examples using all nodes and arguments, see `degooged_tube/ytApiHacking/controlPanel.py`.
 
