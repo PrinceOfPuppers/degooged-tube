@@ -4,7 +4,7 @@
 - [INSTALLATION](#INSTALLATION)
 - [ABOUT](#ABOUT)
 - [USAGE](#USAGE)
-- [DEVLOPMENT](#DEVLOPMENT)
+- [DEVELOPMENT](#DEVLOPMENT)
 - [SCRAPING](#SCRAPING)
 - [API](#API)
 
@@ -22,9 +22,9 @@ pip install degooged-tube
 # ABOUT
 Allows for youtube to be used from a terminal with no ads, without an account account, and while maintaining subbox functionality. 
 
-Can be embedded into other projects using the api in `degooged_tube/ytApiHacking/__init__.py`
+Can be embedded into other projects using the API in `degooged_tube/ytApiHacking/__init__.py`
 
-All youtube api scraping is done internally, with the exception of getting the streaming link for videos, which is done with `yt-dlp`
+All youtube API scraping is done internally, with the exception of getting the streaming link for videos, which is done with `yt-dlp`
 
 
 
@@ -33,17 +33,17 @@ Launch in terminal with command
 ```
 degooged-tube
 ```
-Follow prompts to create a new 'user' (info is stored locally, has nothing to do with a youtube account), I recommend adding a few subs initally as it makes getting use to the cli easier.
+Follow prompts to create a new 'user' (info is stored locally, has nothing to do with a youtube account), I recommend adding a few subs initially as it makes getting use to the cli easier.
 
 ### General Interface
-CLI is interactive, options are displayed on the bottom of the screen and can be sepected by entering the letter in the brackets, IE w for `(w)atch`.
+CLI is interactive, options are displayed on the bottom of the screen and can be selected by entering the letter in the brackets, IE w for `(w)atch`.
 
 Some options IE `(w)atch` will show you a numbered list then prompt you for which number you want to watch, others IE `(p)revious/(n)ext page` will just preform the action.
 
 
 
-# DEVLOPMENT
-To build for devlopment run:
+# DEVELOPMENT
+To build for development run:
 ```
 git clone https://github.com/PrinceOfPuppers/degooged-tube
 
@@ -62,12 +62,12 @@ Will run all unit and integration tests, options are -u and -i to only run the u
 
 
 # SCRAPING
-Youtube will sometimes change their api, most of the time this is not an issue as the scraping engine is robust, however sometimes scrapers will be broken, as such here is a guide on how they work and how to repair them
+youtube will sometimes change their API, most of the time this is not an issue as the scraping engine is robust, however sometimes scrapers will be broken, as such here is a guide on how they work and how to repair them
 
 The configuration of youtube-api hacking exists in `degooged_tube/ytApiHacking/controlPanel.py`
 
 ### ScrapeJsonTree
-The core of degooged-tube is a json scraping engine which is robust against chainging apis, and easily repairable in the event of a scraper breaking.
+The core of degooged-tube is a json scraping engine which is robust against changing apis, and easily repairable in the event of a scraper breaking.
 
 It works by defining nodes in a json tree down to the data you wish to collect, you can specify as many or as few nodes as is needed.
 
@@ -118,23 +118,23 @@ Example Scrapers:
 
 For more examples using all nodes and arguments, see `degooged_tube/ytApiHacking/controlPanel.py`.
 
-For more involved examples of how this system is used in pratice, see `degooged_tube/tests/unitTests.py`.
+For more involved examples of how this system is used in practice, see `degooged_tube/tests/unitTests.py`.
 
 #### Node Types
 - `ScrapeNth`: \
-Scrapes and returns the data for n'th occurance of the key
+Scrapes and returns the data for n'th occurrence of the key
 
 - `ScrapeAll`: \
-Scrapes and returns the a list of data for all occurance of the key
+Scrapes and returns the a list of data for all occurrence of the key
 
 - `ScrapeLongest`: \
-Scrapes and returns the data with largest `len(data)` for all occurance of the key
+Scrapes and returns the data with largest `len(data)` for all occurrence of the key
 
 - `ScrapeUnion([Node1, Node2, ...])`: \
 Will scrape for each node and return the data first one which matches
 
 - `ScrapeAllUnion`/`ScrapeAllUnionNode`: \
-Used togeather as such: `ScrapeAllUnion([ScrapeAllUnionNode, ScrapeAllUnionNode, ...])`, will return a list containing all matches for any of the `ScrapeAllUnionNode`
+Used together as such: `ScrapeAllUnion([ScrapeAllUnionNode, ScrapeAllUnionNode, ...])`, will return a list containing all matches for any of the `ScrapeAllUnionNode`
 
 - `ScrapeElement`: \
 The generic type of any scrape node
@@ -149,16 +149,16 @@ There are 3 Objects which which wrap the youtube-api and allow for easy access t
 
 #### YtInitalPage
 
-Constructed using `YtInitalPage.fromUrl(url: str)` gets a page and parses it for containuation chains and inital data
+Constructed using `YtInitalPage.fromUrl(url: str)` gets a page and parses it for continuation chains and initial data
 
-The method `page.scrapeInitalData(dataFmt: Union[ScrapeElement, list[ScrapeElement]])` will run scrapeJsonTree on any inital data found and return it as a dict
+The method `page.scrapeInitalData(dataFmt: Union[ScrapeElement, list[ScrapeElement]])` will run scrapeJsonTree on any initial data found and return it as a dict
 
 #### YtApiList
 Constructed from `YtInitalPage`, it behaves like a list and making calls to a continuation chain as items are indexed.
 
 The continuation chain is decided using the apiUrl, and by duck-typing based on the scrapeFmt (following only chains which match the dataFmt).
 
-Contains `YtContIter`, an iterator which wraps the continuation chains, deals the requests, as well as implements the aformentioned duck-typing
+Contains `YtContIter`, an iterator which wraps the continuation chains, deals the requests, as well as implements the aforementioned duck-typing
 
 
 # DEGOOGED-TUBE-API
@@ -175,7 +175,7 @@ url/query -------------> getter --> YtInitalPage --+     +--> scrapeInitalData -
                                                                 youtube-api
 ```
 
-Ledgend:
+Legend:
 - `url/query`: \
 url or search query
 
@@ -186,10 +186,10 @@ created using `fromUrl()`
 functions in `degooged_tube/ytApiHacking/__init__.py` prepended by `get`
 
 - `scrapeInitalData`: \
-a method of `YtInitalPage` is passes the requsitie format to by getter
+a method of `YtInitalPage` is passes the requisite format to by getter
 
 - `YtApiList\YtContIter`: \
-`YtApiList` is instanceated by getter and passes the requsitie format to by getter, `YtContIter` in instanceated as a component of `YtApiList`
+`YtApiList` is instantiated by getter and passes the requisite format to by getter, `YtContIter` in instantiated as a component of `YtApiList`
 
 - `scrapeJsonTree`: \
 uses the format on data requested from the youtube-api
@@ -198,7 +198,7 @@ uses the format on data requested from the youtube-api
 the functions in `degooged_tube/ytApiHacking/__init__.py` called `process[BLANK]Info`, typically just calls `fromData` on the requisite dataclass
 
 - `onExtend`: \
-the functions in `degooged_tube/ytApiHacking/__init__.py` called `[BLANK]OnExtend`, typically just calls `fromData` on the requisite dataclass (can be overriden to inject data using `OnExtendKwargs` in a few cases)
+the functions in `degooged_tube/ytApiHacking/__init__.py` called `[BLANK]OnExtend`, typically just calls `fromData` on the requisite dataclass (can be overridden to inject data using `OnExtendKwargs` in a few cases)
 
 - `fromData`: \
-the constructors in `degooged_tube/ytApiHacking/controlPanel.py` which create a dataclass to hold the scraped data (ie `VideoInfo.fromData()`). they also santize and any replaces missing fields with placeholder data if possible
+the constructors in `degooged_tube/ytApiHacking/controlPanel.py` which create a dataclass to hold the scraped data (ie `VideoInfo.fromData()`). they also sanitize and any replaces missing fields with placeholder data if possible
