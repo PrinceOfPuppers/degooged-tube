@@ -141,12 +141,12 @@ class test_SubBox(TestCase):
             uploads = getLimitOffset(pageSize, numPages, self.subBox)
 
             videoChannels = [
-                upload.channelUrl 
-                    if upload.channelUrl != '' 
-                    else self.fail() 
+                upload.channelUrl
+                    if upload.channelUrl != ''
+                    else self.fail()
                     for upload in uploads
             ]
-            
+
 
             if sanitizedChannelUrl not in videoChannels:
                 pageSize += pageSizeExtension

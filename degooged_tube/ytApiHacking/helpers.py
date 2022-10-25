@@ -1,5 +1,7 @@
 import re
 from .customExceptions import UnableToGetUploadTime, UnableToGetApproximateNum
+from urllib.parse import quote_plus
+from . import controlPanel as ctrlp
 import degooged_tube.config as cfg
 from typing import Callable
 
@@ -143,3 +145,17 @@ def jsonRegex(*args, surroundingBrace = False):
     if surroundingBrace:
         r = "{" + r + "}"
     return r
+
+def sanitizeSearchTerm(searchTerm) -> str:
+    return quote_plus(searchTerm.strip())
+
+def sanitizeChannelUrl(channelUrl: str, path:str = ''):
+    channelUrl = channelUrl.strip(' ')
+
+    for splitStr in ctrlp.channelUrlSanitizationSplitsPostfix:
+        channelUrl = channelUrl.split(splitStr,1)[0]
+
+    for splitStr in ctrlp.channelUrlSanitizationSplitsPrefix:
+        channelUrl = channelUrl.split(splitStr,1)[-1]
+
+    return "https" + channelUrl + path

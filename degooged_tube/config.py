@@ -7,7 +7,7 @@ contains all global variables, also parses config into global variables
 '''
 
 _parser = configparser.ConfigParser(allow_no_value=True)
-_parser.optionxform = str 
+_parser.optionxform = str
 
 def writeToConfig(key,value):
     _parser.set('CONFIG',key,value)
@@ -28,7 +28,7 @@ def _getConfig():
             _parser.write(f)
     else:
         _parser.read(cfgPath)
-    
+
 
     config = _parser['CONFIG']
 

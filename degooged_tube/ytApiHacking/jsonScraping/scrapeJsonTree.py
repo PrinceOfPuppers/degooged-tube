@@ -23,7 +23,7 @@ def dumpDebugData(debugDataList: Union[list[ScrapeJsonTreeDebugData], None], tes
         f.write( f"Timestamp:\nUTC:   {datetime.now(timezone.utc)}\nLocal: {datetime.now()}\n" )
         for i,debugData in enumerate(debugDataList):
             data = debugData.data
-            
+
             f.write(f"\nData Number {i}:\n==================================================\n")
             json.dump(data, f, indent=2)
 
@@ -70,13 +70,13 @@ def _scrapeElementStrIndent(className: str, numIndent:int, **kwargs):
     s += f"{indent})"
     return s
 
-    
+
 
 def _getMissingLeavesFromList(scrapeElements: list[ScrapeElement], jsonBranchPath:str, foundLeaves:set[str], missingLeaves:set[str], requiredLeaves:set[str]):
     for child in scrapeElements:
         childBranchPath = _updateBranchPath(jsonBranchPath, child)
         child.getMissingLeaves(childBranchPath, foundLeaves, missingLeaves, requiredLeaves)
-    return 
+    return
 
 
 @dataclass
@@ -130,7 +130,7 @@ class ScrapeAllUnionNode:
         self.isLeaf = len(self.children) == 0
 
     def __repr__(self, numIndent:int = 0):
-        return _scrapeElementStrIndent(self.__class__.__name__, numIndent, 
+        return _scrapeElementStrIndent(self.__class__.__name__, numIndent,
             key = self.key, leaf = self.isLeaf, collapse = self.collapse, dataCondition = self.dataCondition, children = self.children
         )
 
@@ -148,7 +148,7 @@ class ScrapeAllUnionNode:
             return
 
         _getMissingLeavesFromList(self.children, jsonBranchPath, foundLeaves, missingLeaves, requiredLeaves)
-        return 
+        return
 
 
 @dataclass
@@ -160,7 +160,7 @@ class ScrapeAllUnion:
 
     key:str         # only serves as the name of the data (irrelevent if collapsed)
     dataCondition:Union[ Callable[[Any],bool], None ]
-    isLeaf:bool 
+    isLeaf:bool
     rename:str = "" # for polymorphism with other ScrapeElements
 
     def __init__(self, name: str, children: list[ScrapeAllUnionNode], collapse:bool = False, dataCondition = None):
@@ -176,7 +176,7 @@ class ScrapeAllUnion:
         self.isLeaf:bool = False
 
     def __repr__(self, numIndent:int = 0):
-        return _scrapeElementStrIndent(self.__class__.__name__, numIndent, 
+        return _scrapeElementStrIndent(self.__class__.__name__, numIndent,
             name = self.key, isLeaf = self.isLeaf, collapse = self.collapse, dataCondition = self.dataCondition, children = self.children
         )
 
@@ -237,7 +237,7 @@ class _ScrapeNode:
         self.isLeaf = len(self.children) == 0
 
     def __repr__(self, numIndent:int = 0, **kwargs):
-        return _scrapeElementStrIndent(self.__class__.__name__, numIndent, 
+        return _scrapeElementStrIndent(self.__class__.__name__, numIndent,
             key = self.key, rename = self.rename, isLeaf = self.isLeaf, collapse = self.collapse, optional = self.optional, dataCondition = self.dataCondition, children = self.children,
             **kwargs
         )
@@ -260,12 +260,12 @@ class _ScrapeNode:
             return
 
         _getMissingLeavesFromList(self.children, jsonBranchPath, foundLeaves, missingLeaves, requiredLeaves)
-        return 
+        return
 
 
 
 class ScrapeAll(_ScrapeNode):
-    def __init__(self, key:str, children:list[ScrapeElement], collapse:bool = False, 
+    def __init__(self, key:str, children:list[ScrapeElement], collapse:bool = False,
                        rename:str = "", optional:bool = False, dataCondition: Callable[[Any],bool]= None):
         super().__init__(key, children, rename, collapse, optional, True, dataCondition)
         self.key = key
@@ -293,7 +293,7 @@ class ScrapeAll(_ScrapeNode):
 class ScrapeNth(_ScrapeNode):
     n:int
 
-    def __init__(self, key:str, children:list[ScrapeElement], collapse:bool = False, 
+    def __init__(self, key:str, children:list[ScrapeElement], collapse:bool = False,
                        rename:str = "", optional:bool = False, dataCondition: Callable[[Any],bool]= None, n:int = 0):
         super().__init__(key, children, rename, collapse, optional, False, dataCondition)
         self.n = n
@@ -323,12 +323,12 @@ class ScrapeNth(_ScrapeNode):
             return data
         return None
 
-    
+
 
 @dataclass
 class ScrapeLongest(_ScrapeNode):
 
-    def __init__(self, key:str, children:list[ScrapeElement], collapse:bool = False, 
+    def __init__(self, key:str, children:list[ScrapeElement], collapse:bool = False,
                        rename:str = "", optional:bool = False, dataCondition: Callable[[Any],bool]= None):
         super().__init__(key, children, rename, collapse, optional, False, dataCondition)
 
@@ -414,7 +414,7 @@ def _ScrapeNodeHelper(currentVal, jsonBranchPath:str, children: list[ScrapeEleme
             _put(childVal, container, childKey)
         if len(container) != 0:
             res.append(container)
-    
+
     if len(res) == 0:
         return None
 
@@ -438,7 +438,7 @@ def _UnionHelper(j, jsonBranchPath:str, children: list[ScrapeElement], leavesFou
                 childVal = c
                 chosenChild = child
 
-    
+
     if childVal is None:
         return None
 
@@ -504,7 +504,7 @@ def _scrapeJsonTree(j, jsonBranchPath: str, base: ScrapeElement, leavesFound: se
         if base.isLeaf:
             raise ScrapeError("ScrapeAllUnion Cannot be Leaf Node")
 
-        currentVal = base.getVal(j) 
+        currentVal = base.getVal(j)
         if currentVal is None:
             return None
 
@@ -517,7 +517,7 @@ def _scrapeJsonTree(j, jsonBranchPath: str, base: ScrapeElement, leavesFound: se
 
 
     else:
-        currentVal = base.getVal(j) 
+        currentVal = base.getVal(j)
         if currentVal is None:
             return None
 
@@ -542,7 +542,7 @@ def _scrapeJsonTree(j, jsonBranchPath: str, base: ScrapeElement, leavesFound: se
 
 
 def scrapeJsonTree(j, fmt: Union[ScrapeElement, list[ScrapeElement]], debugDataList: list[ScrapeJsonTreeDebugData] = None, truncateThreashold:float = None, errorThreashold:float = None):
-    # if debugDataList is passed, go into debug mode, in this mode never truncate, but always throw error if any keys are missing 
+    # if debugDataList is passed, go into debug mode, in this mode never truncate, but always throw error if any keys are missing
     if truncateThreashold is None:
         truncateThreashold = 0.5 if debugDataList is None else 0.0
 
@@ -558,7 +558,7 @@ def scrapeJsonTree(j, fmt: Union[ScrapeElement, list[ScrapeElement]], debugDataL
     leavesFound = set()
     missingLeaves = set()
     requiredLeaves = set()
-    
+
     for base in bases:
         jsonBranchPath = _updateBranchPath("", base)
         val = _scrapeJsonTree(j, jsonBranchPath, base, leavesFound, truncateThreashold)

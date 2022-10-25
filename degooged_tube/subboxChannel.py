@@ -48,7 +48,7 @@ class SubBoxChannel:
         self.playlistsList = ytapih.getChannelPlaylistsList(initalPage)
         return self.playlistsList
 
-    
+
     def __repr__(self):
         tags = f'tags: {self.tags}' if len(self.tags) > 0 else 'tags: {}'
         return f'{self.channelName}\n     > {tags} - URL: {self.channelUrl}'
@@ -86,7 +86,7 @@ def loadChannel(data) -> Union[SubBoxChannel, str]:
     url, channelTags = data
     try:
         subboxChannel = SubBoxChannel.fromUrl(
-            url, 
+            url,
             channelTags
         )
         cfg.logger.debug(f"here: {subboxChannel.channelName}")

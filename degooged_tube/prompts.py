@@ -31,14 +31,14 @@ def qPrompt(initalPrompt: str, inputPrompt: str, onInput: Callable[[str],None], 
         if len(response) == 0:
             cfg.logger.info("Enter (q) if You're Finished")
             continue
-        
+
         if onError is None:
             onInput(response)
             continue
 
         try:
             onInput(response)
-            
+
         except errorType:
             onError(response)
 

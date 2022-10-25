@@ -4,8 +4,8 @@ from dataclasses import dataclass
 from typing import Union
 
 from .jsonScraping import scrapeJsonTree, scrapeFirstJson, ScrapeElement, ScrapeError, dumpDebugData
-from . import controlPanel as ctrlp 
-from . import customExceptions as ce 
+from . import controlPanel as ctrlp
+from . import customExceptions as ce
 
 
 import degooged_tube.config as cfg

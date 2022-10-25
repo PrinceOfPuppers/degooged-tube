@@ -40,7 +40,7 @@ def createNewUser(username:str, initalSubUrls: list[str] = list(), initalTags: l
         username = 'default'
 
     userPath = f"{cfg.userDataPath}/{username}"
-    
+
     if os.path.exists(userPath) and len(os.listdir(userPath)) != 0:
         raise UserAlreadyExistsException()
 
@@ -82,12 +82,12 @@ def loadUserSubbox(username:str, promptOnError:bool = True) -> Tuple[SubBox, str
                     cfg.logger.info(f"Unsubscribed to {channelUrl}")
 
     return subbox, username
-    
+
 
 def getUsers() -> list[str]:
     if not os.path.exists(cfg.userDataPath):
         return []
-    return os.listdir(path=cfg.userDataPath) 
+    return os.listdir(path=cfg.userDataPath)
 
 def removeUser(username: str):
     username = sanitizeFileName(username)

@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 from .jsonScraping import scrapeJsonTree, dumpDebugData, ScrapeError, ScrapeElement
 from .ytInitalPage import YtInitalPage
-from . import controlPanel as ctrlp 
+from . import controlPanel as ctrlp
 
 import degooged_tube.config as cfg
 
@@ -137,7 +137,7 @@ class YtContIter:
                     f"continuationToken: {continuationToken}\n"
                     f"Status {b.status_code} {b.reason}"
                 )
-            
+
             data:dict = json.loads(b.text)
 
             try:
@@ -193,7 +193,7 @@ class YtContIter:
                     f"continuationToken: {continuationToken}\n"
                     f"Status {b.status_code} {b.reason}"
                 )
-            
+
             returnData.append(json.loads(b.text))
 
             x = ctrlp.continuationTokenRe.search(b.text)

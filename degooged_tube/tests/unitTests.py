@@ -34,7 +34,7 @@ class test_scrapeJsonTree(TestCase):
         solution = {'greetings': [{'hi': {'name': ['alice', 'bob', 'carol', 'dave']}}]}
 
 
-        self.assertEqual ( 
+        self.assertEqual (
             answer, solution
         )
 
@@ -166,7 +166,7 @@ class test_scrapeJsonTree(TestCase):
                 { "name": "bob", "favColor": "green", "coolness": 11 },
                 { "name": "carol", "favColor": "purple", "coolness": ["super", "duper", "cool"] },
                 { "name": "dave", "favColor": "purple" }
-            ], 
+            ],
                 [1, 2, 3]
         ]
 
@@ -369,8 +369,8 @@ class test_scrapeJsonTree(TestCase):
               ], collapse = True)
 
         solution = \
-            { 
-                "names": ["alice", "bob", "carol", "dave"], 
+            {
+                "names": ["alice", "bob", "carol", "dave"],
                 "favColors": ["blue", "green", "purple", "purple" ]
             }
 
@@ -389,7 +389,7 @@ class test_scrapeJsonTree(TestCase):
               ], collapse = True)
 
         solution = \
-            { 
+            {
                 "favColors": ["blue", "green", "purple", "purple" ]
             }
 
@@ -514,8 +514,8 @@ class test_scrapeJsonTree(TestCase):
             ])
 
         solution = \
-            { 
-                "hello": ["there", "boio"], 
+            {
+                "hello": ["there", "boio"],
             }
 
         answer = test_scrapeJsonTreeHelper("random.json", scrapeFmt, 1.0)

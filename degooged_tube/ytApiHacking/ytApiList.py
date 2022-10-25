@@ -2,7 +2,7 @@ from typing import Callable
 
 from .ytContIter import YtContIter, YtInitalPage
 from .jsonScraping import ScrapeElement, ScrapeLongest
-from . import controlPanel as ctrlp 
+from . import controlPanel as ctrlp
 from degooged_tube.helpers import paginationCalculator
 
 import degooged_tube.config as cfg
@@ -24,10 +24,10 @@ class YtApiList(Generic[_T]):
     _getInitData = False
     initScrapeFmt = None
 
-    def __init__(self, initalPage: YtInitalPage, apiUrl: str, scrapeFmt: Union[ScrapeElement, list[ScrapeElement]], getInitalData: bool= False, 
+    def __init__(self, initalPage: YtInitalPage, apiUrl: str, scrapeFmt: Union[ScrapeElement, list[ScrapeElement]], getInitalData: bool= False,
                         onExtend: Callable[[list[dict]], list[_T]] = lambda res: res, onExtendKwargs = dict()):
         '''
-        Notes: 
+        Notes:
             - onExtendKwargs will be passed to onExtend (used for passing data like a channel url to all its videos and etc)
         '''
         self._list = []
@@ -123,7 +123,7 @@ class YtApiList(Generic[_T]):
 
     def __repr__(self):
         self.getAll()
-        return f"{self.__class__.__name__}({str(self._list)})"  
+        return f"{self.__class__.__name__}({str(self._list)})"
 
     def __next__(self) -> _T:
         try:

@@ -23,7 +23,7 @@ setuptools.setup(
     version=getVersion("degooged_tube"),
     author="Joshua McPherson",
     author_email="joshuamcpherson5@gmail.com",
-    description="",
+    description="An adless, accountless, trackerless youtube interface with a sub box",
     long_description = longDescription,
     long_description_content_type = 'text/markdown',
     url="https://github.com/PrinceOfPuppers/degooged-tube",

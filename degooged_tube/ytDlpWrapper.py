@@ -14,7 +14,7 @@ def _getFormat(maxQuality: str, maxFps: str):
     else:
         backup = 'best'
 
-    
+
     return f'bestvideo[height <= {maxQuality}]{fpsStr}+audio/{backup}'
 
 

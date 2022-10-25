@@ -121,12 +121,12 @@ class SubBox:
         # mostRecentIndex / contenderIndex are indices of channels, we are checking for the channel who uploaded most recently
         try:
             mostRecentIndex, mostRecentChannel, mostRecentVideo = self._getNextChannelWithMoreUploads(0)
-        except NoVideo: 
+        except NoVideo:
             self.atMaxLen = True
             cfg.logger.debug("End of SubBox Reached!")
             raise EndOfSubBox
 
-        contenderIndex = mostRecentIndex 
+        contenderIndex = mostRecentIndex
         while True:
             try:
                 contenderIndex, contenderChannel, contenderVideo = self._getNextChannelWithMoreUploads(contenderIndex+1)
@@ -139,7 +139,7 @@ class SubBox:
                 mostRecentVideo = contenderVideo
 
         self.orderedUploads.append(mostRecentChannel.popNextUploadInQueue())
-            
+
     def _getChannelIdsUnderTags(self, tags: set[str]):
         # a channel must have every tag in tags in order to appear (tags must be a subset of the channels tags)
         return [channel.channelId for channel in self.channels if tags.issubset(channel.tags)]
@@ -157,7 +157,7 @@ class SubBox:
         return num
 
     def _extendOrderedUploads(self, desiredLen: int, channelIdWhitelist: Union[list[str], None]):
-        initalLength = len(self.orderedUploads) 
+        initalLength = len(self.orderedUploads)
 
         debugMessage = \
             f"SubBox Extenion Requested:\n" \
@@ -235,7 +235,7 @@ class SubBox:
         if start >= end:
             cfg.logger.debug(f"SubBox.getLimitOffset(limit= {limit}, offset= {offset}), Returning Empty List")
             return []
-        
+
         return uploads[offset: offset+limit]
 
     def getPaginated(self, pageNum: int, pageSize: int, tags: Union[set[str], None] = None) -> list[ytapih.Upload]:

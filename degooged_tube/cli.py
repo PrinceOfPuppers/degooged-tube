@@ -1,7 +1,6 @@
 import sys
 import logging
 from dataclasses import dataclass
-from urllib.parse import quote_plus
 from typing import Callable, Tuple, Union
 from degooged_tube import pool, setupPool
 
@@ -36,8 +35,8 @@ def createNewUserPrompt() -> Tuple[SubBox, str]:
 
     channels = []
     prompts.qPrompt(
-        'Enter the URLs of Channels You Want to Subscribe to', 
-        'Channel Url', 
+        'Enter the URLs of Channels You Want to Subscribe to',
+        'Channel Url',
         lambda channelUrl: channels.append(ytapih.sanitizeChannelUrl(channelUrl)),
         lambda channelUrl: cfg.logger.error(f"Unable to Subscribe to {channelUrl}\n Are You Sure the URL is Correct?"),
         ChannelLoadIssue
@@ -71,7 +70,7 @@ def createNewUserPrompt() -> Tuple[SubBox, str]:
 
 
     prompts.qPrompt(
-        'Enter the Number of the Channel From the Above List', 
+        'Enter the Number of the Channel From the Above List',
         'Channel Number', 
         callback
     )
@@ -177,7 +176,9 @@ def subscriptionsPage(state: CliState):
                 )
             except prompts.Cancel:
                 continue
-            cmds.unsubscribe(state.username, state.subbox, ytapih.sanitizeChannelUrl(state.subbox.channels[index].channelUrl))
+            channelUrl = ytapih.sanitizeChannelUrl(state.subbox.channels[index].channelUrl)
+            channelId = state.subbox.channels[index].channelId
+            cmds.unsubscribe(state.username, state.subbox, channelId, channelUrl)
             continue
 
         if chosenOption == 'a':
@@ -259,7 +260,7 @@ def _searchVideoHelper(state: CliState, searchVid: ytapih.SearchVideo) -> bool:
     raise Exception(f'Reached End Of SearchVideoHelper Switch, Option Chosen {chosenOption}')
 
 
-def _searchChannelHelper(state: CliState, searchChannel) -> bool:
+def _searchChannelHelper(state: CliState, searchChannel:ytapih.SearchChannel) -> bool:
     '''return value specifies whether or not to go back to subbox'''
     while True:
         chosenOption = input(
@@ -275,7 +276,7 @@ def _searchChannelHelper(state: CliState, searchChannel) -> bool:
         break
 
     if chosenOption == 's':
-        cmds.subscribeUnsubscribe(state.username, state.subbox, searchChannel.channelUrl, searchChannel.channelName)
+        cmds.subscribeUnsubscribe(state.username, state.subbox, searchChannel.channelId, searchChannel.channelUrl, searchChannel.channelName)
         return False
 
     if chosenOption == 'c':
@@ -286,18 +287,31 @@ def _searchChannelHelper(state: CliState, searchChannel) -> bool:
     raise Exception(f'Reached End Of SearchChannelHelper Switch, Option Chosen {chosenOption}')
 
 
+def _searchPageHelper() -> str:
+    while True:
+        searchTerm = input("Search Term (or q to quit): ")
+        sanitizedSearchTerm = ytapih.helpers.sanitizeSearchTerm(searchTerm)
+        if sanitizedSearchTerm == 'q':
+            return ''
+        if sanitizedSearchTerm == '':
+            searchTerm = print("Invalid Search Term")
+            continue
+        return searchTerm
+
 def searchPage(state: CliState, pageNum: int = 1) -> bool:
     '''return value specifies whether or not to go back to subbox'''
     getPageSize = lambda : int((getTerminalSize()[1] - 5)/3)
 
-    searchTerm = input("Search Term: ")
-    sanitizedSearchTerm = quote_plus(searchTerm)
-    searchList, filters = ytapih.getSearchList(sanitizedSearchTerm)
+    sanitizedSearchTerm = _searchPageHelper()
 
+    if not sanitizedSearchTerm:
+        return False
+
+    searchList, filters = ytapih.getSearchList(sanitizedSearchTerm)
     searchRes = searchList.getPaginated(pageNum, getPageSize())
 
     while True:
-        searchTitle = f'Search: {searchTerm}, Page: {pageNum}' 
+        searchTitle = f'Search: {sanitizedSearchTerm}, Page: {pageNum}' 
 
         cfg.logger.info(searchTitle)
 
@@ -381,9 +395,9 @@ def searchPage(state: CliState, pageNum: int = 1) -> bool:
 
 
             if chosenOption == 's':
-                searchTerm = input("Search Term: ")
-                sanitizedSearchTerm = quote_plus(searchTerm)
-
+                sanitizedSearchTerm = _searchPageHelper()
+                if not sanitizedSearchTerm:
+                    continue
                 searchList, filters = ytapih.getSearchList(sanitizedSearchTerm)
 
                 pageNum = 0
@@ -416,7 +430,7 @@ def relatedVideosPage(state: CliState, videoPage: ytapih.YtInitalPage, videoTitl
         ).strip().lower()
 
         options = [
-            'w', 'r', 'v', 'c', 
+            'w', 'r', 'v', 'c',
             'p', 'n', 'h', 'b'
         ]
 
@@ -611,7 +625,7 @@ def channelInfoPage(state: CliState, channel: SubBoxChannel) -> bool:
             f"Banner:        {banner}\n"
             f"Description: \n{channel.channelInfo.description}\n"
         )
-        
+
         chosenOption = input(
             'Options: (u)ploads, (s)ubscribe/unsubscribe, (h)ome, (b)ack\n'
             'Option: '
@@ -637,7 +651,7 @@ def channelInfoPage(state: CliState, channel: SubBoxChannel) -> bool:
             continue
 
         if chosenOption == 's':
-            cmds.subscribeUnsubscribe(state.username, state.subbox, channel.channelUrl, channel.channelName)
+            cmds.subscribeUnsubscribe(state.username, state.subbox, channel.channelId, channel.channelUrl, channel.channelName)
             continue
 
 
@@ -660,7 +674,7 @@ def uploadsPage(state: CliState, channel: SubBoxChannel, pageNum: int = 1) -> bo
         ).strip().lower()
 
         options = [
-            'w', 'r', 'v', 'c', 
+            'w', 'r', 'v', 'c',
             'p', 'n', 'h', 'b'
         ]
 
@@ -732,9 +746,9 @@ def subboxPage(state: CliState, pageNum: int = 1, tags:Union[set[str], None] = N
         uploads = state.subbox.getPaginated(pageNum, getPageSize(), tags)
 
         if tags != None and len(tags) > 0:
-            subboxTitle = f'Subbox Page {pageNum}, Tags: {tags}:' 
+            subboxTitle = f'Subbox Page {pageNum}, Tags: {tags}:'
         else:
-            subboxTitle = f'Subbox Page {pageNum}:' 
+            subboxTitle = f'Subbox Page {pageNum}:'
 
         cfg.logger.info(subboxTitle)
         for i,upload in enumerate(uploads):
@@ -748,7 +762,7 @@ def subboxPage(state: CliState, pageNum: int = 1, tags:Union[set[str], None] = N
         ).strip().lower()
 
         options = [
-            'w', 'r', 'v', 'c', 
+            'w', 'r', 'v', 'c',
             'p', 'n', 'r', 'f', 's', 'e', 'l'
         ]
 

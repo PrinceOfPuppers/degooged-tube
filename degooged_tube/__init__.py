@@ -6,7 +6,7 @@ import sys
 from typing import Union
 
 
-__version__ = "0.0.1"
+__version__ = "1.0.0"
 
 pool:Union[Pool, None] = None
 
@@ -52,7 +52,7 @@ signal(SIGINT,noInterrupt.handler)
 def setupPool():
     signal(SIGINT, SIG_IGN)
     # pool will ignore signal and let parent process close
-    global pool 
+    global pool
     pool = multiprocessing.Pool(processes=multiprocessing.cpu_count())
     signal(SIGINT,noInterrupt.handler)
     return pool

@@ -1,10 +1,10 @@
 from .ytContIter import YtInitalPage
-from . import controlPanel as ctrlp 
+from . import controlPanel as ctrlp
 from .ytApiList import YtApiList
 from .controlPanel import Upload, SearchType, SearchVideo, SearchChannel, ChannelInfo, VideoInfo, \
                           RelatedVideo, SearchElementFromData, Comment, ChannelPlaylist, PlaylistVideo, PlaylistInfo
 from typing import Tuple, Union
-from .helpers import addResultIfNotNone
+from .helpers import addResultIfNotNone, sanitizeChannelUrl
 
 
 # uploads
@@ -121,25 +121,14 @@ def searchOnExtend(res):
 
 # Search
 def getSearchList(term:str, onExtend = searchOnExtend) -> Tuple[YtApiList[Union[SearchVideo, SearchChannel]], list[SearchType]]:
+    term = term.strip()
+    if term == '':
+        term = "easter egg" # simplest solution (should be managed by caller)
+
     url = ctrlp.searchUrl + term
 
     searchInitalPage = YtInitalPage.fromUrl(url)
     searchList = YtApiList(searchInitalPage, ctrlp.searchApiUrl, ctrlp.searchScrapeFmt, getInitalData = True, onExtend = onExtend)
     filterData = processFilterData( searchInitalPage.scrapeInitalData(ctrlp.searchFilterScrapeFmt) )
     return searchList, filterData
-
-
-
-
-
-def sanitizeChannelUrl(channelUrl: str, path:str = ''):
-    channelUrl = channelUrl.strip(' ')
-
-    for splitStr in ctrlp.channelUrlSanitizationSplitsPostfix:
-        channelUrl = channelUrl.split(splitStr,1)[0]
-
-    for splitStr in ctrlp.channelUrlSanitizationSplitsPrefix:
-        channelUrl = channelUrl.split(splitStr,1)[-1]
-
-    return "https" + channelUrl + path
 

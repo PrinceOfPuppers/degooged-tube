@@ -20,18 +20,18 @@ apiKeyRe = re.compile(jsonRegex("INNERTUBE_API_KEY", "(.*?)"))
 clientVersionRe = re.compile(jsonRegex("key", "cver", "value", "(.*?)" , surroundingBrace = True))
 ytInitalDataRe = re.compile(r"ytInitialData = (\{.*?\});</script>")
 
-# inital page continuation token and apiUrl scraping 
+# inital page continuation token and apiUrl scraping
 continuationScrapeFmt = \
     ScrapeAll("continuationItemRenderer",[
         ScrapeNth("apiUrl",[]),
         ScrapeNth("token",[])
     ], collapse = True)
 
-# continuation token scraping regex for continuation json (you could also use continuationScrapeFmt) 
+# continuation token scraping regex for continuation json (you could also use continuationScrapeFmt)
 continuationTokenRe = re.compile(r'[\'\"]token[\'\"]\s?:\s?[\'\"](.*?)[\'\"]')
 
 
-# post request url for continuation chains, key is scraped from inital 
+# post request url for continuation chains, key is scraped from inital
 apiContinuationUrlFmt = 'https://www.youtube.com/{apiUrl}?key={key}'
 
 # post request body for continuation chains, clientVersion is scraped from inital page, continuationToken from inital and subsequent api responses
@@ -58,7 +58,7 @@ apiContinuationBodyFmt = '''{{
 continuationPageDataContainerKey = "continuationItems"
 initalPageDataContainerKey = "contents"
 
-@dataclass 
+@dataclass
 class Thumbnail:
     width:int
     height:int
@@ -84,7 +84,7 @@ def _isLive(text):
     return text.lower() == "live"
 
 # some stuff shares scraper formats, such as uploads, recommended, and playlist videos, so we create wrappers for them
-def _uploadAndRelatedFmt(titleTextKey: str, durationTextContainerKey: str, 
+def _uploadAndRelatedFmt(titleTextKey: str, durationTextContainerKey: str,
                          includeViewCount = True, includePublishedTime = True) -> list[ScrapeElement]:
     l:list[ScrapeElement] = [
          ScrapeNth("videoId",[]),
@@ -225,7 +225,7 @@ videoInfoScrapeFmt = \
             #ScrapeNth("sentimentBar",[
             #    ScrapeNth("tooltip",[], collapse=True)
             #],rename="likeDislike"),
-            
+
         ], collapse = True),
 
         ScrapeNth("videoSecondaryInfoRenderer",[
@@ -329,7 +329,7 @@ class PlaylistInfo:
         title:str                   = tryGet(data, 'title')
         description:str             = tryGet(data, 'description')
         return cls(title, description)
-    
+
     def __repr__(self):
         return f'{self.title}\n{self.description}\n'
 
@@ -396,7 +396,7 @@ class Upload:
         channelId:str = ''
         avatar:list[Thumbnail] = list()
         return cls(videoId, url, unixTime, thumbnails, uploadedOn, views, duration, title, channelName, channelUrl, channelId, avatar)
-    
+
     def __repr__(self):
         return f'{self.title}\n     > {self.channelName} | {self.duration} | {self.uploadedOn} | {self.views}\n'
 
@@ -450,7 +450,7 @@ playlistVideosApiUrl = '/youtubei/v1/browse'
 
 playlistVideosScrapeFmt = \
     ScrapeAll("playlistVideoRenderer", [
-        *_uploadAndRelatedFmt("text", "lengthText", includePublishedTime = False, includeViewCount = False), 
+        *_uploadAndRelatedFmt("text", "lengthText", includePublishedTime = False, includeViewCount = False),
         ScrapeNth("shortBylineText", [
             ScrapeNth("text", [], collapse = True),
         ], rename = "channelName"),
@@ -492,7 +492,7 @@ class PlaylistVideo:
 
 
         return cls(videoId, url, thumbnails, duration, title, channelName, channelUrlFragment, channelUrl)
-    
+
     def __repr__(self):
         return f'{self.title}\n     > {self.channelName} | {self.duration} \n'
 
@@ -546,7 +546,7 @@ relatedVideosApiUrl = '/youtubei/v1/next'
 
 relatedVideosScrapeFmt = \
     ScrapeAll("compactVideoRenderer", [
-        *_uploadAndRelatedFmt("simpleText", "lengthText"), 
+        *_uploadAndRelatedFmt("simpleText", "lengthText"),
         ScrapeNth("longBylineText", [
             ScrapeNth("text", [], collapse = True),
         ], rename = "channelName"),
@@ -598,7 +598,7 @@ class RelatedVideo:
         avatar:list[Thumbnail]  = [Thumbnail.fromData(datum) for datum in tryGet(data, 'avatar', [])]
 
         return cls(videoId, url, thumbnails, uploadedOn, views, duration, title, channelName, channelUrlFragment, channelUrl, avatar)
-    
+
     def __repr__(self):
         return f'{self.title}\n     > {self.channelName} | {self.duration} | {self.uploadedOn} | {self.views}\n'
 
@@ -713,6 +713,7 @@ searchScrapeFmt = \
             ScrapeAllUnion("", [
 
                 ScrapeAllUnionNode("channelRenderer", [
+                    ScrapeNth("channelId",[]),
 
                     ScrapeNth("title",[
                         ScrapeNth("simpleText",[],collapse=True)
@@ -842,6 +843,7 @@ class SearchChannel:
     channelName:str
     channelUrlFragment:str
     channelUrl:str
+    channelId:Union[str]
     avatar:list[Thumbnail]
     channelDescription:str
     subscribers:str
@@ -859,12 +861,13 @@ class SearchChannel:
             return None
 
         channelUrl         = 'https://www.youtube.com' + channelUrlFragment
+        channelId          = tryGet(data,'channelId', None)
         avatar:list[Thumbnail]        = [Thumbnail.fromData(datum) for datum in tryGet(data, 'avatar', [])]
         channelDescription = tryGet(data, 'channelDescription')
         subscribers        = tryGet(data, 'subscribers')
         videoCount         = " ".join(tryGet(data, 'videoCount', []))
 
-        return cls(channelName, channelUrlFragment, channelUrl, avatar, channelDescription, subscribers, videoCount)
+        return cls(channelName, channelUrlFragment, channelUrl, channelId, avatar, channelDescription, subscribers, videoCount)
 
     def __repr__(self):
         return f'Channel: {self.channelName}\n     > {self.subscribers} | {self.videoCount}\n'

@@ -14,7 +14,7 @@ def playVideo(url:str):
     cfg.logger.info("\nMPV Player \nPress (q) or Close Window to Stop:")
     subprocess.call((f'mpv', '--ytdl-format=bestvideo[height<=?1080]+bestaudio/best', url))
     return
-    
+
 #    player = mpv.MPV(ytdl=True, input_default_bindings=True, input_vo_keyboard=True, osc=True)
 #    try:
 #        player.play(url)

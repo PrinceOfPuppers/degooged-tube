@@ -2,7 +2,7 @@ import sys
 import logging
 import degooged_tube.config as cfg
 import argparse
-from degooged_tube.ytApiHacking.jsonScraping import scrapeJsonTree, ScrapeNode, ScrapeNum
+from degooged_tube.ytApiHacking.jsonScraping import scrapeJsonTree
 import degooged_tube.ytApiHacking.controlPanel as ctrlp
 
 #modified version of help formatter which only prints args once in help message
