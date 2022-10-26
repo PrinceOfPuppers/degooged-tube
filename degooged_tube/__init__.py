@@ -6,7 +6,7 @@ import sys
 from typing import Union
 
 
-__version__ = "1.0.1"
+__version__ = "1.0.2"
 
 pool:Union[Pool, None] = None
 

@@ -1,5 +1,7 @@
 from yt_dlp import YoutubeDL
 import degooged_tube.config as cfg
+
+
 def _getFormat(maxQuality: str, maxFps: str):
     if maxFps != 'highest':
         fpsStr = f'[fps <= {maxFps}]'
@@ -20,7 +22,8 @@ def _getFormat(maxQuality: str, maxFps: str):
 
 def getStreamLink(videoUrl:str):
     format = _getFormat(cfg.maxQuality, cfg.maxFps)
-    ydl_opts = {'writeinfojson': True, 'quiet': True, 'format': format}
+    ydl_opts = {'writeinfojson': True, 'quiet': True, 'format': format, 'cachedir': cfg.cacheDir}
     with YoutubeDL(ydl_opts) as ydl:
         x = ydl.extract_info(videoUrl, False)
+        assert x is not None
         return x['url']

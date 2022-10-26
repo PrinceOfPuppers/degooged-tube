@@ -49,6 +49,7 @@ testDataDumpPath = f"{modulePath}/tests/dataDump.log"
 testLogPath = f"{modulePath}/tests/testing.log"
 integrationTestPath = f"{modulePath}/tests/integrationTests.py"
 unitTestPath = f"{modulePath}/tests/unitTest.py"
+cacheDir = f"{modulePath}/.cache"
 
 # global variables
 testing = False
